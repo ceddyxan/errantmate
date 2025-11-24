@@ -1,0 +1,1908 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+.animate-shimmer {
+    animation: shimmer 2s infinite;
+}
+</style>
+<div class="max-w-7xl mx-auto">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Reports & Analytics</h1>
+            <p class="text-gray-600 mt-1">Delivery statistics and insights</p>
+        </div>
+
+        <!-- Enhanced Export Section -->
+        <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100 shadow-sm">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div class="flex items-center">
+                    <div class="p-3 bg-green-100 rounded-lg mr-4">
+                        <i class="fas fa-download text-green-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800">Export Reports</h3>
+                        <p class="text-sm text-gray-600">Download delivery data in CSV format</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ url_for('export', period='daily') }}" 
+                       class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm hover:shadow-md">
+                        <i class="fas fa-calendar-day mr-2 text-gray-500"></i>Daily
+                    </a>
+                    <a href="{{ url_for('export', period='weekly') }}" 
+                       class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105">
+                        <i class="fas fa-calendar-week mr-2"></i>Weekly
+                    </a>
+                    <a href="{{ url_for('export', period='monthly') }}" 
+                       class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105">
+                        <i class="fas fa-calendar-alt mr-2"></i>Monthly
+                    </a>
+                    <a href="{{ url_for('export', period='yearly') }}" 
+                       class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105">
+                        <i class="fas fa-calendar mr-2"></i>Yearly
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Date Range Filter -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8 overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center">
+                <i class="fas fa-filter text-blue-600 mr-3"></i>
+                <h3 class="text-lg font-semibold text-gray-800">Time Period Filter</h3>
+            </div>
+        </div>
+        <div class="p-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <button onclick="filterData('today')" 
+                        class="filter-btn group relative px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 transform hover:scale-105" 
+                        data-period="today">
+                    <div class="flex flex-col items-center">
+                        <i class="fas fa-sun text-lg mb-1 text-gray-400 group-hover:text-blue-500"></i>
+                        <span>Today</span>
+                    </div>
+                </button>
+                <button onclick="filterData('week')" 
+                        class="filter-btn group relative px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 transform hover:scale-105" 
+                        data-period="week">
+                    <div class="flex flex-col items-center">
+                        <i class="fas fa-calendar-week text-lg mb-1 text-gray-400 group-hover:text-blue-500"></i>
+                        <span>This Week</span>
+                    </div>
+                </button>
+                <button onclick="filterData('month')" 
+                        class="filter-btn group relative px-4 py-3 bg-blue-600 border border-blue-600 rounded-lg text-sm font-medium text-white shadow-md transform scale-105" 
+                        data-period="month">
+                    <div class="flex flex-col items-center">
+                        <i class="fas fa-calendar-alt text-lg mb-1"></i>
+                        <span>This Month</span>
+                    </div>
+                </button>
+                <button onclick="filterData('year')" 
+                        class="filter-btn group relative px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 transform hover:scale-105" 
+                        data-period="year">
+                    <div class="flex flex-col items-center">
+                        <i class="fas fa-calendar text-lg mb-1 text-gray-400 group-hover:text-blue-500"></i>
+                        <span>This Year</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4 mb-8">
+        <div class="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden  hover:shadow-lg hover:border-blue-200 hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Total Deliveries</p>
+                        <p class="text-3xl font-bold text-gray-800 mt-2" id="total-deliveries">0</p>
+                        <div class="flex items-center mt-2">
+                            <span class="text-xs text-gray-400" id="total-deliveries-change">-</span>
+                        </div>
+                    </div>
+                    <div class="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-truck text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="h-1 bg-gradient-to-r from-blue-500 to-blue-600"></div>
+        </div>
+        <div class="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden  hover:shadow-lg hover:border-green-200 hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Delivered</p>
+                        <p class="text-3xl font-bold text-gray-800 mt-2" id="delivered">0</p>
+                        <div class="flex items-center mt-2">
+                            <span class="text-xs text-gray-400" id="delivered-change">-</span>
+                        </div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100 text-green-600 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-check-circle text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="h-1 bg-gradient-to-r from-green-500 to-green-600"></div>
+        </div>
+        <div class="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden  hover:shadow-lg hover:border-amber-200 hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">In Transit</p>
+                        <p class="text-3xl font-bold text-gray-800 mt-2" id="in-transit">0</p>
+                        <div class="flex items-center mt-2">
+                            <span class="text-xs text-gray-400" id="in-transit-change">-</span>
+                        </div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-gradient-to-br from-amber-50 to-amber-100 text-amber-600 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-clock text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="h-1 bg-gradient-to-r from-amber-500 to-amber-600"></div>
+        </div>
+        <div class="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden  hover:shadow-lg hover:border-gray-400 hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Pending</p>
+                        <p class="text-3xl font-bold text-gray-800 mt-2" id="pending">0</p>
+                        <div class="flex items-center mt-2">
+                            <span class="text-xs text-gray-400" id="pending-change">-</span>
+                        </div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 text-gray-600 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-hourglass-half text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="h-1 bg-gradient-to-r from-gray-500 to-gray-600"></div>
+        </div>
+        <div class="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden  hover:shadow-lg hover:border-purple-200 hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Revenue</p>
+                        <p class="text-3xl font-bold text-gray-800 mt-2" id="revenue">KSh 0</p>
+                        <div class="flex items-center mt-2">
+                            <span class="text-xs text-gray-400" id="revenue-change">-</span>
+                        </div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 text-purple-600 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-money-bill-wave text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="h-1 bg-gradient-to-r from-purple-500 to-purple-600"></div>
+        </div>
+        <div class="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden  hover:shadow-lg hover:border-emerald-200 hover:-translate-y-1">
+            <div class="p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Net Profit/Loss</p>
+                        <p class="text-3xl font-bold mt-2" id="profit-loss">KSh 0</p>
+                        <div class="flex items-center mt-2">
+                            <span class="text-xs" id="profit-loss-change">-</span>
+                        </div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-100 text-emerald-600 group-hover:scale-110 transition-transform duration-300" id="profit-loss-icon">
+                        <i class="fas fa-chart-line text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="h-1 bg-gradient-to-r from-emerald-500 to-teal-600" id="profit-loss-bar"></div>
+        </div>
+    </div>
+
+    <!-- Enhanced Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden  hover:shadow-lg">
+            <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center">
+                    <i class="fas fa-chart-pie text-purple-600 mr-3"></i>
+                    <h3 class="text-lg font-semibold text-gray-800">Status Distribution</h3>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="h-64">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden  hover:shadow-lg">
+            <div class="bg-gradient-to-r from-orange-50 to-red-50 px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center">
+                    <i class="fas fa-chart-line text-orange-600 mr-3"></i>
+                    <h3 class="text-lg font-semibold text-gray-800">Delivery Trends</h3>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="h-64">
+                    <canvas id="trendsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delivery Persons Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8  hover:shadow-lg">
+        <div class="bg-gradient-to-r from-indigo-50 to-purple-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <button id="toggleDeliveryPersons" 
+                        class="flex items-center text-indigo-600 hover:text-indigo-800 focus:outline-none transition-colors duration-200">
+                    <i class="fas fa-chevron-down mr-2 transition-transform duration-200" id="deliveryPersonsToggleIcon"></i>
+                    <span class="text-lg font-semibold">Delivery Persons</span>
+                </button>
+                
+                <div class="flex items-center gap-3">
+                    <!-- Time Period Filter -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500">Period:</span>
+                        <div class="flex gap-1">
+                            <button onclick="filterDeliveryPersons('today')" 
+                                    class="delivery-period-btn px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded text-gray-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200" 
+                                    data-period="today">
+                                Today
+                            </button>
+                            <button onclick="filterDeliveryPersons('week')" 
+                                    class="delivery-period-btn px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded text-gray-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200" 
+                                    data-period="week">
+                                This Week
+                            </button>
+                            <button onclick="filterDeliveryPersons('month')" 
+                                    class="delivery-period-btn px-2 py-1 text-xs bg-blue-600 border border-blue-600 rounded text-white shadow-sm" 
+                                    data-period="month">
+                                This Month
+                            </button>
+                            <button onclick="filterDeliveryPersons('all')" 
+                                    class="delivery-period-btn px-2 py-1 text-xs bg-gray-50 border border-gray-200 rounded text-gray-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200" 
+                                    data-period="all">
+                                All Time
+                            </button>
+                        </div>
+                    </div>
+                    <button onclick="refreshDeliveryPersons()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                        <i class="fas fa-sync-alt mr-1"></i>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="deliveryPersonsContent" class="hidden">
+            <div class="collapsible-container">
+                <!-- Delivery persons will be loaded here -->
+                <div class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-gray-400 text-2xl mb-3"></i>
+                    <p class="text-gray-500">Loading delivery persons...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Recent Deliveries Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden  hover:shadow-lg">
+        <div class="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <button id="toggleDeliveries" 
+                        class="flex items-center text-blue-600 hover:text-blue-800 focus:outline-none transition-colors duration-200">
+                    <i class="fas fa-chevron-down mr-2 transition-transform duration-200" id="toggleIcon"></i>
+                    <span class="text-lg font-semibold">Recent Deliveries</span>
+                </button>
+                
+                <!-- Recent Deliveries Filter -->
+                <div id="recentDeliveriesFilter" class="hidden">
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <!-- Filter Section Headers -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <!-- Date & Status Filters -->
+                            <div class="space-y-3">
+                                <!-- Date Filters -->
+                                <div class="flex items-center gap-2 mb-2">
+                                    <i class="fas fa-calendar-alt text-blue-600 text-sm"></i>
+                                    <span class="text-sm font-semibold text-gray-700">Time Period</span>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="filterRecentDeliveries('today')" 
+                                            class="recent-filter-btn px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200" 
+                                            data-period="today">
+                                        Today
+                                    </button>
+                                    <button onclick="filterRecentDeliveries('week')" 
+                                            class="recent-filter-btn px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200" 
+                                            data-period="week">
+                                        This Week
+                                    </button>
+                                    <button onclick="filterRecentDeliveries('month')" 
+                                            class="recent-filter-btn px-3 py-1.5 text-sm bg-blue-600 border border-blue-600 rounded-lg text-white shadow-sm" 
+                                            data-period="month">
+                                        This Month
+                                    </button>
+                                    <button onclick="filterRecentDeliveries('year')" 
+                                            class="recent-filter-btn px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200" 
+                                            data-period="year">
+                                        This Year
+                                    </button>
+                                </div>
+                                
+                                <!-- Status Filters -->
+                                <div class="flex items-center gap-2 mb-2">
+                                    <i class="fas fa-filter text-purple-600 text-sm"></i>
+                                    <span class="text-sm font-semibold text-gray-700">Status</span>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="filterRecentDeliveriesByStatus('all')" 
+                                            class="status-filter-btn px-3 py-1.5 text-sm bg-blue-600 border border-blue-600 rounded-lg text-white shadow-sm" 
+                                            data-status="all">
+                                        All
+                                    </button>
+                                    <button onclick="filterRecentDeliveriesByStatus('Pending')" 
+                                            class="status-filter-btn px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-100 hover:border-gray-300 hover:text-gray-800 transition-all duration-200" 
+                                            data-status="Pending">
+                                        Pending
+                                    </button>
+                                    <button onclick="filterRecentDeliveriesByStatus('In Transit')" 
+                                            class="status-filter-btn px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200" 
+                                            data-status="In Transit">
+                                        In Transit
+                                    </button>
+                                    <button onclick="filterRecentDeliveriesByStatus('Delivered')" 
+                                            class="status-filter-btn px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200" 
+                                            data-status="Delivered">
+                                        Delivered
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Search Filter -->
+                            <div class="space-y-3">
+                                <!-- Search Filter -->
+                                <div class="flex items-center gap-2 mb-2">
+                                    <i class="fas fa-search text-green-600 text-sm"></i>
+                                    <span class="text-sm font-semibold text-gray-700">Search</span>
+                                </div>
+                                <div class="relative">
+                                    <input type="text" 
+                                           id="searchInput"
+                                           placeholder="Search deliveries..." 
+                                           onkeyup="filterRecentDeliveriesBySearch(this.value)"
+                                           class="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-search text-gray-400 text-sm"></i>
+                                    </div>
+                                </div>
+                                <!-- Search Results Count -->
+                                <div id="searchResultsCount" class="mt-2 text-xs text-gray-500 hidden">
+                                    Found <span id="resultsCount" class="font-medium text-gray-700">0</span> results
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Active Filters Summary -->
+                        <div id="activeFiltersSummary" class="mt-4 pt-3 border-t border-gray-200 hidden">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-gray-500">Active filters:</span>
+                                <button onclick="clearAllFilters()" class="text-xs text-red-600 hover:text-red-700 font-medium">
+                                    Clear All
+                                </button>
+                            </div>
+                            <div id="activeFiltersList" class="flex flex-wrap gap-1 mt-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="recentDeliveries" class="hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ref #</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Display ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sender</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recipient</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Delivery Person</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentDeliveriesBody" class="divide-y divide-gray-100">
+                        {% for delivery in recent_deliveries %}
+                        <tr class="hover:bg-gray-50 transition-colors duration-150" data-date="{{ delivery.created_at.isoformat() }}" data-delivery-person="{{ delivery.delivery_person }}" data-original-id="{{ delivery.display_id }}">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{{ loop.index }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ delivery.display_id }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ delivery.sender_name }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ delivery.recipient_name }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ delivery.delivery_person or 'Not assigned' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full transition-all duration-200
+                                    {% if delivery.status == 'Delivered' %}bg-green-100 text-green-800 hover:bg-green-200
+                                    {% elif delivery.status == 'In Transit' %}bg-blue-100 text-blue-800 hover:bg-blue-200
+                                    {% else %}bg-gray-100 text-gray-800 hover:bg-gray-200{% endif %}">
+                                    {{ delivery.status }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ delivery.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <div class="flex space-x-2">
+                                    <!-- View Details -->
+                                    <button onclick="viewDeliveryDetails('{{ delivery.id }}')" 
+                                            class="text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                                            title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    
+                                    <!-- Update Status -->
+                                    <div class="relative inline-block">
+                                        <button onclick="toggleStatusDropdown('{{ delivery.id }}')" 
+                                                class="text-amber-600 hover:text-amber-800 transition-colors duration-200"
+                                                title="Update Status">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <div id="status-dropdown-{{ delivery.id }}" 
+                                             class="hidden absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                                            <button onclick="updateDeliveryStatus('{{ delivery.id }}', 'Pending')" 
+                                                    class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                Pending
+                                            </button>
+                                            <button onclick="updateDeliveryStatus('{{ delivery.id }}', 'In Transit')" 
+                                                    class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                In Transit
+                                            </button>
+                                            <button onclick="updateDeliveryStatus('{{ delivery.id }}', 'Delivered')" 
+                                                    class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                Delivered
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Delete -->
+                                    <button onclick="deleteDelivery('{{ delivery.id }}')" 
+                                            class="text-red-600 hover:text-red-800 transition-colors duration-200"
+                                            title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if not recent_deliveries %}
+                <div class="text-center py-8">
+                    <i class="fas fa-inbox text-gray-300 text-4xl mb-3"></i>
+                    <p class="text-gray-500">No recent deliveries found</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Delivery Details Modal -->
+    <div id="deliveryDetailsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-2xl bg-white">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
+                <h3 class="text-xl font-bold text-gray-900">Delivery Details</h3>
+                <button onclick="closeDeliveryDetailsModal()" class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Content -->
+            <div id="deliveryDetailsContent" class="space-y-4">
+                <!-- Content will be dynamically loaded here -->
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="mt-6 pt-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button onclick="closeDeliveryDetailsModal()" 
+                        class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200">
+                    Close
+                </button>
+                <button onclick="printDeliveryDetails()" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    <i class="fas fa-print mr-2"></i>Print
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentPeriod = 'month';
+    let summaryData = {};
+    let statusChart = null;
+    let trendsChart = null;
+    
+    // Recent Deliveries Toggle
+    const toggleButton = document.getElementById('toggleDeliveries');
+    const recentDeliveries = document.getElementById('recentDeliveries');
+    const toggleIcon = document.getElementById('toggleIcon');
+    let isVisible = false;
+
+    if (toggleButton && recentDeliveries && toggleIcon) {
+        recentDeliveries.classList.add('hidden');
+        updateButtonState();
+        
+        toggleButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            isVisible = !isVisible;
+            recentDeliveries.classList.toggle('hidden', !isVisible);
+            updateButtonState();
+            
+            if (isVisible) {
+                fetchRecentDeliveries();
+            }
+        });
+        
+        function updateButtonState() {
+            if (isVisible) {
+                toggleIcon.className = 'fas fa-chevron-up mr-2';
+                toggleButton.querySelector('span').textContent = 'Hide Recent Deliveries';
+                document.getElementById('recentDeliveriesFilter').classList.remove('hidden');
+            } else {
+                toggleIcon.className = 'fas fa-chevron-down mr-2';
+                toggleButton.querySelector('span').textContent = 'Show Recent Deliveries';
+                document.getElementById('recentDeliveriesFilter').classList.add('hidden');
+            }
+        }
+    }
+    
+    // Delivery Persons Toggle
+    const deliveryPersonsToggleButton = document.getElementById('toggleDeliveryPersons');
+    const deliveryPersonsContent = document.getElementById('deliveryPersonsContent');
+    const deliveryPersonsToggleIcon = document.getElementById('deliveryPersonsToggleIcon');
+    let deliveryPersonsVisible = false;
+
+    if (deliveryPersonsToggleButton && deliveryPersonsContent && deliveryPersonsToggleIcon) {
+        deliveryPersonsContent.classList.add('hidden');
+        updateDeliveryPersonsButtonState();
+        
+        deliveryPersonsToggleButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            deliveryPersonsVisible = !deliveryPersonsVisible;
+            deliveryPersonsContent.classList.toggle('hidden', !deliveryPersonsVisible);
+            updateDeliveryPersonsButtonState();
+            
+            if (deliveryPersonsVisible) {
+                fetchDeliveryPersons(currentDeliveryPersonsPeriod);
+            }
+        });
+        
+        function updateDeliveryPersonsButtonState() {
+            if (deliveryPersonsVisible) {
+                deliveryPersonsToggleIcon.className = 'fas fa-chevron-up mr-2';
+                deliveryPersonsToggleButton.querySelector('span').textContent = 'Hide Delivery Persons';
+            } else {
+                deliveryPersonsToggleIcon.className = 'fas fa-chevron-down mr-2';
+                deliveryPersonsToggleButton.querySelector('span').textContent = 'Show Delivery Persons';
+            }
+        }
+    }
+    
+    // Time Period Filter function
+    window.filterData = function(period) {
+        currentPeriod = period;
+        
+        // Update button styles
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            if (btn.dataset.period === period) {
+                btn.className = 'filter-btn group relative px-4 py-3 bg-blue-600 border border-blue-600 rounded-lg text-sm font-medium text-white shadow-md transform scale-105';
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = icon.className.replace(/text-\w+-500/, 'text-white');
+                }
+            } else {
+                btn.className = 'filter-btn group relative px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 transform hover:scale-105';
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = icon.className.replace(/text-white/, 'text-gray-400 group-hover:text-blue-500');
+                }
+            }
+        });
+        
+        updateDashboard(period);
+        
+        // Trends chart is updated in updateChartsData function
+    };
+    
+    fetchSummaryData();
+    
+    let currentDeliveryPersonsPeriod = 'month';
+    
+    function fetchDeliveryPersons(period = 'month') {
+        currentDeliveryPersonsPeriod = period;
+        
+        const container = document.getElementById('deliveryPersonsContent');
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-spinner fa-spin text-gray-400 text-2xl mb-3"></i>
+                <p class="text-gray-500">Loading delivery persons...</p>
+            </div>
+        `;
+        
+        updateDeliveryPeriodButtons(period);
+        
+        const url = `{{ url_for('get_delivery_persons') }}?period=${period}`;
+        
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => displayDeliveryPersons(data))
+            .catch(error => {
+                console.error('Error fetching delivery persons:', error);
+                displayDeliveryPersonsError();
+            });
+    }
+    
+    function updateDeliveryPeriodButtons(activePeriod) {
+        // Remove active state from all buttons
+        document.querySelectorAll('.delivery-period-btn').forEach(btn => {
+            btn.classList.remove('bg-blue-600', 'border-blue-600', 'text-white', 'shadow-sm');
+            btn.classList.add('bg-gray-50', 'border-gray-200', 'text-gray-600');
+        });
+        
+        // Add active state to selected button
+        const activeBtn = document.querySelector(`.delivery-period-btn[data-period="${activePeriod}"]`);
+        if (activeBtn) {
+            activeBtn.classList.remove('bg-gray-50', 'border-gray-200', 'text-gray-600');
+            activeBtn.classList.add('bg-blue-600', 'border-blue-600', 'text-white', 'shadow-sm');
+        }
+    }
+    
+    // Filter delivery persons by period
+    window.filterDeliveryPersons = function(period) {
+        // Update button styles immediately for better UX
+        updateDeliveryPeriodButtons(period);
+        
+        // Fetch delivery persons for the selected period
+        fetchDeliveryPersons(period);
+    };
+    
+    function displayDeliveryPersons(persons) {
+        // Store delivery persons data globally for Revenue per Person metric
+        window.currentDeliveryPersonsData = persons;
+        
+        const container = document.getElementById('deliveryPersonsContent');
+        
+        if (persons.length === 0) {
+            const periodText = currentDeliveryPersonsPeriod === 'all' ? 'all time' : 
+                              currentDeliveryPersonsPeriod === 'today' ? 'today' :
+                              currentDeliveryPersonsPeriod === 'week' ? 'this week' : 'this month';
+            
+            container.innerHTML = `
+                <div class="text-center py-12">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                        <i class="fas fa-user-slash text-gray-400 text-xl"></i>
+                    </div>
+                    <p class="text-gray-500 text-sm font-medium">No delivery persons found for ${periodText}</p>
+                    <p class="text-gray-400 text-xs mt-2">Add deliveries with delivery person names to see team statistics</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">';
+        
+        persons.forEach(person => {
+            const successRate = person.success_rate.toFixed(0);
+            const profitColor = person.net_profit >= 0 ? 'emerald' : 'red';
+            const successColor = successRate >= 80 ? 'emerald' : successRate >= 50 ? 'orange' : 'red';
+            
+            // Format display IDs - show only first 2, then count
+            const displayIds = person.display_ids.slice(0, 2);
+            const remainingCount = person.display_ids.length - 2;
+            const displayIdsText = displayIds.join(', ') + (remainingCount > 0 ? ` +${remainingCount}` : '');
+            
+            // Generate random gradient colors for variety
+            const gradients = [
+                'from-blue-500 to-indigo-600',
+                'from-purple-500 to-pink-600', 
+                'from-green-500 to-teal-600',
+                'from-orange-500 to-red-600',
+                'from-cyan-500 to-blue-600',
+                'from-rose-500 to-purple-600'
+            ];
+            const randomGradient = gradients[person.name.charCodeAt(0) % gradients.length];
+            
+            html += `
+                <div class="group bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 hover:shadow-sm transition-all duration-200">
+                    <!-- Header Section -->
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <!-- Minimal Avatar -->
+                            <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-semibold text-sm">
+                                ${person.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900 text-sm">${person.name}</h4>
+                                <p class="text-xs text-gray-500">Team Member</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-900">${person.total_deliveries}</div>
+                            <div class="text-xs text-gray-500 uppercase tracking-wide">Total</div>
+                        </div>
+                    </div>
+                        
+                    <!-- Divider -->
+                    <div class="border-t border-gray-100 mb-4"></div>
+                        
+                    <!-- Key Metrics -->
+                    <div class="space-y-2">
+                        <!-- Revenue Row -->
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600">Revenue</span>
+                            <span class="text-sm font-medium text-gray-900">KSh ${person.revenue.toLocaleString()}</span>
+                        </div>
+                            
+                        <!-- Expenses Row -->
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600">Expenses</span>
+                            <span class="text-sm font-medium text-gray-900">KSh ${person.expenses.toLocaleString()}</span>
+                        </div>
+                            
+                        <!-- Profit Row -->
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600">Net Profit</span>
+                            <span class="text-sm font-medium ${person.net_profit >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                ${person.net_profit >= 0 ? '+' : ''}KSh ${Math.abs(person.net_profit).toLocaleString()}
+                            </span>
+                        </div>
+                            
+                        <!-- Success Rate Section -->
+                        <div class="pt-2 mt-2 border-t border-gray-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-gray-600">Success Rate</span>
+                                <span class="text-sm font-bold ${successRate >= 80 ? 'text-green-600' : successRate >= 50 ? 'text-yellow-600' : 'text-red-600'}">${successRate}%</span>
+                            </div>
+                            <div class="w-full bg-gray-100 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full transition-all duration-500" 
+                                     style="width: ${successRate}%; background-color: ${successRate >= 80 ? '#10b981' : successRate >= 50 ? '#eab308' : '#ef4444'};">
+                                </div>
+                            </div>
+                        </div>
+                            
+                        <!-- Status Pills -->
+                        <div class="flex items-center gap-1.5 pt-2 flex-wrap">
+                            ${person.delivered > 0 ? `
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                                    ${person.delivered} delivered
+                                </span>
+                            ` : ''}
+                            ${person.pending > 0 ? `
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-200">
+                                    ${person.pending} pending
+                                </span>
+                            ` : ''}
+                            ${person.in_transit > 0 ? `
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                                    ${person.in_transit} in transit
+                                </span>
+                            ` : ''}
+                        </div>
+                            
+                        <!-- Ref #s Section -->
+                        ${person.display_ids.length > 0 ? `
+                            <div class="pt-2 mt-2 border-t border-gray-100">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs text-gray-500 uppercase tracking-wide">Recent IDs</span>
+                                    ${person.display_ids.length > 2 ? `
+                                        <button onclick="toggleDeliveryIds(this, '${person.name.replace(/[^a-zA-Z0-9]/g, '_')}')" 
+                                                class="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                                            <span class="toggle-text">Show All</span>
+                                            <i class="fas fa-chevron-down text-xs toggle-icon transition-transform duration-300 ml-1"></i>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                                <div class="delivery-ids-container" id="ids_${person.name.replace(/[^a-zA-Z0-9]/g, '_')}">
+                                    <div class="text-xs text-gray-600 bg-gray-50 px-2 py-1.5 rounded border border-gray-200">
+                                        ${displayIdsText}
+                                    </div>
+                                    ${person.display_ids.length > 2 ? `
+                                        <div class="hidden all-ids mt-2">
+                                            <div class="text-xs text-gray-600 bg-gray-50 px-2 py-1.5 rounded border border-gray-200">
+                                                ${person.display_ids.join(', ')}
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+    }
+    
+    function displayDeliveryPersonsError() {
+        const container = document.getElementById('deliveryPersonsContent');
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-3"></i>
+                <p class="text-gray-500">Error loading delivery persons</p>
+                <button onclick="fetchDeliveryPersons('${currentDeliveryPersonsPeriod}')" class="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                    <i class="fas fa-retry mr-1"></i>
+                    Try Again
+                </button>
+            </div>
+        `;
+    }
+    
+    // Refresh delivery persons function
+    window.refreshDeliveryPersons = function() {
+        fetchDeliveryPersons(currentDeliveryPersonsPeriod);
+    };
+    
+    // Toggle Ref #s expansion
+    window.toggleDeliveryIds = function(button, personId) {
+        const container = document.getElementById(`ids_${personId}`);
+        const allIdsDiv = container.querySelector('.all-ids');
+        const toggleText = button.querySelector('.toggle-text');
+        const toggleIcon = button.querySelector('.toggle-icon');
+        
+        if (allIdsDiv.classList.contains('hidden')) {
+            // Show all IDs
+            allIdsDiv.classList.remove('hidden');
+            toggleText.textContent = 'Show Less';
+            toggleIcon.classList.add('rotate-180');
+        } else {
+            // Hide all IDs
+            allIdsDiv.classList.add('hidden');
+            toggleText.textContent = 'Show All';
+    }
+};
+
+// Initial fetch
+fetchDeliveryPersons('month');
+
+function fetchSummaryData() {
+    fetch("{{ url_for('get_summary') }}")
+        .then(response => response.json())
+        .then(data => {
+            summaryData = data;
+            createCharts();
+            updateDashboard(currentPeriod);
+
+        })
+        .catch(error => {
+            // Still create charts with empty data if fetch fails
+            createCharts();
+        });
+}
+
+function updateDashboard(period) {
+    if (!summaryData || !summaryData.deliveries) {
+        return;
+    }
+    
+    const deliveries = summaryData.deliveries;
+    const now = new Date();
+    
+    let filteredDeliveries = [];
+    
+    switch(period) {
+        case 'today':
+            // Filter for current system date only
+            filteredDeliveries = deliveries.filter(d => {
+                const deliveryDate = new Date(d.created_at);
+                return deliveryDate.toDateString() === now.toDateString();
+            });
+            break;
+        case 'week':
+            // Filter for current calendar week (Sunday to Saturday)
+            const startOfWeek = new Date(now);
+            const day = startOfWeek.getDay();
+            const diff = startOfWeek.getDate() - day;
+            startOfWeek.setDate(diff);
+            startOfWeek.setHours(0, 0, 0, 0);
+            
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            endOfWeek.setHours(23, 59, 59, 999);
+            
+            filteredDeliveries = deliveries.filter(d => {
+                const deliveryDate = new Date(d.created_at);
+                return deliveryDate >= startOfWeek && deliveryDate <= endOfWeek;
+            });
+            break;
+        case 'month':
+            // Filter for current calendar month
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            startOfMonth.setHours(0, 0, 0, 0);
+            
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            endOfMonth.setHours(23, 59, 59, 999);
+            
+            filteredDeliveries = deliveries.filter(d => {
+                const deliveryDate = new Date(d.created_at);
+                return deliveryDate >= startOfMonth && deliveryDate <= endOfMonth;
+            });
+            break;
+        case 'year':
+            // Filter for current calendar year
+            const startOfYear = new Date(now.getFullYear(), 0, 1);
+            startOfYear.setHours(0, 0, 0, 0);
+            
+            const endOfYear = new Date(now.getFullYear(), 11, 31);
+            endOfYear.setHours(23, 59, 59, 999);
+            
+            filteredDeliveries = deliveries.filter(d => {
+                const deliveryDate = new Date(d.created_at);
+                return deliveryDate >= startOfYear && deliveryDate <= endOfYear;
+            });
+            break;
+        default:
+            filteredDeliveries = deliveries;
+    }
+    
+    // Update summary cards
+    const totalDeliveries = filteredDeliveries.length;
+    const delivered = filteredDeliveries.filter(d => d.status === 'Delivered').length;
+    const inTransit = filteredDeliveries.filter(d => d.status === 'In Transit').length;
+    const pending = filteredDeliveries.filter(d => d.status === 'Pending').length;
+    const revenue = filteredDeliveries.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+    const expenses = filteredDeliveries.reduce((sum, d) => sum + (parseFloat(d.expenses) || 0), 0);
+    const netProfit = revenue - expenses;
+    
+    // Update DOM elements
+    const totalDeliveriesEl = document.getElementById('total-deliveries');
+    if (totalDeliveriesEl) totalDeliveriesEl.textContent = totalDeliveries;
+    
+    const deliveredEl = document.getElementById('delivered');
+    if (deliveredEl) deliveredEl.textContent = delivered;
+    
+    const inTransitEl = document.getElementById('in-transit');
+    if (inTransitEl) inTransitEl.textContent = inTransit;
+    
+    const pendingEl = document.getElementById('pending');
+    if (pendingEl) pendingEl.textContent = pending;
+    
+    const revenueEl = document.getElementById('revenue');
+    if (revenueEl) revenueEl.textContent = `KSh ${revenue.toLocaleString()}`;
+    
+    const profitLossEl = document.getElementById('profit-loss');
+    if (profitLossEl) {
+        profitLossEl.textContent = `KSh ${netProfit.toLocaleString()}`;
+        profitLossEl.className = `text-3xl font-bold mt-2 ${netProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
+    }
+    
+    
+    // Update charts with filtered data
+    updateChartsData(filteredDeliveries, period);
+}
+
+
+
+
+
+
+
+window.createCharts = function() {
+    // Create status chart
+    const statusCtx = document.getElementById('statusChart');
+    if (statusCtx) {
+        if (statusChart) {
+            statusChart.destroy();
+        }
+        
+        statusChart = new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Delivered', 'In Transit', 'Pending'],
+                datasets: [{
+                    data: [0, 0, 0],
+                    backgroundColor: [
+                        'rgba(34, 197, 94, 0.8)',
+                        'rgba(59, 130, 246, 0.8)',
+                        'rgba(251, 191, 36, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(34, 197, 94, 1)',
+                        'rgba(59, 130, 246, 1)',
+                        'rgba(251, 191, 36, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            font: {
+                                size: 12
+                            },
+                            generateLabels: function(chart) {
+                                const data = chart.data;
+                                if (data.labels.length && data.datasets.length) {
+                                    const dataset = data.datasets[0];
+                                    const total = dataset.data.reduce((a, b) => a + b, 0);
+                                    return data.labels.map((label, i) => {
+                                        const value = dataset.data[i];
+                                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+                                        return {
+                                            text: `${label}: ${percentage}%`,
+                                            fillStyle: dataset.backgroundColor[i],
+                                            hidden: false,
+                                            index: i
+                                        };
+                                    });
+                                }
+                                return [];
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        display: true,
+                        formatter: (value, ctx) => {
+                            const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = sum > 0 ? ((value / sum) * 100).toFixed(1) : '0.0';
+                            return `${percentage}%`;
+                        },
+                        color: '#fff',
+                        font: {
+                            weight: 'bold',
+                            size: 14
+                        },
+                        textStrokeColor: 'rgba(0, 0, 0, 0.3)',
+                        textStrokeWidth: 2,
+                        textShadowColor: 'rgba(0, 0, 0, 0.5)',
+                        textShadowBlur: 4
+                    }
+                }
+            },
+            plugins: [ChartDataLabels]
+        });
+    }
+    
+    // Create trends chart
+    const trendsCtx = document.getElementById('trendsChart');
+    if (trendsCtx) {
+        if (trendsChart) {
+            trendsChart.destroy();
+        }
+        
+        trendsChart = new Chart(trendsCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Deliveries',
+                    data: [],
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Update charts with data if available
+    if (summaryData && summaryData.deliveries) {
+        updateChartsData(summaryData.deliveries);
+    }
+}
+
+function updateChartsData(deliveries, period = 'month') {
+    if (!deliveries || deliveries.length === 0) return;
+    
+    // Update status chart
+    if (statusChart) {
+        const delivered = deliveries.filter(d => d.status === 'Delivered').length;
+        const inTransit = deliveries.filter(d => d.status === 'In Transit').length;
+        const pending = deliveries.filter(d => d.status === 'Pending').length;
+
+        statusChart.data.datasets[0].data = [delivered, inTransit, pending];
+        statusChart.update();
+    }
+
+    // Update trends chart
+    if (trendsChart) {
+        const labels = [];
+        const deliveryCounts = [];
+        const now = new Date();
+
+        switch (period) {
+            case 'today':
+                // Show hourly breakdown for today
+                for (let i = 0; i < 24; i++) {
+                    const hourStart = new Date(now);
+                    hourStart.setHours(i, 0, 0, 0);
+                    const hourEnd = new Date(now);
+                    hourEnd.setHours(i, 59, 59, 999);
+
+                    const hourDeliveries = deliveries.filter(d => {
+                        const deliveryDate = new Date(d.created_at);
+                        return deliveryDate >= hourStart && deliveryDate <= hourEnd;
+                    });
+
+                    labels.push(`${i}:00`);
+                    deliveryCounts.push(hourDeliveries.length);
+                }
+                break;
+
+            case 'week':
+                // Show daily breakdown for current week
+                const startOfWeek = new Date(now);
+                const day = startOfWeek.getDay();
+                const diff = startOfWeek.getDate() - day;
+                startOfWeek.setDate(diff);
+                startOfWeek.setHours(0, 0, 0, 0);
+
+                for (let i = 0; i < 7; i++) {
+                    const dayStart = new Date(startOfWeek);
+                    dayStart.setDate(startOfWeek.getDate() + i);
+                    const dayEnd = new Date(dayStart);
+                    dayEnd.setHours(23, 59, 59, 999);
+
+                    const dayDeliveries = deliveries.filter(d => {
+                        const deliveryDate = new Date(d.created_at);
+                        return deliveryDate >= dayStart && deliveryDate <= dayEnd;
+                    });
+
+                    labels.push(dayStart.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }));
+                    deliveryCounts.push(dayDeliveries.length);
+                }
+                break;
+
+            case 'month':
+                // Show weekly breakdown for current month
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                const weeksInMonth = Math.ceil((endOfMonth.getDate() + startOfMonth.getDay()) / 7);
+
+                for (let i = 0; i < weeksInMonth; i++) {
+                    const weekStart = new Date(startOfMonth);
+                    weekStart.setDate(startOfMonth.getDate() + (i * 7) - startOfMonth.getDay());
+                    if (weekStart.getMonth() !== startOfMonth.getMonth()) {
+                        weekStart.setDate(1);
+                    }
+                    const weekEnd = new Date(weekStart);
+                    weekEnd.setDate(weekStart.getDate() + 6);
+                    let adjustedWeekEnd = weekEnd;
+                    if (weekEnd.getMonth() !== startOfMonth.getMonth()) {
+                        adjustedWeekEnd = new Date(endOfMonth);
+                    }
+                    adjustedWeekEnd.setHours(23, 59, 59, 999);
+
+                    const weekDeliveries = deliveries.filter(d => {
+                        const deliveryDate = new Date(d.created_at);
+                        return deliveryDate >= weekStart && deliveryDate <= adjustedWeekEnd;
+                    });
+
+                    labels.push(`Week ${i + 1}`);
+                    deliveryCounts.push(weekDeliveries.length);
+                }
+                break;
+
+            case 'year':
+                // Show monthly breakdown for current year
+                for (let i = 0; i < 12; i++) {
+                    const monthStart = new Date(now.getFullYear(), i, 1);
+                    const monthEnd = new Date(now.getFullYear(), i + 1, 0);
+                    monthEnd.setHours(23, 59, 59, 999);
+
+                    const monthDeliveries = deliveries.filter(d => {
+                        const deliveryDate = new Date(d.created_at);
+                        return deliveryDate >= monthStart && deliveryDate <= monthEnd;
+                    });
+
+                    labels.push(monthStart.toLocaleDateString('en-US', { month: 'short' }));
+                    deliveryCounts.push(monthDeliveries.length);
+                }
+                break;
+
+            default:
+                // Default to last 7 days
+                for (let i = 6; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    date.setHours(0, 0, 0, 0);
+
+                    const nextDate = new Date(date);
+                    nextDate.setDate(nextDate.getDate() + 1);
+
+                    const dayDeliveries = deliveries.filter(d => {
+                        const deliveryDate = new Date(d.created_at);
+                        return deliveryDate >= date && deliveryDate < nextDate;
+                    });
+
+                    labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+                    deliveryCounts.push(dayDeliveries.length);
+                }
+        }
+
+        trendsChart.data.labels = labels;
+        trendsChart.data.datasets[0].data = deliveryCounts;
+        trendsChart.update();
+    }
+}
+
+// Initial fetch
+fetchDeliveryPersons('month');
+
+function fetchSummaryData() {
+    fetch("{{ url_for('get_summary') }}")
+        .then(response => response.json())
+        .then(data => {
+            summaryData = data;
+            createCharts();
+            updateDashboard(currentPeriod);
+
+        })
+        .catch(error => {
+            // Still create charts with empty data if fetch fails
+            createCharts();
+        });
+}
+
+fetchSummaryData();
+
+window.fetchRecentDeliveries = function() {
+    fetch('/get_recent_deliveries')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                displayRecentDeliveriesError();
+            } else {
+                displayRecentDeliveries(data);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching recent deliveries:', error);
+            displayRecentDeliveriesError();
+        });
+};
+
+window.updateActiveFilters = function() {
+    const activeFiltersSummary = document.getElementById('activeFiltersSummary');
+    const activeFiltersList = document.getElementById('activeFiltersList');
+    
+    const activeFilters = [];
+    
+    const searchValue = document.getElementById('searchInput').value.trim();
+    if (searchValue) {
+        activeFilters.push(`Search: "${searchValue}"`);
+    }
+    
+    const activePeriodBtn = document.querySelector('.recent-filter-btn:not(.bg-gray-50)');
+    if (activePeriodBtn && !activePeriodBtn.dataset.period.includes('month')) {
+        activeFilters.push(`Period: ${activePeriodBtn.textContent.trim()}`);
+    }
+    
+    const activeStatusBtn = document.querySelector('.status-filter-btn:not(.bg-gray-50)');
+    if (activeStatusBtn && !activeStatusBtn.dataset.status.includes('all')) {
+        activeFilters.push(`Status: ${activeStatusBtn.textContent.trim()}`);
+    }
+    
+    if (activeFilters.length > 0) {
+        activeFiltersSummary.classList.remove('hidden');
+        activeFiltersList.innerHTML = activeFilters.map(filter => 
+            `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">${filter}</span>`
+        ).join('');
+    } else {
+        activeFiltersSummary.classList.add('hidden');
+    }
+    
+    renumberVisibleRows();
+}
+
+function renumberVisibleRows() {
+    const tbody = document.getElementById('recentDeliveriesBody');
+    const visibleRows = Array.from(tbody.querySelectorAll('tr')).filter(row => row.style.display !== 'none');
+    
+    visibleRows.forEach((row, index) => {
+        const idCell = row.querySelector('td:nth-child(1)');
+        if (idCell) {
+            idCell.textContent = `#${index + 1}`;
+        }
+    });
+}
+
+function displayRecentDeliveries(deliveries) {
+    const tbody = document.getElementById('recentDeliveriesBody');
+    
+    if (deliveries.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-8">
+                    <i class="fas fa-inbox text-gray-300 text-4xl mb-3"></i>
+                    <p class="text-gray-500">No recent deliveries found</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = deliveries.map((delivery, index) => `
+            <tr class="hover:bg-gray-50 transition-colors duration-150" data-date="${delivery.created_at}" data-delivery-person="${delivery.delivery_person || ''}" data-original-id="${delivery.display_id}">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#${index + 1}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${delivery.display_id}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${delivery.sender_name}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${delivery.recipient_name}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${delivery.delivery_person || 'Not assigned'}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full transition-all duration-200
+                        ${delivery.status === 'Delivered' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
+                          delivery.status === 'In Transit' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
+                          'bg-gray-100 text-gray-800 hover:bg-gray-200'}">
+                        ${delivery.status}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${new Date(delivery.created_at).toLocaleString()}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div class="flex space-x-2">
+                        <button onclick="viewDeliveryDetails('${delivery.id}')" 
+                                class="text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                                title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <div class="relative inline-block">
+                            <button onclick="toggleStatusDropdown('${delivery.id}')" 
+                                    class="text-amber-600 hover:text-amber-800 transition-colors duration-200"
+                                    title="Update Status">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <div id="status-dropdown-${delivery.id}" 
+                                 class="hidden absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                                <button onclick="updateDeliveryStatus('${delivery.id}', 'Pending')" 
+                                        class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    Pending
+                                </button>
+                                <button onclick="updateDeliveryStatus('${delivery.id}', 'In Transit')" 
+                                        class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    In Transit
+                                </button>
+                                <button onclick="updateDeliveryStatus('${delivery.id}', 'Delivered')" 
+                                        class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    Delivered
+                                </button>
+                            </div>
+                        </div>
+                        <button onclick="deleteDelivery('${delivery.id}')" 
+                                class="text-red-600 hover:text-red-800 transition-colors duration-200"
+                                title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    window.displayRecentDeliveriesError = function() {
+        const tbody = document.getElementById('recentDeliveriesBody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-3"></i>
+                    <p class="text-gray-500">Error loading recent deliveries</p>
+                    <button onclick="fetchRecentDeliveries()" class="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                        <i class="fas fa-retry mr-1"></i>
+                        Try Again
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
+    
+    window.toggleStatusDropdown = function(deliveryId) {
+        const dropdown = document.getElementById(`status-dropdown-${deliveryId}`);
+        
+        // Close all other dropdowns
+        document.querySelectorAll('[id^="status-dropdown-"]').forEach(d => {
+            if (d.id !== `status-dropdown-${deliveryId}`) {
+                d.classList.add('hidden');
+            }
+        });
+        
+        // Toggle current dropdown
+        dropdown.classList.toggle('hidden');
+    };
+
+    window.updateDeliveryStatus = function(deliveryId, newStatus) {
+        document.getElementById(`status-dropdown-${deliveryId}`).classList.add('hidden');
+        
+        // Update status via API
+        fetch(`/update_status/${deliveryId}/${encodeURIComponent(newStatus)}`)
+            .then(response => {
+                if (response.ok) {
+                    // Refresh the page data
+                    location.reload();
+                } else {
+                    alert('Error updating status. Please try again.');
+                }
+            })
+            .catch(error => {
+                alert('Error updating status. Please try again.');
+            });
+    };
+    
+    window.deleteDelivery = function(deliveryId) {
+        if (confirm(`Are you sure you want to delete delivery #${deliveryId}? This action cannot be undone.`)) {
+            fetch(`/delete_delivery/${deliveryId}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Refresh the page data
+                    location.reload();
+                } else {
+                    alert('Error deleting delivery. Please try again.');
+                }
+            })
+            .catch(error => {
+                alert('Error deleting delivery. Please try again.');
+            });
+        }
+    };
+    
+    // Delivery Details Modal Functions
+    window.viewDeliveryDetails = function(deliveryId) {
+        const modal = document.getElementById('deliveryDetailsModal');
+        const content = document.getElementById('deliveryDetailsContent');
+        
+        content.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-spinner fa-spin text-blue-600 text-2xl mb-3"></i>
+                <p class="text-gray-500">Loading delivery details...</p>
+            </div>
+        `;
+        
+        // Show modal
+        modal.classList.remove('hidden');
+        
+        // Fetch delivery details
+        fetch(`/get_delivery_details/${deliveryId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(delivery => {
+                displayDeliveryDetails(delivery);
+            })
+            .catch(error => {
+                console.error('Error fetching delivery details:', error);
+                content.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-2xl mb-3"></i>
+                        <p class="text-gray-500">Error loading delivery details</p>
+                        <p class="text-gray-400 text-sm mt-2">Please try again later</p>
+                    </div>
+                `;
+            });
+    };
+    
+    function displayDeliveryDetails(delivery) {
+        const content = document.getElementById('deliveryDetailsContent');
+        
+        const statusColor = delivery.status === 'Delivered' ? 'green' : 
+                           delivery.status === 'In Transit' ? 'blue' : 'gray';
+        
+        content.innerHTML = `
+            <!-- Basic Information -->
+            <div class="bg-gray-50 rounded-xl p-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs font-medium text-gray-500">Ref #</label>
+                        <p class="text-sm font-semibold text-gray-900">#${delivery.id}</p>
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-gray-500">Display ID</label>
+                        <p class="text-sm font-semibold text-gray-900">${delivery.display_id}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Status Badge -->
+            <div class="flex items-center justify-between">
+                <div>
+                    <label class="text-xs font-medium text-gray-500">Current Status</label>
+                    <div class="mt-1">
+                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-${statusColor}-100 text-${statusColor}-800">
+                            ${delivery.status}
+                        </span>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <label class="text-xs font-medium text-gray-500">Created</label>
+                    <p class="text-sm text-gray-900">${new Date(delivery.created_at).toLocaleString()}</p>
+                </div>
+            </div>
+            
+            <!-- Sender Information -->
+            <div class="border-t pt-4">
+                <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                    <i class="fas fa-user text-blue-600 mr-2"></i>
+                    Sender Information
+                </h4>
+                <div class="bg-blue-50 rounded-xl p-4 space-y-2">
+                    <div>
+                        <label class="text-xs font-medium text-gray-500">Name</label>
+                        <p class="text-sm font-semibold text-gray-900">${delivery.sender_name}</p>
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-gray-500">Phone</label>
+                        <p class="text-sm text-gray-900">${delivery.sender_phone}</p>
+                    </div>
+                    ${delivery.sender_address ? `
+                        <div>
+                            <label class="text-xs font-medium text-gray-500">Address</label>
+                            <p class="text-sm text-gray-900">${delivery.sender_address}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <!-- Recipient Information -->
+            <div class="border-t pt-4">
+                <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                    <i class="fas fa-user-check text-green-600 mr-2"></i>
+                    Recipient Information
+                </h4>
+                <div class="bg-green-50 rounded-xl p-4 space-y-2">
+                    <div>
+                        <label class="text-xs font-medium text-gray-500">Name</label>
+                        <p class="text-sm font-semibold text-gray-900">${delivery.recipient_name}</p>
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-gray-500">Phone</label>
+                        <p class="text-sm text-gray-900">${delivery.recipient_phone}</p>
+                    </div>
+                    ${delivery.recipient_address ? `
+                        <div>
+                            <label class="text-xs font-medium text-gray-500">Address</label>
+                            <p class="text-sm text-gray-900">${delivery.recipient_address}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <!-- Delivery Details -->
+            <div class="border-t pt-4">
+                <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                    <i class="fas fa-truck text-purple-600 mr-2"></i>
+                    Delivery Details
+                </h4>
+                <div class="bg-purple-50 rounded-xl p-4 space-y-2">
+                    ${delivery.delivery_person ? `
+                        <div>
+                            <label class="text-xs font-medium text-gray-500">Delivery Person</label>
+                            <p class="text-sm font-semibold text-gray-900">${delivery.delivery_person}</p>
+                        </div>
+                    ` : ''}
+                    ${delivery.amount ? `
+                        <div>
+                            <label class="text-xs font-medium text-gray-500">Amount</label>
+                            <p class="text-sm font-semibold text-gray-900">KSh ${parseFloat(delivery.amount).toLocaleString()}</p>
+                        </div>
+                    ` : ''}
+                    ${delivery.expenses ? `
+                        <div>
+                            <label class="text-xs font-medium text-gray-500">Expenses</label>
+                            <p class="text-sm text-gray-900">KSh ${parseFloat(delivery.expenses).toLocaleString()}</p>
+                        </div>
+                    ` : ''}
+                    ${delivery.goods_type ? `
+                        <div>
+                            <label class="text-xs font-medium text-gray-500">Goods Type</label>
+                            <p class="text-sm text-gray-900">${delivery.goods_type}</p>
+                        </div>
+                    ` : ''}
+                    ${delivery.quantity ? `
+                        <div>
+                            <label class="text-xs font-medium text-gray-500">Quantity</label>
+                            <p class="text-sm text-gray-900">${delivery.quantity}</p>
+                        </div>
+                    ` : ''}
+                    ${delivery.payment_by ? `
+                        <div>
+                            <label class="text-xs font-medium text-gray-500">Payment By</label>
+                            <p class="text-sm text-gray-900">${delivery.payment_by}</p>
+                        </div>
+                    ` : ''}
+                    ${delivery.notes ? `
+                        <div>
+                            <label class="text-xs font-medium text-gray-500">Notes</label>
+                            <p class="text-sm text-gray-900">${delivery.notes}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+    
+    window.closeDeliveryDetailsModal = function() {
+        const modal = document.getElementById('deliveryDetailsModal');
+        modal.classList.add('hidden');
+    };
+    
+    window.printDeliveryDetails = function() {
+        const content = document.getElementById('deliveryDetailsContent').innerHTML;
+        const printWindow = window.open('', '_blank');
+        
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+<style>span { visibility: visible !important; opacity: 1 !important; }</style>
+<style>.metric-name { display: inline !important; visibility: visible !important; opacity: 1 !important; }</style>
+                <title>Delivery Details</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; }
+                    .header { text-align: center; margin-bottom: 30px; }
+                    .section { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+                    .label { font-size: 12px; color: #666; margin-bottom: 5px; }
+                    .value { font-size: 14px; font-weight: bold; color: #333; }
+                    @media print { body { padding: 10px; } }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>Delivery Details</h1>
+                    <p>Generated on ${new Date().toLocaleString()}</p>
+                </div>
+                ${content}
+            </body>
+            </html>
+        `);
+        
+        printWindow.document.close();
+        printWindow.print();
+    };
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.relative')) {
+            document.querySelectorAll('[id^="status-dropdown-"]').forEach(dd => {
+                dd.classList.add('hidden');
+            });
+        }
+    });
+});
+
+// Unified combination filtering system
+window.currentFilters = {
+    period: 'all',
+    status: 'all', 
+    search: ''
+};
+
+window.applyCombinedFilters = function() {
+    const tbody = document.getElementById('recentDeliveriesBody');
+    const rows = tbody.querySelectorAll('tr');
+    const now = new Date();
+    const resultsCountElement = document.getElementById('searchResultsCount');
+    const resultsCountSpan = document.getElementById('resultsCount');
+    
+    let visibleCount = 0;
+    
+    // Calculate date range based on period filter
+    let startDate, endDate;
+    switch(currentFilters.period) {
+        case 'today':
+            startDate = new Date(now);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(now);
+            endDate.setHours(23, 59, 59, 999);
+            break;
+        case 'week':
+            startDate = new Date(now);
+            const day = startDate.getDay();
+            const diff = startDate.getDate() - day;
+            startDate.setDate(diff);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
+            endDate.setHours(23, 59, 59, 999);
+            break;
+        case 'month':
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            endDate.setHours(23, 59, 59, 999);
+            break;
+        case 'year':
+            startDate = new Date(now.getFullYear(), 0, 1);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(now.getFullYear(), 11, 31);
+            endDate.setHours(23, 59, 59, 999);
+            break;
+        default:
+            startDate = null;
+            endDate = null;
+    }
+    
+    rows.forEach(row => {
+        let shouldShow = true;
+        
+        // Check date filter
+        if (startDate && endDate) {
+            const dateText = row.querySelector('td:nth-child(7)').textContent.trim();
+            const rowDate = new Date(dateText);
+            if (rowDate < startDate || rowDate > endDate) {
+                shouldShow = false;
+            }
+        }
+        
+        // Check status filter
+        if (shouldShow && currentFilters.status !== 'all') {
+            const statusElement = row.querySelector('td:nth-child(6) span');
+            const rowStatus = statusElement ? statusElement.textContent.trim() : '';
+            if (rowStatus !== currentFilters.status) {
+                shouldShow = false;
+            }
+        }
+        
+        // Check search filter
+        if (shouldShow && currentFilters.search !== '') {
+            const term = currentFilters.search.toLowerCase();
+            const deliveryId = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+            const displayId = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+            const sender = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+            const recipient = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+            const deliveryPerson = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
+            const status = row.querySelector('td:nth-child(6) span').textContent.toLowerCase();
+            const date = row.querySelector('td:nth-child(7)').textContent.toLowerCase();
+            
+            const matchesSearch = deliveryId.includes(term) || displayId.includes(term) || 
+                                sender.includes(term) || recipient.includes(term) || 
+                                deliveryPerson.includes(term) || status.includes(term) || 
+                                date.includes(term);
+            
+            if (!matchesSearch) {
+                shouldShow = false;
+            }
+        }
+        
+        // Apply visibility
+        if (shouldShow) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Update results count
+    if (resultsCountElement && resultsCountSpan) {
+        if (currentFilters.search !== '' || currentFilters.period !== 'all' || currentFilters.status !== 'all') {
+            resultsCountElement.classList.remove('hidden');
+            resultsCountSpan.textContent = visibleCount;
+        } else {
+            resultsCountElement.classList.add('hidden');
+        }
+    }
+    
+    updateActiveFilters();
+    renumberVisibleRows();
+};
+
+// Enhanced filter functions that use the unified system
+window.filterRecentDeliveries = function(period) {
+    currentFilters.period = period;
+    
+    // Update button styles
+    document.querySelectorAll('.date-filter-btn').forEach(btn => {
+        if (btn.dataset.period === period) {
+            btn.classList.remove('bg-gray-50', 'border-gray-200', 'text-gray-700');
+            btn.classList.add('bg-blue-600', 'border-blue-600', 'text-white', 'shadow-sm');
+        } else {
+            btn.classList.remove('bg-blue-600', 'border-blue-600', 'text-white', 'shadow-sm');
+            btn.classList.add('bg-gray-50', 'border-gray-200', 'text-gray-700');
+        }
+    });
+    
+    applyCombinedFilters();
+};
+
+window.filterRecentDeliveriesByStatus = function(status) {
+    currentFilters.status = status;
+    
+    // Update button styles
+    document.querySelectorAll('.status-filter-btn').forEach(btn => {
+        if (btn.dataset.status === status) {
+            btn.classList.remove('bg-gray-50', 'border-gray-200', 'text-gray-700');
+            btn.classList.add('bg-blue-600', 'border-blue-600', 'text-white', 'shadow-sm');
+        } else {
+            btn.classList.remove('bg-blue-600', 'border-blue-600', 'text-white', 'shadow-sm');
+            btn.classList.add('bg-gray-50', 'border-gray-200', 'text-gray-700');
+        }
+    });
+    
+    applyCombinedFilters();
+};
+
+window.filterRecentDeliveriesBySearch = function(searchTerm) {
+    currentFilters.search = searchTerm.toLowerCase().trim();
+    applyCombinedFilters();
+};
+
+window.clearAllFilters = function() {
+    currentFilters = {
+        period: 'all',
+        status: 'all',
+        search: ''
+    };
+    
+    // Reset all button styles
+    document.querySelectorAll('.date-filter-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'border-blue-600', 'text-white', 'shadow-sm');
+        btn.classList.add('bg-gray-50', 'border-gray-200', 'text-gray-700');
+    });
+    
+    document.querySelectorAll('.status-filter-btn').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'border-blue-600', 'text-white', 'shadow-sm');
+        btn.classList.add('bg-gray-50', 'border-gray-200', 'text-gray-700');
+    });
+    
+    // Clear search input
+    const searchInput = document.getElementById('deliverySearch');
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    
+    applyCombinedFilters();
+};
+
+</script>
+{% endblock %}

@@ -1,0 +1,984 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-green-800">New Delivery</h1>
+            <p class="text-green-600 mt-1">Enter delivery details below</p>
+        </div>
+        <a href="{{ url_for('index') }}" class="bg-teal-500 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded inline-flex items-center">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-green-50 to-teal-50 px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-green-800 flex items-center">
+                <i class="fas fa-truck-loading text-teal-600 mr-2"></i>
+                Delivery Information
+            </h2>
+        </div>
+        <form method="POST" action="{{ url_for('add_delivery') }}" class="space-y-6">
+            <div class="p-6 space-y-8">
+                <!-- Sender Information -->
+                <div class="space-y-4">
+                    <div class="flex items-center">
+                        <div class="w-1 h-6 bg-teal-500 rounded-full mr-3"></div>
+                        <h3 class="text-lg font-semibold text-gray-800">Sender Information</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-1">
+                            <label for="sender_name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-user text-gray-400"></i>
+                                </div>
+                                <input type="text" id="sender_name" name="sender_name" autocomplete="off" required
+                                       class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                       placeholder="John Doe">
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label for="sender_phone" class="block text-sm font-medium text-gray-700">Phone Number</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-phone text-gray-400"></i>
+                                </div>
+                                <input type="tel" id="sender_phone" name="sender_phone" autocomplete="off" required
+                                       class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                       pattern="[0-9]{10,15}" placeholder="0712345678">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recipient Information -->
+                <div class="space-y-4 pt-6 border-t border-gray-100">
+                    <div class="flex items-center">
+                        <div class="w-1 h-6 bg-teal-500 rounded-full mr-3"></div>
+                        <h3 class="text-lg font-semibold text-gray-800">Recipient Information</h3>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-1">
+                                <label for="recipient_name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-user text-gray-400"></i>
+                                    </div>
+                                    <input type="text" id="recipient_name" name="recipient_name" autocomplete="off" required
+                                           class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                           placeholder="Jane Smith">
+                                </div>
+                            </div>
+                            <div class="space-y-1">
+                                <label for="recipient_phone" class="block text-sm font-medium text-gray-700">Phone Number</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-phone text-gray-400"></i>
+                                    </div>
+                                    <input type="tel" id="recipient_phone" name="recipient_phone" autocomplete="off" required
+                                           class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                           pattern="[0-9]{10,15}" placeholder="0723456789">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label for="recipient_address" class="block text-sm font-medium text-gray-700">Delivery Address</label>
+                            <div class="relative">
+                                <div class="absolute top-3 left-0 pl-3 flex items-start pointer-events-none">
+                                    <i class="fas fa-map-marker-alt text-gray-400 mt-0.5"></i>
+                                </div>
+                                <textarea id="recipient_address" name="recipient_address" autocomplete="off" rows="2" required
+                                          class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                          placeholder="123 Main St, City, Country"></textarea>
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label for="delivery_person" class="block text-sm font-medium text-gray-700">Delivery Person</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-user-tie text-gray-400"></i>
+                                </div>
+                                <input type="text" id="delivery_person" name="delivery_person" autocomplete="off" required
+                                       class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                       placeholder="Delivery person's name">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delivery Details -->
+                <div class="space-y-4 pt-6 border-t border-gray-100">
+                    <div class="flex items-center">
+                        <div class="w-1 h-6 bg-teal-500 rounded-full mr-3"></div>
+                        <h3 class="text-lg font-semibold text-gray-800">Delivery Details</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="space-y-1">
+                            <label for="goods_type" class="block text-sm font-medium text-gray-700">Goods Type</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-box text-gray-400"></i>
+                                </div>
+                                <input type="text" id="goods_type" name="goods_type" autocomplete="off" required
+                                       class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                       placeholder="e.g., Documents, Electronics">
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label for="quantity" class="block text-sm font-medium text-gray-700">Quantity</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-boxes text-gray-400"></i>
+                                </div>
+                                <input type="number" id="quantity" name="quantity" autocomplete="off" min="1" required
+                                       class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                       placeholder="1">
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label for="amount" class="block text-sm font-medium text-gray-700">Amount (KSh)</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500">KSh</span>
+                                </div>
+                                <input type="number" id="amount" name="amount" autocomplete="off" step="0.01" min="0" required
+                                       class="pl-16 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                       placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label for="expenses" class="block text-sm font-medium text-gray-700">Expenses (KSh)</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500">KSh</span>
+                                </div>
+                                <input type="number" id="expenses" name="expenses" autocomplete="off" step="0.01" min="0" value="0.00"
+                                       class="pl-16 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
+                                       placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label for="payment_by" class="block text-sm font-medium text-gray-700">Payment By</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-credit-card text-gray-400"></i>
+                                </div>
+                                <select id="payment_by" name="payment_by" required
+                                       class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                                    <option value="">Select payment method</option>
+                                    <option value="M-Pesa">M-Pesa</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Card">Card</option>
+                                    <option value="Bank Transfer">Bank Transfer</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-info-circle text-gray-400"></i>
+                                </div>
+                                <select id="status" name="status" required
+                                       class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
+                                    <option value="Pending">Pending</option>
+                                    <option value="In Transit">In Transit</option>
+                                    <option value="Delivered">Delivered</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-green-50 border-t border-green-100 flex justify-end">
+                <button type="button" onclick="window.history.back()" 
+                        class="bg-teal-500 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded inline-flex items-center">
+                    Cancel
+                </button>
+                <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded inline-flex items-center">
+                    <i class="fas fa-save mr-2"></i> Save Delivery
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Enhanced Recent Deliveries Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-lg mt-8">
+        <div class="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <button id="toggleDeliveries" 
+                        class="flex items-center text-blue-600 hover:text-blue-800 focus:outline-none transition-colors duration-200">
+                    <i class="fas fa-chevron-down mr-2 transition-transform duration-200" id="toggleIcon"></i>
+                    <span class="text-lg font-semibold">Recent Deliveries</span>
+                </button>
+                
+                <!-- Recent Deliveries Filter -->
+                <div id="recentDeliveriesFilter" class="hidden">
+                    <div class="bg-gray-50 rounded-xl p-6 border border-gray-100">
+                        <!-- Filter Header -->
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-sm font-semibold text-gray-700 flex items-center">
+                                <i class="fas fa-filter text-gray-400 mr-2"></i>
+                                Filters
+                            </h3>
+                            <button onclick="clearAllFilters()" class="text-xs text-gray-500 hover:text-gray-700 transition-colors">
+                                Clear all
+                            </button>
+                        </div>
+                        
+                        <!-- Filter Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <!-- Time Period Filter -->
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-3">Time Period</label>
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="filterRecentDeliveries('today')" 
+                                            class="recent-filter-btn px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 transition-all duration-200" 
+                                            data-period="today">
+                                        Today
+                                    </button>
+                                    <button onclick="filterRecentDeliveries('week')" 
+                                            class="recent-filter-btn px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 transition-all duration-200" 
+                                            data-period="week">
+                                        This Week
+                                    </button>
+                                    <button onclick="filterRecentDeliveries('month')" 
+                                            class="recent-filter-btn px-4 py-2 text-sm bg-blue-600 border border-blue-600 rounded-lg text-white shadow-sm" 
+                                            data-period="month">
+                                        This Month
+                                    </button>
+                                    <button onclick="filterRecentDeliveries('year')" 
+                                            class="recent-filter-btn px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 transition-all duration-200" 
+                                            data-period="year">
+                                        This Year
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Status Filter -->
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-3">Status</label>
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="filterRecentDeliveriesByStatus('all')" 
+                                            class="status-filter-btn px-4 py-2 text-sm bg-blue-600 border border-blue-600 rounded-lg text-white shadow-sm" 
+                                            data-status="all">
+                                        All
+                                    </button>
+                                    <button onclick="filterRecentDeliveriesByStatus('Pending')" 
+                                            class="status-filter-btn px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 transition-all duration-200" 
+                                            data-status="Pending">
+                                        Pending
+                                    </button>
+                                    <button onclick="filterRecentDeliveriesByStatus('In Transit')" 
+                                            class="status-filter-btn px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200" 
+                                            data-status="In Transit">
+                                        In Transit
+                                    </button>
+                                    <button onclick="filterRecentDeliveriesByStatus('Delivered')" 
+                                            class="status-filter-btn px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200" 
+                                            data-status="Delivered">
+                                        Delivered
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Search Filter -->
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-3">Search</label>
+                                <div class="relative">
+                                    <input type="text" 
+                                           id="searchInput"
+                                           placeholder="Search deliveries..." 
+                                           onkeyup="filterRecentDeliveriesBySearch(this.value)"
+                                           class="w-full pl-10 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-search text-gray-400 text-sm"></i>
+                                    </div>
+                                </div>
+                                <!-- Search Results Count -->
+                                <div id="searchResultsCount" class="mt-2 text-xs text-gray-500 hidden">
+                                    Found <span id="resultsCount" class="font-medium text-gray-700">0</span> results
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Active Filters Summary -->
+                        <div id="activeFiltersSummary" class="mt-6 pt-4 border-t border-gray-200 hidden">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs text-gray-500">Active filters:</span>
+                                <button onclick="clearAllFilters()" class="text-xs text-red-600 hover:text-red-700 font-medium transition-colors">
+                                    Clear All
+                                </button>
+                            </div>
+                            <div id="activeFiltersList" class="flex flex-wrap gap-2 mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="recentDeliveries" class="hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ref #</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Display ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sender</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recipient</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentDeliveriesBody" class="divide-y divide-gray-100">
+                        <!-- Recent deliveries will be loaded here -->
+                        <tr>
+                            <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                                <i class="fas fa-spinner fa-spin text-2xl mb-3"></i>
+                                <p>Loading recent deliveries...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delivery Details Modal -->
+    <div id="deliveryDetailsModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-lg bg-white">
+            <div class="flex justify-between items-center pb-3 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Delivery Details</h3>
+                <button onclick="closeDeliveryDetailsModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="deliveryDetailsContent" class="py-4">
+                <!-- Delivery details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Recent Deliveries Toggle
+    const toggleButton = document.getElementById('toggleDeliveries');
+    const recentDeliveries = document.getElementById('recentDeliveries');
+    const toggleIcon = document.getElementById('toggleIcon');
+    let isVisible = false;
+
+    if (toggleButton && recentDeliveries && toggleIcon) {
+        recentDeliveries.classList.add('hidden');
+        updateButtonState();
+        
+        toggleButton.addEventListener('click', function(event) {
+            event.preventDefault();
+            isVisible = !isVisible;
+            recentDeliveries.classList.toggle('hidden', !isVisible);
+            updateButtonState();
+            
+            if (isVisible) {
+                fetchRecentDeliveries();
+            }
+        });
+        
+        function updateButtonState() {
+            if (isVisible) {
+                toggleIcon.className = 'fas fa-chevron-up mr-2';
+                toggleButton.querySelector('span').textContent = 'Hide Recent Deliveries';
+                document.getElementById('recentDeliveriesFilter').classList.remove('hidden');
+            } else {
+                toggleIcon.className = 'fas fa-chevron-down mr-2';
+                toggleButton.querySelector('span').textContent = 'Show Recent Deliveries';
+                document.getElementById('recentDeliveriesFilter').classList.add('hidden');
+            }
+        }
+    }
+
+    // Fetch recent deliveries
+    function fetchRecentDeliveries() {
+        fetch('/get_recent_deliveries')
+            .then(response => response.json())
+            .then(data => displayRecentDeliveries(data))
+            .catch(error => {
+                console.error('Error fetching recent deliveries:', error);
+                displayRecentDeliveriesError();
+            });
+    }
+
+    function displayRecentDeliveries(deliveries) {
+        const tbody = document.getElementById('recentDeliveriesBody');
+        
+        if (deliveries.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                        <i class="fas fa-inbox text-gray-300 text-4xl mb-3"></i>
+                        <p>No recent deliveries found</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        let html = '';
+        deliveries.forEach((delivery, index) => {
+            const statusClass = delivery.status === 'Delivered' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
+                              delivery.status === 'In Transit' ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
+                              'bg-gray-100 text-gray-800 hover:bg-gray-200';
+            
+            html += `
+                <tr class="hover:bg-gray-50 transition-colors duration-150" data-date="${delivery.created_at}" data-delivery-person="${delivery.delivery_person || ''}" data-original-id="${delivery.display_id}">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#${index + 1}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${delivery.display_id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div class="flex flex-col">
+                            <span class="font-medium text-gray-900">${delivery.sender_name}</span>
+                            <span class="text-xs text-gray-400">${delivery.sender_phone}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div class="flex flex-col">
+                            <span class="font-medium text-gray-900">${delivery.recipient_name}</span>
+                            <span class="text-xs text-gray-400">${delivery.recipient_phone}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full transition-all duration-200 ${statusClass}">
+                            ${delivery.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${new Date(delivery.created_at).toLocaleString()}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div class="flex space-x-2">
+                            <button onclick="viewDeliveryDetails('${delivery.id}')" 
+                                    class="text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                                    title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            
+                            <div class="relative inline-block">
+                                <button onclick="toggleStatusDropdown('${delivery.id}')" 
+                                        class="text-amber-600 hover:text-amber-800 transition-colors duration-200"
+                                        title="Update Status">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <div id="status-dropdown-${delivery.id}" 
+                                     class="hidden absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                                    <button onclick="updateDeliveryStatus('${delivery.id}', 'Pending')" 
+                                            class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        Pending
+                                    </button>
+                                    <button onclick="updateDeliveryStatus('${delivery.id}', 'In Transit')" 
+                                            class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        In Transit
+                                    </button>
+                                    <button onclick="updateDeliveryStatus('${delivery.id}', 'Delivered')" 
+                                            class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        Delivered
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    }
+
+    function displayRecentDeliveriesError() {
+        const tbody = document.getElementById('recentDeliveriesBody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="px-6 py-8 text-center text-red-500">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-3"></i>
+                    <p>Error loading recent deliveries</p>
+                    <button onclick="fetchRecentDeliveries()" class="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                        <i class="fas fa-retry mr-1"></i>
+                        Try Again
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
+
+    function renumberVisibleRows() {
+        const tbody = document.getElementById('recentDeliveriesBody');
+        const visibleRows = Array.from(tbody.querySelectorAll('tr')).filter(row => row.style.display !== 'none');
+        
+        visibleRows.forEach((row, index) => {
+            const idCell = row.querySelector('td:nth-child(1)');
+            if (idCell) {
+                idCell.textContent = `#${index + 1}`;
+            }
+        });
+    }
+
+    // Filter functions
+    window.filterRecentDeliveries = function(period) {
+        const tbody = document.getElementById('recentDeliveriesBody');
+        const rows = tbody.querySelectorAll('tr');
+        const now = new Date();
+        
+        let startDate, endDate;
+        
+        switch(period) {
+            case 'today':
+                // Filter for current system date only
+                startDate = new Date(now);
+                startDate.setHours(0, 0, 0, 0);
+                endDate = new Date(now);
+                endDate.setHours(23, 59, 59, 999);
+                break;
+            case 'week':
+                // Filter for current calendar week (Sunday to Saturday)
+                startDate = new Date(now);
+                const day = startDate.getDay();
+                const diff = startDate.getDate() - day;
+                startDate.setDate(diff);
+                startDate.setHours(0, 0, 0, 0);
+                
+                endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + 6);
+                endDate.setHours(23, 59, 59, 999);
+                break;
+            case 'month':
+                // Filter for current calendar month
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                startDate.setHours(0, 0, 0, 0);
+                
+                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                endDate.setHours(23, 59, 59, 999);
+                break;
+            case 'year':
+                // Filter for current calendar year
+                startDate = new Date(now.getFullYear(), 0, 1);
+                startDate.setHours(0, 0, 0, 0);
+                
+                endDate = new Date(now.getFullYear(), 11, 31);
+                endDate.setHours(23, 59, 59, 999);
+                break;
+            default:
+                return; // No filtering
+        }
+        
+        rows.forEach(row => {
+            const dateStr = row.dataset.date;
+            if (dateStr) {
+                const rowDate = new Date(dateStr);
+                if (rowDate >= startDate && rowDate <= endDate) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+        });
+        
+        // Update button styles
+        document.querySelectorAll('.recent-filter-btn').forEach(btn => {
+            if (btn.dataset.period === period) {
+                btn.className = 'recent-filter-btn px-4 py-2 text-sm bg-blue-600 border border-blue-600 rounded-lg text-white shadow-sm';
+            } else {
+                btn.className = 'recent-filter-btn px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 transition-all duration-200';
+            }
+        });
+        
+        renumberVisibleRows();
+    };
+
+    window.filterRecentDeliveriesByStatus = function(status) {
+        // Update button styles
+        document.querySelectorAll('.status-filter-btn').forEach(btn => {
+            if (btn.dataset.status === status) {
+                btn.className = 'status-filter-btn px-3 py-1.5 text-sm bg-blue-600 border border-blue-600 rounded-lg text-white shadow-sm';
+            } else {
+                if (btn.dataset.status === 'Pending') {
+                    btn.className = 'status-filter-btn px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-100 hover:border-gray-300 hover:text-gray-800 transition-all duration-200';
+                } else if (btn.dataset.status === 'In Transit') {
+                    btn.className = 'status-filter-btn px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200';
+                } else if (btn.dataset.status === 'Delivered') {
+                    btn.className = 'status-filter-btn px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:bg-green-50 hover:border-green-300 hover:text-green-700 transition-all duration-200';
+                } else {
+                    btn.className = 'status-filter-btn px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-100 hover:border-gray-300 hover:text-gray-800 transition-all duration-200';
+                }
+            }
+        });
+        
+        // Filter rows based on status
+        const tbody = document.getElementById('recentDeliveriesBody');
+        const rows = tbody.querySelectorAll('tr');
+        
+        rows.forEach(row => {
+            const statusCell = row.querySelector('td:nth-child(5) span');
+            if (statusCell) {
+                const rowStatus = statusCell.textContent.trim();
+                const showRow = status === 'all' || rowStatus === status;
+                row.style.display = showRow ? '' : 'none';
+            }
+        });
+        
+        renumberVisibleRows();
+    };
+
+    window.filterRecentDeliveriesBySearch = function(searchTerm) {
+        const tbody = document.getElementById('recentDeliveriesBody');
+        const rows = tbody.querySelectorAll('tr');
+        const resultsCountElement = document.getElementById('searchResultsCount');
+        const resultsCountSpan = document.getElementById('resultsCount');
+        
+        const term = searchTerm.toLowerCase().trim();
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            if (term === '') {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                const id = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+                const displayId = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                const senderName = row.querySelector('td:nth-child(3) span:first-child').textContent.toLowerCase();
+                const senderPhone = row.querySelector('td:nth-child(3) span:last-child').textContent.toLowerCase();
+                const recipientName = row.querySelector('td:nth-child(4) span:first-child').textContent.toLowerCase();
+                const recipientPhone = row.querySelector('td:nth-child(4) span:last-child').textContent.toLowerCase();
+                const status = row.querySelector('td:nth-child(5) span').textContent.toLowerCase();
+                const date = row.querySelector('td:nth-child(6)').textContent.toLowerCase();
+                
+                const matchesSearch = id.includes(term) || 
+                                   displayId.includes(term) || 
+                                   senderName.includes(term) || 
+                                   senderPhone.includes(term) || 
+                                   recipientName.includes(term) || 
+                                   recipientPhone.includes(term) || 
+                                   status.includes(term) || 
+                                   date.includes(term);
+                
+                if (matchesSearch) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+        });
+        
+        // Update results count
+        if (term !== '') {
+            resultsCountElement.classList.remove('hidden');
+            resultsCountSpan.textContent = visibleCount;
+        } else {
+            resultsCountElement.classList.add('hidden');
+        }
+        
+        renumberVisibleRows();
+    };
+
+    window.clearAllFilters = function() {
+        // Reset all filters
+        filterRecentDeliveries('month');
+        filterRecentDeliveriesByStatus('all');
+        document.getElementById('searchInput').value = '';
+        filterRecentDeliveriesBySearch('');
+    };
+
+    // Original form functionality
+    function formatPhoneNumber(input) {
+        let phoneNumber = input.value.replace(/\D/g, '');
+        if (phoneNumber.startsWith('0')) {
+            phoneNumber = '254' + phoneNumber.substring(1);
+        } else if (phoneNumber.length === 9) {
+            phoneNumber = '254' + phoneNumber;
+        }
+        input.value = phoneNumber;
+    }
+
+    // Add event listeners
+    const phoneInputs = ['sender_phone', 'recipient_phone'];
+    phoneInputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.addEventListener('blur', () => formatPhoneNumber(input));
+        }
+    });
+
+    // Auto-capitalize names
+    const nameInputs = ['sender_name', 'recipient_name'];
+    nameInputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.addEventListener('blur', function() {
+                this.value = this.value.split(' ').map(word => 
+                    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                ).join(' ');
+            });
+        }
+    });
+
+    // Delivery Details Modal Functions
+    window.viewDeliveryDetails = function(deliveryId) {
+        console.log('View delivery details:', deliveryId);
+        
+        // Show loading state
+        const modal = document.getElementById('deliveryDetailsModal');
+        const content = document.getElementById('deliveryDetailsContent');
+        
+        content.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-spinner fa-spin text-blue-600 text-2xl mb-3"></i>
+                <p class="text-gray-500">Loading delivery details...</p>
+            </div>
+        `;
+        
+        // Show modal
+        modal.classList.remove('hidden');
+        
+        // Fetch delivery details
+        fetch(`/get_delivery_details/${deliveryId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch delivery details');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                // Display delivery details
+                content.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-2">Delivery Information</h4>
+                                <div class="space-y-2">
+                                    <div><span class="text-sm text-gray-500">ID:</span> <span class="text-sm font-medium">${data.id}</span></div>
+                                    <div><span class="text-sm text-gray-500">Display ID:</span> <span class="text-sm font-medium">${data.display_id}</span></div>
+                                    <div><span class="text-sm text-gray-500">Status:</span> <span class="px-2 py-1 text-xs font-semibold rounded-full ${
+                                        data.status === 'Delivered' ? 'bg-green-100 text-green-800' :
+                                        data.status === 'In Transit' ? 'bg-blue-100 text-blue-800' :
+                                        'bg-gray-100 text-gray-800'
+                                    }">${data.status}</span></div>
+                                    <div><span class="text-sm text-gray-500">Created:</span> <span class="text-sm font-medium">${new Date(data.created_at).toLocaleString()}</span></div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-2">Financial Information</h4>
+                                <div class="space-y-2">
+                                    <div><span class="text-sm text-gray-500">Amount:</span> <span class="text-sm font-medium">KSh ${data.amount.toFixed(2)}</span></div>
+                                    <div><span class="text-sm text-gray-500">Expenses:</span> <span class="text-sm font-medium">KSh ${data.expenses.toFixed(2)}</span></div>
+                                    <div><span class="text-sm text-gray-500">Net Profit:</span> <span class="text-sm font-medium text-green-600">KSh ${(data.amount - data.expenses).toFixed(2)}</span></div>
+                                    <div><span class="text-sm text-gray-500">Payment Method:</span> <span class="text-sm font-medium">${data.payment_by}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-2">Sender Information</h4>
+                                <div class="space-y-2">
+                                    <div><span class="text-sm text-gray-500">Name:</span> <span class="text-sm font-medium">${data.sender_name}</span></div>
+                                    <div><span class="text-sm text-gray-500">Phone:</span> <span class="text-sm font-medium">${data.sender_phone}</span></div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-2">Recipient Information</h4>
+                                <div class="space-y-2">
+                                    <div><span class="text-sm text-gray-500">Name:</span> <span class="text-sm font-medium">${data.recipient_name}</span></div>
+                                    <div><span class="text-sm text-gray-500">Phone:</span> <span class="text-sm font-medium">${data.recipient_phone}</span></div>
+                                    <div><span class="text-sm text-gray-500">Address:</span> <span class="text-sm font-medium">${data.recipient_address}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-2">Additional Information</h4>
+                            <div class="space-y-2">
+                                <div><span class="text-sm text-gray-500">Goods Type:</span> <span class="text-sm font-medium">${data.goods_type}</span></div>
+                                <div><span class="text-sm text-gray-500">Quantity:</span> <span class="text-sm font-medium">${data.quantity}</span></div>
+                                <div><span class="text-sm text-gray-500">Delivery Person:</span> <span class="text-sm font-medium">${data.delivery_person || 'Not assigned'}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                console.error('Error fetching delivery details:', error);
+                content.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-3"></i>
+                        <p class="text-red-500">Error loading delivery details</p>
+                        <p class="text-sm text-gray-500 mt-2">${error.message}</p>
+                        <button onclick="closeDeliveryDetailsModal()" class="mt-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
+                            Close
+                        </button>
+                    </div>
+                `;
+            });
+    };
+
+    window.closeDeliveryDetailsModal = function() {
+        document.getElementById('deliveryDetailsModal').classList.add('hidden');
+    };
+
+    window.toggleStatusDropdown = function(deliveryId) {
+        const dropdown = document.getElementById(`status-dropdown-${deliveryId}`);
+        
+        // Close all other dropdowns
+        document.querySelectorAll('[id^="status-dropdown-"]').forEach(dd => {
+            if (dd.id !== `status-dropdown-${deliveryId}`) {
+                dd.classList.add('hidden');
+            }
+        });
+        
+        // Toggle current dropdown
+        dropdown.classList.toggle('hidden');
+    };
+
+    window.updateDeliveryStatus = function(deliveryId, newStatus) {
+        console.log('Update delivery status:', deliveryId, newStatus);
+        
+        // Close dropdown
+        const dropdown = document.getElementById(`status-dropdown-${deliveryId}`);
+        if (dropdown) {
+            dropdown.classList.add('hidden');
+        } else {
+            console.error('Dropdown not found:', `status-dropdown-${deliveryId}`);
+            return;
+        }
+        
+        // Find the status cell using a more reliable method
+        const row = dropdown.closest('tr');
+        if (!row) {
+            console.error('Row not found for dropdown');
+            return;
+        }
+        
+        const statusCell = row.querySelector('td:nth-child(5) span');
+        if (!statusCell) {
+            console.error('Status cell not found in row');
+            return;
+        }
+        
+        // Show loading state on the status badge
+        const originalContent = statusCell.innerHTML;
+        statusCell.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        console.log('Loading state shown');
+        
+        // Update status via API
+        const url = `/update_status/${deliveryId}/${encodeURIComponent(newStatus)}`;
+        console.log('Making request to:', url);
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                if (data.success) {
+                    // Show success message
+                    console.log('Status updated successfully:', data.message);
+                    
+                    // Show temporary success notification
+                    showNotification('Status updated successfully!', 'success');
+                    
+                    // Refresh the recent deliveries data
+                    fetchRecentDeliveries();
+                } else {
+                    console.error('Error updating status:', data.error);
+                    
+                    // Restore original status badge content
+                    statusCell.innerHTML = originalContent;
+                    
+                    // Show error notification
+                    showNotification('Error updating status. Please try again.', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating status:', error);
+                
+                // Restore original status badge content
+                statusCell.innerHTML = originalContent;
+                
+                // Show error notification
+                showNotification('Network error. Please check your connection.', 'error');
+            });
+    };
+
+    // Notification system
+    function showNotification(message, type) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full`;
+        
+        // Style based on type
+        if (type === 'success') {
+            notification.className += ' bg-green-500 text-white';
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+        } else if (type === 'error') {
+            notification.className += ' bg-red-500 text-white';
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+        }
+        
+        // Add to page
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.classList.remove('translate-x-full');
+            notification.classList.add('translate-x-0');
+        }, 100);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.classList.remove('translate-x-0');
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+    }
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.matches('.text-amber-600') && !event.target.closest('[id^="status-dropdown-"]')) {
+            document.querySelectorAll('[id^="status-dropdown-"]').forEach(dropdown => {
+                dropdown.classList.add('hidden');
+            });
+        }
+    });
+
+    // Close modal when clicking outside
+    document.addEventListener('click', function(event) {
+        const modal = document.getElementById('deliveryDetailsModal');
+        if (event.target === modal) {
+            closeDeliveryDetailsModal();
+        }
+    });
+});
+</script>
+{% endblock %}
