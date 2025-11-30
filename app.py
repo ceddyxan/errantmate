@@ -12,12 +12,21 @@ import platform
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY') or 'dev-key-please-change-in-production'
 
+# Ensure instance directory exists
+instance_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
+if not os.path.exists(instance_dir):
+    os.makedirs(instance_dir)
+
 # Database configuration
-database_url = os.environ.get('DATABASE_URL', f'sqlite:///{os.path.join(os.path.dirname(os.path.abspath(__file__)), "instance", "deliveries.db")}')
+database_url = os.environ.get('DATABASE_URL', f'sqlite:///{os.path.join(instance_dir, "deliveries.db")}')
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
+# Initialize database tables
+with app.app_context():
+    db.create_all()
 
 # Models
 class User(db.Model):
