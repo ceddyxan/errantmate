@@ -27,17 +27,19 @@ db = SQLAlchemy(app)
 # Initialize database tables
 with app.app_context():
     try:
+        # Force drop and recreate to ensure clean state
+        db.drop_all()
         db.create_all()
-        print("Database tables created/verified successfully")
+        print("Database tables recreated successfully")
     except Exception as e:
         print(f"Error creating tables: {e}")
-        # Try to drop and recreate if needed
+        # Try one more time
         try:
-            db.drop_all()
             db.create_all()
-            print("Database tables recreated successfully")
+            print("Database tables created on retry")
         except Exception as e2:
             print(f"Fatal database error: {e2}")
+            raise e2
 
 # Models
 class User(db.Model):
