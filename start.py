@@ -50,7 +50,7 @@ def main():
                 print("\nApplication stopped by user")
         else:
             print("No virtual environment found")
-            print("Using system Python (may have compatibility issues)")
+            print("Using system Python")
             run_app()
 
 def run_app():
