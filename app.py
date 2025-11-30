@@ -30,6 +30,7 @@ with app.app_context():
 
 # Models
 class User(db.Model):
+    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
@@ -50,6 +51,7 @@ class User(db.Model):
         return f'<User {self.username} ({self.role})>'
 
 class Delivery(db.Model):
+    __tablename__ = 'delivery'
     id = db.Column(db.Integer, primary_key=True)
     display_id = db.Column(db.String(20), unique=True, nullable=False)
     sender_name = db.Column(db.String(100), nullable=False)
@@ -74,6 +76,7 @@ class Delivery(db.Model):
         return f'<Delivery {self.display_id}>'
 
 class AuditLog(db.Model):
+    __tablename__ = 'audit_log'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     username = db.Column(db.String(80), nullable=False)
