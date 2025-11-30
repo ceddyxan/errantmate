@@ -6,10 +6,15 @@
         <div>
             <h1 class="text-2xl font-bold text-green-800">New Delivery</h1>
             <p class="text-green-600 mt-1">Enter delivery details below</p>
+            <div class="mt-2 text-lg font-bold text-gray-700">
+                Welcome {{ session.username }}
+            </div>
         </div>
-        <a href="{{ url_for('index') }}" class="bg-teal-500 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded inline-flex items-center">
-            <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
-        </a>
+        <div class="flex flex-col sm:flex-row gap-2">
+            <a href="{{ url_for('index') }}" class="bg-teal-500 hover:bg-teal-700 text-teal-50 font-bold py-2 px-4 rounded inline-flex items-center">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+            </a>
+        </div>
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -95,17 +100,6 @@
                                           placeholder="123 Main St, City, Country"></textarea>
                             </div>
                         </div>
-                        <div class="space-y-1">
-                            <label for="delivery_person" class="block text-sm font-medium text-gray-700">Delivery Person</label>
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <i class="fas fa-user-tie text-gray-400"></i>
-                                </div>
-                                <input type="text" id="delivery_person" name="delivery_person" autocomplete="off" required
-                                       class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                                       placeholder="Delivery person's name">
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -150,17 +144,6 @@
                             </div>
                         </div>
                         <div class="space-y-1">
-                            <label for="expenses" class="block text-sm font-medium text-gray-700">Expenses (KSh)</label>
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <span class="text-gray-500">KSh</span>
-                                </div>
-                                <input type="number" id="expenses" name="expenses" autocomplete="off" step="0.01" min="0" value="0.00"
-                                       class="pl-16 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                                       placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="space-y-1">
                             <label for="payment_by" class="block text-sm font-medium text-gray-700">Payment By</label>
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -176,20 +159,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="space-y-1">
-                            <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <i class="fas fa-info-circle text-gray-400"></i>
-                                </div>
-                                <select id="status" name="status" required
-                                       class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
-                                    <option value="Pending">Pending</option>
-                                    <option value="In Transit">In Transit</option>
-                                    <option value="Delivered">Delivered</option>
-                                </select>
-                            </div>
-                        </div>
+                        <input type="hidden" id="status" name="status" value="Pending">
                     </div>
                 </div>
             </div>
@@ -329,6 +299,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Display ID</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sender</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recipient</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Delivery Address</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -337,7 +308,7 @@
                     <tbody id="recentDeliveriesBody" class="divide-y divide-gray-100">
                         <!-- Recent deliveries will be loaded here -->
                         <tr>
-                            <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                            <td colspan="8" class="px-6 py-8 text-center text-gray-500">
                                 <i class="fas fa-spinner fa-spin text-2xl mb-3"></i>
                                 <p>Loading recent deliveries...</p>
                             </td>
@@ -359,6 +330,21 @@
             </div>
             <div id="deliveryDetailsContent" class="py-4">
                 <!-- Delivery details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Delivery Modal -->
+    <div id="updateDeliveryModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-lg bg-white">
+            <div class="flex justify-between items-center pb-3 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Update Delivery</h3>
+                <button onclick="closeUpdateDeliveryModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="updateDeliveryContent" class="py-4">
+                <!-- Update form will be loaded here -->
             </div>
         </div>
     </div>
@@ -401,7 +387,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Fetch recent deliveries
     function fetchRecentDeliveries() {
-        fetch('/get_recent_deliveries')
+        fetch('/get_user_recent_deliveries')
             .then(response => response.json())
             .then(data => displayRecentDeliveries(data))
             .catch(error => {
@@ -416,7 +402,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (deliveries.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                    <td colspan="8" class="px-6 py-8 text-center text-gray-500">
                         <i class="fas fa-inbox text-gray-300 text-4xl mb-3"></i>
                         <p>No recent deliveries found</p>
                     </td>
@@ -447,6 +433,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             <span class="text-xs text-gray-400">${delivery.recipient_phone}</span>
                         </div>
                     </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div class="max-w-xs" title="${delivery.recipient_address || 'No address'}">
+                            <span class="truncate block">${delivery.recipient_address || 'No address'}</span>
+                        </div>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full transition-all duration-200 ${statusClass}">
                             ${delivery.status}
@@ -463,28 +454,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <i class="fas fa-eye"></i>
                             </button>
                             
-                            <div class="relative inline-block">
-                                <button onclick="toggleStatusDropdown('${delivery.id}')" 
-                                        class="text-amber-600 hover:text-amber-800 transition-colors duration-200"
-                                        title="Update Status">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <div id="status-dropdown-${delivery.id}" 
-                                     class="hidden absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                                    <button onclick="updateDeliveryStatus('${delivery.id}', 'Pending')" 
-                                            class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        Pending
-                                    </button>
-                                    <button onclick="updateDeliveryStatus('${delivery.id}', 'In Transit')" 
-                                            class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        In Transit
-                                    </button>
-                                    <button onclick="updateDeliveryStatus('${delivery.id}', 'Delivered')" 
-                                            class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        Delivered
-                                    </button>
-                                </div>
-                            </div>
+                            <button onclick="openUpdateDeliveryModal('${delivery.id}')" 
+                                    class="text-green-600 hover:text-green-800 transition-colors duration-200"
+                                    title="Update Delivery">
+                                <i class="fas fa-edit"></i>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -498,7 +472,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const tbody = document.getElementById('recentDeliveriesBody');
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="px-6 py-8 text-center text-red-500">
+                <td colspan="8" class="px-6 py-8 text-center text-red-500">
                     <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-3"></i>
                     <p>Error loading recent deliveries</p>
                     <button onclick="fetchRecentDeliveries()" class="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">
@@ -617,7 +591,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const rows = tbody.querySelectorAll('tr');
         
         rows.forEach(row => {
-            const statusCell = row.querySelector('td:nth-child(5) span');
+            const statusCell = row.querySelector('td:nth-child(6) span');
             if (statusCell) {
                 const rowStatus = statusCell.textContent.trim();
                 const showRow = status === 'all' || rowStatus === status;
@@ -648,8 +622,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const senderPhone = row.querySelector('td:nth-child(3) span:last-child').textContent.toLowerCase();
                 const recipientName = row.querySelector('td:nth-child(4) span:first-child').textContent.toLowerCase();
                 const recipientPhone = row.querySelector('td:nth-child(4) span:last-child').textContent.toLowerCase();
-                const status = row.querySelector('td:nth-child(5) span').textContent.toLowerCase();
-                const date = row.querySelector('td:nth-child(6)').textContent.toLowerCase();
+                const deliveryAddress = row.querySelector('td:nth-child(5) span').textContent.toLowerCase();
+                const status = row.querySelector('td:nth-child(6) span').textContent.toLowerCase();
+                const date = row.querySelector('td:nth-child(7)').textContent.toLowerCase();
                 
                 const matchesSearch = id.includes(term) || 
                                    displayId.includes(term) || 
@@ -657,6 +632,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                    senderPhone.includes(term) || 
                                    recipientName.includes(term) || 
                                    recipientPhone.includes(term) || 
+                                   deliveryAddress.includes(term) || 
                                    status.includes(term) || 
                                    date.includes(term);
                 
@@ -723,7 +699,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Delivery Details Modal Functions
     window.viewDeliveryDetails = function(deliveryId) {
-        console.log('View delivery details:', deliveryId);
         
         // Show loading state
         const modal = document.getElementById('deliveryDetailsModal');
@@ -757,58 +732,51 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="space-y-4">
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <h4 class="font-semibold text-gray-700 mb-2">Delivery Information</h4>
+                                <h4 class="font-bold text-gray-700 mb-2">Delivery Information</h4>
                                 <div class="space-y-2">
-                                    <div><span class="text-sm text-gray-500">ID:</span> <span class="text-sm font-medium">${data.id}</span></div>
-                                    <div><span class="text-sm text-gray-500">Display ID:</span> <span class="text-sm font-medium">${data.display_id}</span></div>
-                                    <div><span class="text-sm text-gray-500">Status:</span> <span class="px-2 py-1 text-xs font-semibold rounded-full ${
+                                    <div><span class="text-sm font-bold text-gray-500">Status:</span> <span class="px-2 py-1 text-xs font-semibold rounded-full ${
                                         data.status === 'Delivered' ? 'bg-green-100 text-green-800' :
                                         data.status === 'In Transit' ? 'bg-blue-100 text-blue-800' :
                                         'bg-gray-100 text-gray-800'
                                     }">${data.status}</span></div>
-                                    <div><span class="text-sm text-gray-500">Created:</span> <span class="text-sm font-medium">${new Date(data.created_at).toLocaleString()}</span></div>
                                 </div>
                             </div>
                             <div>
-                                <h4 class="font-semibold text-gray-700 mb-2">Financial Information</h4>
+                                <h4 class="font-bold text-gray-700 mb-2">Financial Information</h4>
                                 <div class="space-y-2">
-                                    <div><span class="text-sm text-gray-500">Amount:</span> <span class="text-sm font-medium">KSh ${data.amount.toFixed(2)}</span></div>
-                                    <div><span class="text-sm text-gray-500">Expenses:</span> <span class="text-sm font-medium">KSh ${data.expenses.toFixed(2)}</span></div>
-                                    <div><span class="text-sm text-gray-500">Net Profit:</span> <span class="text-sm font-medium text-green-600">KSh ${(data.amount - data.expenses).toFixed(2)}</span></div>
-                                    <div><span class="text-sm text-gray-500">Payment Method:</span> <span class="text-sm font-medium">${data.payment_by}</span></div>
+                                    <div><span class="text-sm font-bold text-gray-500">Amount:</span> <span class="text-sm font-bold">KSh ${data.amount.toFixed(2)}</span></div>
+                                    <div><span class="text-sm font-bold text-gray-500">Payment Method:</span> <span class="text-sm font-bold">${data.payment_by}</span></div>
                                 </div>
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <h4 class="font-semibold text-gray-700 mb-2">Sender Information</h4>
+                                <h4 class="font-bold text-gray-700 mb-2">Sender Information</h4>
                                 <div class="space-y-2">
-                                    <div><span class="text-sm text-gray-500">Name:</span> <span class="text-sm font-medium">${data.sender_name}</span></div>
-                                    <div><span class="text-sm text-gray-500">Phone:</span> <span class="text-sm font-medium">${data.sender_phone}</span></div>
+                                    <div><span class="text-sm font-bold text-gray-500">Name:</span> <span class="text-sm font-bold">${data.sender_name}</span></div>
+                                    <div><span class="text-sm font-bold text-gray-500">Phone:</span> <span class="text-sm font-bold">${data.sender_phone}</span></div>
                                 </div>
                             </div>
                             <div>
-                                <h4 class="font-semibold text-gray-700 mb-2">Recipient Information</h4>
+                                <h4 class="font-bold text-gray-700 mb-2">Recipient Information</h4>
                                 <div class="space-y-2">
-                                    <div><span class="text-sm text-gray-500">Name:</span> <span class="text-sm font-medium">${data.recipient_name}</span></div>
-                                    <div><span class="text-sm text-gray-500">Phone:</span> <span class="text-sm font-medium">${data.recipient_phone}</span></div>
-                                    <div><span class="text-sm text-gray-500">Address:</span> <span class="text-sm font-medium">${data.recipient_address}</span></div>
+                                    <div><span class="text-sm font-bold text-gray-500">Name:</span> <span class="text-sm font-bold">${data.recipient_name}</span></div>
+                                    <div><span class="text-sm font-bold text-gray-500">Phone:</span> <span class="text-sm font-bold">${data.recipient_phone}</span></div>
+                                    <div><span class="text-sm font-bold text-gray-500">Address:</span> <span class="text-sm font-bold">${data.recipient_address}</span></div>
                                 </div>
                             </div>
                         </div>
                         <div>
-                            <h4 class="font-semibold text-gray-700 mb-2">Additional Information</h4>
+                            <h4 class="font-bold text-gray-700 mb-2">Additional Information</h4>
                             <div class="space-y-2">
-                                <div><span class="text-sm text-gray-500">Goods Type:</span> <span class="text-sm font-medium">${data.goods_type}</span></div>
-                                <div><span class="text-sm text-gray-500">Quantity:</span> <span class="text-sm font-medium">${data.quantity}</span></div>
-                                <div><span class="text-sm text-gray-500">Delivery Person:</span> <span class="text-sm font-medium">${data.delivery_person || 'Not assigned'}</span></div>
+                                <div><span class="text-sm font-bold text-gray-500">Goods Type:</span> <span class="text-sm font-bold">${data.goods_type}</span></div>
+                                <div><span class="text-sm font-bold text-gray-500">Quantity:</span> <span class="text-sm font-bold">${data.quantity}</span></div>
                             </div>
                         </div>
                     </div>
                 `;
             })
             .catch(error => {
-                console.error('Error fetching delivery details:', error);
                 content.innerHTML = `
                     <div class="text-center py-8">
                         <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-3"></i>
@@ -841,38 +809,32 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     window.updateDeliveryStatus = function(deliveryId, newStatus) {
-        console.log('Update delivery status:', deliveryId, newStatus);
         
         // Close dropdown
         const dropdown = document.getElementById(`status-dropdown-${deliveryId}`);
         if (dropdown) {
             dropdown.classList.add('hidden');
         } else {
-            console.error('Dropdown not found:', `status-dropdown-${deliveryId}`);
             return;
         }
         
         // Find the status cell using a more reliable method
         const row = dropdown.closest('tr');
         if (!row) {
-            console.error('Row not found for dropdown');
             return;
         }
         
         const statusCell = row.querySelector('td:nth-child(5) span');
         if (!statusCell) {
-            console.error('Status cell not found in row');
             return;
         }
         
         // Show loading state on the status badge
         const originalContent = statusCell.innerHTML;
         statusCell.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        console.log('Loading state shown');
         
         // Update status via API
         const url = `/update_status/${deliveryId}/${encodeURIComponent(newStatus)}`;
-        console.log('Making request to:', url);
         
         fetch(url, {
             method: 'POST',
@@ -882,14 +844,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
             .then(response => {
-                console.log('Response status:', response.status);
                 return response.json();
             })
             .then(data => {
-                console.log('Response data:', data);
                 if (data.success) {
-                    // Show success message
-                    console.log('Status updated successfully:', data.message);
                     
                     // Show temporary success notification
                     showNotification('Status updated successfully!', 'success');
@@ -962,6 +920,220 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 300);
         }, 3000);
     }
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!event.target.matches('.text-amber-600') && !event.target.closest('[id^="status-dropdown-"]')) {
+            document.querySelectorAll('[id^="status-dropdown-"]').forEach(dropdown => {
+                dropdown.classList.add('hidden');
+            });
+        }
+    });
+
+    // Close modal when clicking outside
+    document.addEventListener('click', function(event) {
+        const modal = document.getElementById('deliveryDetailsModal');
+        if (event.target === modal) {
+            closeDeliveryDetailsModal();
+        }
+    });
+
+    // Update Delivery Modal Functions
+    window.openUpdateDeliveryModal = function(deliveryId) {
+        // Show loading state
+        const modal = document.getElementById('updateDeliveryModal');
+        const content = document.getElementById('updateDeliveryContent');
+        
+        content.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-spinner fa-spin text-blue-600 text-2xl mb-3"></i>
+                <p class="text-gray-500">Loading delivery details...</p>
+            </div>
+        `;
+        
+        // Show modal
+        modal.classList.remove('hidden');
+        
+        // Fetch delivery details
+        fetch(`/get_delivery_details/${deliveryId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch delivery details');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                // Display update form
+                content.innerHTML = `
+                    <form id="updateDeliveryForm" class="space-y-6">
+                        <input type="hidden" id="updateDeliveryId" value="${data.id}">
+                        
+                        <!-- Sender Information -->
+                        <div class="space-y-4">
+                            <h4 class="text-md font-semibold text-gray-800 flex items-center">
+                                <i class="fas fa-user text-blue-500 mr-2"></i>
+                                Sender Information
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Sender Name</label>
+                                    <input type="text" id="updateSenderName" value="${data.sender_name}" required
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Sender Phone</label>
+                                    <input type="tel" id="updateSenderPhone" value="${data.sender_phone}" required
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Recipient Information -->
+                        <div class="space-y-4">
+                            <h4 class="text-md font-semibold text-gray-800 flex items-center">
+                                <i class="fas fa-user-friends text-green-500 mr-2"></i>
+                                Recipient Information
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Recipient Name</label>
+                                    <input type="text" id="updateRecipientName" value="${data.recipient_name}" required
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Recipient Phone</label>
+                                    <input type="tel" id="updateRecipientPhone" value="${data.recipient_phone}" required
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Address</label>
+                                <textarea id="updateRecipientAddress" rows="2" required
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">${data.recipient_address || ''}</textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Delivery Details -->
+                        <div class="space-y-4">
+                            <h4 class="text-md font-semibold text-gray-800 flex items-center">
+                                <i class="fas fa-truck text-purple-500 mr-2"></i>
+                                Delivery Details
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Goods Type</label>
+                                    <input type="text" id="updateGoodsType" value="${data.goods_type}" required
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                                    <input type="number" id="updateQuantity" value="${data.quantity}" min="1" required
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Amount (KSh)</label>
+                                    <input type="number" id="updateAmount" value="${data.amount}" step="0.01" min="0" required
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment By</label>
+                                    <select id="updatePaymentBy" required
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="M-Pesa" ${data.payment_by === 'M-Pesa' ? 'selected' : ''}>M-Pesa</option>
+                                        <option value="Cash" ${data.payment_by === 'Cash' ? 'selected' : ''}>Cash</option>
+                                        <option value="Card" ${data.payment_by === 'Card' ? 'selected' : ''}>Card</option>
+                                        <option value="Bank Transfer" ${data.payment_by === 'Bank Transfer' ? 'selected' : ''}>Bank Transfer</option>
+                                    </select>
+                                </div>
+                                <!-- Status field hidden - defaults to Pending -->
+                                <input type="hidden" id="updateStatus" value="Pending">
+                            </div>
+                        </div>
+                        
+                        <!-- Form Actions -->
+                        <div class="flex justify-end space-x-3 pt-4 border-t">
+                            <button type="button" onclick="closeUpdateDeliveryModal()" 
+                                    class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors">
+                                Cancel
+                            </button>
+                            <button type="submit" 
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-save mr-2"></i>Update Delivery
+                            </button>
+                        </div>
+                    </form>
+                `;
+                
+                // Add form submit handler
+                document.getElementById('updateDeliveryForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    submitUpdateDelivery();
+                });
+            })
+            .catch(error => {
+                content.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-3"></i>
+                        <p class="text-red-500">Error loading delivery details</p>
+                        <p class="text-sm text-gray-500 mt-2">${error.message}</p>
+                        <button onclick="closeUpdateDeliveryModal()" class="mt-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
+                            Close
+                        </button>
+                    </div>
+                `;
+            });
+    };
+
+    window.closeUpdateDeliveryModal = function() {
+        const modal = document.getElementById('updateDeliveryModal');
+        modal.classList.add('hidden');
+    };
+
+    window.submitUpdateDelivery = function() {
+        const deliveryId = document.getElementById('updateDeliveryId').value;
+        const formData = {
+            sender_name: document.getElementById('updateSenderName').value,
+            sender_phone: document.getElementById('updateSenderPhone').value,
+            recipient_name: document.getElementById('updateRecipientName').value,
+            recipient_phone: document.getElementById('updateRecipientPhone').value,
+            recipient_address: document.getElementById('updateRecipientAddress').value,
+            goods_type: document.getElementById('updateGoodsType').value,
+            quantity: document.getElementById('updateQuantity').value,
+            amount: document.getElementById('updateAmount').value,
+            payment_by: document.getElementById('updatePaymentBy').value,
+            status: document.getElementById('updateStatus').value
+        };
+        
+        fetch(`/update_delivery/${deliveryId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                showNotification('Delivery updated successfully!', 'success');
+                closeUpdateDeliveryModal();
+                // Refresh recent deliveries
+                fetchRecentDeliveries();
+            } else {
+                showNotification(data.error || 'Error updating delivery', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error updating delivery:', error);
+            showNotification('Error updating delivery', 'error');
+        });
+    };
 
     // Close dropdowns when clicking outside
     document.addEventListener('click', function(event) {

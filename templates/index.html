@@ -13,64 +13,105 @@
         </a>
     </div>
 
-    <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <!-- Total Deliveries -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <div class="flex items-center">
-                <div class="p-3 bg-blue-50 rounded-lg">
-                    <i class="fas fa-truck text-blue-600 text-xl"></i>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm text-gray-500 font-medium">Total Deliveries</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ total_deliveries or 0 }}</p>
-                    <p class="text-xs text-gray-400 mt-1">All time</p>
-                </div>
-            </div>
+    <!-- Statistics - Modern Design with Offline Support -->
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 32px;">
+        <div class="modern-stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 16px; text-align: center; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.15); transition: transform 0.3s ease, box-shadow 0.3s ease;">
+            <div style="font-size: 14px; color: rgba(255, 255, 255, 0.9); font-weight: 500; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">Total</div>
+            <div style="font-size: 32px; font-weight: 800; color: #ffffff; line-height: 1;" data-stat="total_deliveries">{{ total_deliveries or 0 }}</div>
         </div>
-
-        <!-- Active Deliveries -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <div class="flex items-center">
-                <div class="p-3 bg-amber-50 rounded-lg">
-                    <i class="fas fa-clock text-amber-600 text-xl"></i>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm text-gray-500 font-medium">Active</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ active_deliveries or 0 }}</p>
-                    <p class="text-xs text-gray-400 mt-1">Pending + In Transit</p>
-                </div>
-            </div>
+        <div class="modern-stat-card" style="background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%); padding: 20px; border-radius: 16px; text-align: center; box-shadow: 0 4px 15px rgba(86, 171, 47, 0.15); transition: transform 0.3s ease, box-shadow 0.3s ease;">
+            <div style="font-size: 14px; color: rgba(255, 255, 255, 0.9); font-weight: 500; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">Delivered</div>
+            <div style="font-size: 32px; font-weight: 800; color: #ffffff; line-height: 1;" data-stat="delivered_count">{{ delivered_count or 0 }}</div>
         </div>
-
-        <!-- Completed Today -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <div class="flex items-center">
-                <div class="p-3 bg-green-50 rounded-lg">
-                    <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm text-gray-500 font-medium">Completed Today</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ completed_today or 0 }}</p>
-                    <p class="text-xs text-gray-400 mt-1">Successfully delivered</p>
-                </div>
-            </div>
+        <div class="modern-stat-card" style="background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%); padding: 20px; border-radius: 16px; text-align: center; box-shadow: 0 4px 15px rgba(33, 147, 176, 0.15); transition: transform 0.3s ease, box-shadow 0.3s ease;">
+            <div style="font-size: 14px; color: rgba(255, 255, 255, 0.9); font-weight: 500; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">In Transit</div>
+            <div style="font-size: 32px; font-weight: 800; color: #ffffff; line-height: 1;" data-stat="in_transit_count">{{ in_transit_count or 0 }}</div>
         </div>
-
-        <!-- Completion Rate -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <div class="flex items-center">
-                <div class="p-3 bg-purple-50 rounded-lg">
-                    <i class="fas fa-percentage text-purple-600 text-xl"></i>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm text-gray-500 font-medium">Completion Rate</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ completion_rate or 0 }}%</p>
-                    <p class="text-xs text-gray-400 mt-1">This month</p>
-                </div>
-            </div>
+        <div class="modern-stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 20px; border-radius: 16px; text-align: center; box-shadow: 0 4px 15px rgba(240, 147, 251, 0.15); transition: transform 0.3s ease, box-shadow 0.3s ease;">
+            <div style="font-size: 14px; color: rgba(255, 255, 255, 0.9); font-weight: 500; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">Pending</div>
+            <div style="font-size: 32px; font-weight: 800; color: #ffffff; line-height: 1;" data-stat="pending_count">{{ pending_count or 0 }}</div>
         </div>
     </div>
+
+    <!-- Offline Data Storage -->
+    <div id="offlineDataContainer" style="display: none;"
+         data-deliveries="{{ deliveries[:10] | tojson | safe }}"
+         data-total-deliveries="{{ total_deliveries or 0 }}"
+         data-delivered-count="{{ delivered_count or 0 }}"
+         data-pending-count="{{ pending_count or 0 }}"
+         data-in-transit-count="{{ in_transit_count or 0 }}"
+         data-total-revenue="{{ total_revenue or 0 }}"
+         data-total-expenses="{{ total_expenses or 0 }}"
+         data-net-profit="{{ net_profit or 0 }}">
+    </div>
+
+    <script>
+        // Store current data for offline access using data attributes
+        (function() {
+            var container = document.getElementById('offlineDataContainer');
+            
+            // Parse deliveries data
+            var deliveriesData = [];
+            try {
+                deliveriesData = JSON.parse(container.dataset.deliveries || '[]');
+            } catch (e) {
+                console.warn('Failed to parse deliveries data:', e);
+            }
+            
+            // Create statistics data
+            var statisticsData = {
+                total_deliveries: Number(container.dataset.totalDeliveries || 0),
+                delivered_count: Number(container.dataset.deliveredCount || 0),
+                pending_count: Number(container.dataset.pendingCount || 0),
+                in_transit_count: Number(container.dataset.inTransitCount || 0),
+                total_revenue: Number(container.dataset.totalRevenue || 0),
+                total_expenses: Number(container.dataset.totalExpenses || 0),
+                net_profit: Number(container.dataset.netProfit || 0)
+            };
+            
+            window.currentOfflineData = {
+                deliveries: deliveriesData,
+                statistics: statisticsData,
+                timestamp: new Date().toISOString()
+            };
+
+            // Process deliveries data for offline use
+            if (window.currentOfflineData.deliveries) {
+                window.currentOfflineData.deliveries = window.currentOfflineData.deliveries.map(function(delivery) {
+                    return {
+                        id: delivery.id,
+                        display_id: delivery.display_id,
+                        status: delivery.status,
+                        recipient: delivery.recipient_name,
+                        amount: delivery.amount,
+                        created_at: delivery.created_at ? new Date(delivery.created_at).toISOString() : ""
+                    };
+                });
+            }
+
+            // Enhanced offline mode integration
+            if (window.OfflineMode) {
+                // Override data extraction methods
+                OfflineMode.getCurrentDeliveries = function() {
+                    return window.currentOfflineData.deliveries || [];
+                };
+                
+                OfflineMode.getCurrentStatistics = function() {
+                    return window.currentOfflineData.statistics || {};
+                };
+                
+                // Cache data immediately
+                OfflineMode.cacheCurrentData();
+            }
+        })();
+    </script>
+
+    <style>
+        .modern-stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.25);
+        }
+    </style>
 
     <!-- Charts and Actions Row -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

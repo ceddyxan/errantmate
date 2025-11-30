@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .animate-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: .5; }
+    }
+</style>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">System Health Monitoring</h1>
+            <p class="mt-2 text-gray-600">Real-time system performance and health status</p>
+        </div>
+
+        <!-- Health Monitoring Section -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden mb-8 hover:shadow-xl">
+            <div class="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 py-5 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-indigo-500 rounded-xl flex items-center justify-center shadow-lg">
+                            <i class="fas fa-heartbeat text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">System Health</h3>
+                            <p class="text-sm text-gray-600 mt-1">Real-time performance monitoring</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                            <span class="text-sm font-medium text-gray-700" id="systemStatus">Healthy</span>
+                        </div>
+                        <button onclick="refreshSystemHealth()" class="px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors duration-200">
+                            <i class="fas fa-sync-alt mr-2"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <!-- System Overview -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center shadow-lg">
+                                <i class="fas fa-server text-white text-lg"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">System Uptime</p>
+                                <p class="text-2xl font-bold text-gray-900" id="systemUptime">24d 0h 0m</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-check text-green-600 text-xs"></i>
+                            </div>
+                            <span class="text-xs font-medium text-green-600">Operational</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center shadow-lg">
+                                <i class="fas fa-microchip text-white text-lg"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">CPU Usage</p>
+                                <p class="text-2xl font-bold text-gray-900" id="cpuUsage">12%</p>
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div id="cpuProgressBar" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 12%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-12 h-12 bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
+                                <i class="fas fa-memory text-white text-lg"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Memory Usage</p>
+                                <p class="text-2xl font-bold text-gray-900" id="memoryUsage">45%</p>
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div id="memoryProgressBar" class="bg-purple-500 h-2 rounded-full transition-all duration-300" style="width: 45%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
+                                <i class="fas fa-database text-white text-lg"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Database</p>
+                                <p class="text-2xl font-bold text-gray-900" id="dbResponse">2.5ms</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-bolt text-green-600 text-xs"></i>
+                            </div>
+                            <span class="text-xs font-medium text-green-600">Fast</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Detailed Metrics -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Performance Metrics -->
+                    <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                        <h4 class="text-lg font-bold text-gray-800 mb-4">Performance Metrics</h4>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-tachometer-alt text-blue-600 text-sm"></i>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-700">CPU Load</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-sm font-bold text-gray-900" id="cpuLoad">12%</span>
+                                    <span class="text-xs text-gray-500 ml-2">8 cores</span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-memory text-purple-600 text-sm"></i>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-700">Memory</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-sm font-bold text-gray-900" id="memoryDetails">3.2GB / 8GB</span>
+                                    <span class="text-xs text-gray-500 ml-2">40%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-hdd text-green-600 text-sm"></i>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-700">Disk Space</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-sm font-bold text-gray-900" id="diskSpace">120GB / 500GB</span>
+                                    <span class="text-xs text-gray-500 ml-2">24%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-network-wired text-orange-600 text-sm"></i>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-700">Network I/O</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-sm font-bold text-gray-900" id="networkIO">↑2.5MB ↓3.1MB</span>
+                                    <span class="text-xs text-gray-500 ml-2">Total</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- System Information -->
+                    <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                        <h4 class="text-lg font-bold text-gray-800 mb-4">System Information</h4>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-desktop text-indigo-600 text-sm"></i>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-700">Platform</span>
+                                </div>
+                                <span class="text-sm font-bold text-gray-900" id="platformInfo">Windows</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-microchip text-teal-600 text-sm"></i>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-700">Architecture</span>
+                                </div>
+                                <span class="text-sm font-bold text-gray-900" id="archInfo">x64</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-server text-red-600 text-sm"></i>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-700">Processes</span>
+                                </div>
+                                <span class="text-sm font-bold text-gray-900" id="processCount">156</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-clock text-yellow-600 text-sm"></i>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-700">Last Update</span>
+                                </div>
+                                <span class="text-sm font-bold text-gray-900" id="lastUpdate">Just now</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // System Health Monitoring
+        window.refreshSystemHealth = function() {
+            fetch('/get_system_health')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Error loading system health:', data.error);
+                        return;
+                    }
+                    
+                    updateSystemHealthDisplay(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching system health:', error);
+                });
+        };
+
+        window.updateSystemHealthDisplay = function(data) {
+            try {
+                // Update system status
+                const statusElement = document.getElementById('systemStatus');
+                const statusIndicator = statusElement?.previousElementSibling;
+                
+                if (statusElement && statusIndicator) {
+                    statusElement.textContent = data.overall_status.charAt(0).toUpperCase() + data.overall_status.slice(1);
+                    
+                    // Update status indicator color
+                    statusIndicator.className = `w-3 h-3 rounded-full animate-pulse ${
+                        data.overall_status === 'healthy' ? 'bg-green-500' :
+                        data.overall_status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+                    }`;
+                }
+                
+                // Update uptime
+                const uptimeElement = document.getElementById('systemUptime');
+                if (uptimeElement && data.uptime) {
+                    uptimeElement.textContent = data.uptime.formatted;
+                }
+                
+                // Update CPU usage
+                const cpuUsageElement = document.getElementById('cpuUsage');
+                const cpuProgressBar = document.getElementById('cpuProgressBar');
+                const cpuLoadElement = document.getElementById('cpuLoad');
+                
+                if (cpuUsageElement && data.performance?.cpu) {
+                    const cpuUsage = Math.round(data.performance.cpu.usage_percent);
+                    cpuUsageElement.textContent = `${cpuUsage}%`;
+                    if (cpuProgressBar) {
+                        cpuProgressBar.style.width = `${cpuUsage}%`;
+                        cpuProgressBar.className = `h-2 rounded-full transition-all duration-300 ${
+                            cpuUsage < 80 ? 'bg-blue-500' :
+                            cpuUsage < 95 ? 'bg-yellow-500' : 'bg-red-500'
+                        }`;
+                    }
+                    if (cpuLoadElement) {
+                        cpuLoadElement.textContent = `${cpuUsage}%`;
+                    }
+                }
+                
+                // Update memory usage
+                const memoryUsageElement = document.getElementById('memoryUsage');
+                const memoryProgressBar = document.getElementById('memoryProgressBar');
+                const memoryDetailsElement = document.getElementById('memoryDetails');
+                
+                if (memoryUsageElement && data.performance?.memory) {
+                    const memoryUsage = Math.round(data.performance.memory.usage_percent);
+                    memoryUsageElement.textContent = `${memoryUsage}%`;
+                    if (memoryProgressBar) {
+                        memoryProgressBar.style.width = `${memoryUsage}%`;
+                        memoryProgressBar.className = `h-2 rounded-full transition-all duration-300 ${
+                            memoryUsage < 80 ? 'bg-purple-500' :
+                            memoryUsage < 95 ? 'bg-yellow-500' : 'bg-red-500'
+                        }`;
+                    }
+                    if (memoryDetailsElement) {
+                        memoryDetailsElement.textContent = `${data.performance.memory.used_gb}GB / ${data.performance.memory.total_gb}GB`;
+                    }
+                }
+                
+                // Update database response time
+                const dbResponseElement = document.getElementById('dbResponse');
+                if (dbResponseElement && data.database) {
+                    dbResponseElement.textContent = `${data.database.query_time_ms}ms`;
+                }
+                
+                // Update disk space
+                const diskSpaceElement = document.getElementById('diskSpace');
+                if (diskSpaceElement && data.performance?.disk) {
+                    diskSpaceElement.textContent = `${data.performance.disk.used_gb}GB / ${data.performance.disk.total_gb}GB`;
+                }
+                
+                // Update network I/O
+                const networkIOElement = document.getElementById('networkIO');
+                if (networkIOElement && data.performance?.network) {
+                    networkIOElement.textContent = `↑${data.performance.network.bytes_sent_mb}MB ↓${data.performance.network.bytes_recv_mb}MB`;
+                }
+                
+                // Update platform info
+                const platformElement = document.getElementById('platformInfo');
+                if (platformElement && data.system_info) {
+                    platformElement.textContent = data.system_info.platform;
+                }
+                
+                // Update architecture
+                const archElement = document.getElementById('archInfo');
+                if (archElement && data.system_info) {
+                    archElement.textContent = data.system_info.architecture;
+                }
+                
+                // Update process count
+                const processCountElement = document.getElementById('processCount');
+                if (processCountElement && data.processes) {
+                    processCountElement.textContent = data.processes.total_count;
+                }
+                
+                // Update last update time
+                const lastUpdateElement = document.getElementById('lastUpdate');
+                if (lastUpdateElement) {
+                    const now = new Date();
+                    lastUpdateElement.textContent = now.toLocaleTimeString();
+                }
+                
+            } catch (error) {
+                console.error('Error updating system health display:', error);
+            }
+        };
+
+        // Auto-refresh system health
+        let systemHealthRefreshInterval = null;
+
+        window.startSystemHealthAutoRefresh = function() {
+            // Clear any existing interval
+            if (systemHealthRefreshInterval) {
+                clearInterval(systemHealthRefreshInterval);
+            }
+            
+            // Set up auto-refresh every 60 seconds
+            systemHealthRefreshInterval = setInterval(function() {
+                if (!document.hidden) {
+                    refreshSystemHealth();
+                }
+            }, 60000); // 60 seconds
+            
+            // Also refresh when page becomes visible again
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden && systemHealthRefreshInterval) {
+                    refreshSystemHealth();
+                }
+            });
+        };
+
+        // Stop auto-refresh
+        window.stopSystemHealthAutoRefresh = function() {
+            if (systemHealthRefreshInterval) {
+                clearInterval(systemHealthRefreshInterval);
+                systemHealthRefreshInterval = null;
+            }
+        };
+
+        // Initialize system health on page load
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                refreshSystemHealth();
+                startSystemHealthAutoRefresh();
+            }, 1000); // 1 second delay
+        });
+
+        // Stop auto-refresh when page unloads
+        window.addEventListener('beforeunload', function() {
+            stopSystemHealthAutoRefresh();
+        });
+    </script>
+{% endblock %}

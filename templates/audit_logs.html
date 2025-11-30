@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Logs - Errantmate Delivery Management{% endblock %}
+
+{% block extra_css %}
+<style>
+.audit-log-row {
+    border-bottom: 1px solid #f1f5f9;
+}
+.audit-log-row:hover {
+    background-color: #fafbfc;
+}
+.action-badge {
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.action-LOGIN_SUCCESS { background-color: #f0fdf4; color: #166534; }
+.action-LOGIN_FAILED { background-color: #fef2f2; color: #dc2626; }
+.action-LOGOUT { background-color: #f8fafc; color: #475569; }
+.action-CREATE { background-color: #eff6ff; color: #2563eb; }
+.action-UPDATE { background-color: #fef9c7; color: #ca8a04; }
+.action-DELETE { background-color: #fef2f2; color: #dc2626; }
+.action-EXPORT { background-color: #f5f3ff; color: #7c3aed; }
+.action-VIEW { background-color: #f0fdf4; color: #166534; }
+.filter-bar {
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white">
+    <!-- Header -->
+    <div class="border-b border-gray-200">
+        <div class="px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-xl font-semibold text-gray-900">Audit Logs</h1>
+                    <p class="text-sm text-gray-500 mt-1">{{ pagination.total if pagination else 0 }} records</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+        <div class="px-4 sm:px-6 lg:px-8 py-3">
+            <form method="GET" class="flex flex-wrap gap-3 items-end">
+                <select name="action" class="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Actions</option>
+                    <option value="LOGIN" {{ 'selected' if action_filter == 'LOGIN' }}>Login</option>
+                    <option value="LOGOUT" {{ 'selected' if action_filter == 'LOGOUT' }}>Logout</option>
+                    <option value="CREATE" {{ 'selected' if action_filter == 'CREATE' }}>Create</option>
+                    <option value="UPDATE" {{ 'selected' if action_filter == 'UPDATE' }}>Update</option>
+                    <option value="DELETE" {{ 'selected' if action_filter == 'DELETE' }}>Delete</option>
+                    <option value="EXPORT" {{ 'selected' if action_filter == 'EXPORT' }}>Export</option>
+                    <option value="VIEW" {{ 'selected' if action_filter == 'VIEW' }}>View</option>
+                </select>
+
+                <input type="text" name="username" value="{{ username_filter }}" 
+                       placeholder="Username"
+                       class="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+
+                <input type="date" name="date_from" value="{{ date_from }}" 
+                       class="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+
+                <input type="date" name="date_to" value="{{ date_to }}" 
+                       class="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+
+                <button type="submit" 
+                        class="px-4 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
+                    Filter
+                </button>
+
+                {% if action_filter or username_filter or date_from or date_to %}
+                <a href="{{ url_for('audit_logs') }}" 
+                   class="text-sm text-gray-500 hover:text-gray-700">
+                    Clear
+                </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Audit Logs Table -->
+    <div class="px-4 sm:px-6 lg:px-8">
+        {% if audit_logs %}
+        <div class="border border-gray-200 rounded-lg overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Time</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">User</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Action</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Resource</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Details</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">IP</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for log in audit_logs %}
+                        <tr class="audit-log-row">
+                            <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-600">
+                                {{ log.timestamp.strftime('%m-%d %H:%M') }}
+                            </td>
+                            <td class="px-4 py-2 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-6 w-6">
+                                        <div class="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center">
+                                            <span class="text-gray-600 text-xs font-medium">{{ log.username[0].upper() if log.username else 'U' }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="ml-2">
+                                        <div class="text-sm font-medium text-gray-900">{{ log.username }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-2 whitespace-nowrap">
+                                <span class="action-badge action-{{ log.action }}">
+                                    {{ log.action.replace('_', ' ') }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700">
+                                {% if log.resource_type %}
+                                    <div class="flex items-center">
+                                        <span class="font-medium">{{ log.resource_type }}</span>
+                                        {% if log.resource_id %}
+                                            <span class="ml-1 text-gray-400">#{{ log.resource_id }}</span>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <span class="text-gray-400">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-2 text-sm text-gray-600 max-w-xs truncate" title="{{ log.details or '-' }}">
+                                {{ log.details or '-' }}
+                            </td>
+                            <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-500">
+                                {{ log.ip_address or '-' }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination and pagination.pages > 1 %}
+            <div class="border-t border-gray-200 px-4 py-3 flex items-center justify-between">
+                <div class="text-sm text-gray-700">
+                    {{ pagination.page * pagination.per_page - pagination.per_page + 1 }}-{{ [pagination.page * pagination.per_page, pagination.total]|min }} of {{ pagination.total }}
+                </div>
+                <div class="flex space-x-1">
+                    {% if pagination.has_prev %}
+                        <a href="{{ url_for('audit_logs', page=pagination.prev_num, action=action_filter, username=username_filter, date_from=date_from, date_to=date_to) }}" 
+                           class="px-3 py-1 border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+                            ←
+                        </a>
+                    {% endif %}
+                    
+                    {% for page_num in pagination.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num == pagination.page %}
+                                <span class="px-3 py-1 border border-blue-500 bg-blue-50 text-sm text-blue-600">
+                                    {{ page_num }}
+                                </span>
+                            {% else %}
+                                <a href="{{ url_for('audit_logs', page=page_num, action=action_filter, username=username_filter, date_from=date_from, date_to=date_to) }}" 
+                                   class="px-3 py-1 border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+                                    {{ page_num }}
+                                </a>
+                            {% endif %}
+                        {% else %}
+                            <span class="px-3 py-1 text-sm text-gray-500">...</span>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if pagination.has_next %}
+                        <a href="{{ url_for('audit_logs', page=pagination.next_num, action=action_filter, username=username_filter, date_from=date_from, date_to=date_to) }}" 
+                           class="px-3 py-1 border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+                            →
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-12">
+            <div class="text-gray-400 text-sm">
+                {% if action_filter or username_filter or date_from or date_to %}
+                    No logs match your filters.
+                {% else %}
+                    No audit logs recorded yet.
+                {% endif %}
+            </div>
+            {% if action_filter or username_filter or date_from or date_to %}
+                <a href="{{ url_for('audit_logs') }}" 
+                   class="text-sm text-blue-600 hover:text-blue-700 mt-2 inline-block">
+                    Clear filters
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

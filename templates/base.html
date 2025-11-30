@@ -7,8 +7,16 @@
     <title>Errantmate - Delivery Management</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script>
+        if (typeof Chart === 'undefined') {
+            console.warn('Chart.js CDN failed, using local fallback');
+        }
+        if (typeof ChartDataLabels === 'undefined') {
+            console.warn('Chart.js Data Labels plugin CDN failed, using local fallback');
+        }
+    </script>
     <style>
         /* stylelint-disable */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -91,9 +99,676 @@
                 padding-bottom: 4rem; /* Space for bottom nav */
             }
         }
+
+        /* Dark Mode Styles */
+        .dark {
+            background-color: #1a202c;
+            color: #e2e8f0;
+        }
+        
+        .dark .card {
+            background-color: #2d3748;
+            border-color: #4a5568;
+            color: #e2e8f0;
+        }
+        
+        .dark .card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+        
+        .dark .btn-primary {
+            background-color: rgb(20 184 166);
+        }
+        
+        .dark .btn-primary:hover {
+            background-color: rgb(13 148 136);
+        }
+        
+        .dark .btn-secondary {
+            background-color: #2d3748;
+            border-color: rgb(20 184 166);
+            color: rgb(20 184 166);
+        }
+        
+        .dark .btn-secondary:hover {
+            background-color: #4a5568;
+        }
+        
+        .dark nav {
+            background-color: #2d3748 !important;
+            border-color: #4a5568 !important;
+        }
+        
+        .dark .nav-link {
+            color: #e2e8f0;
+        }
+        
+        .dark .nav-link:hover {
+            background-color: #4a5568;
+        }
+        
+        .dark .bg-green-600 {
+            background-color: #2d3748 !important;
+        }
+        
+        .dark .bg-green-700 {
+            background-color: #4a5568 !important;
+        }
+        
+        .dark .bg-green-800 {
+            background-color: #1a202c !important;
+        }
+        
+        .dark .bg-gray-50 {
+            background-color: #2d3748 !important;
+            color: #e2e8f0 !important;
+        }
+        
+        .dark .bg-white {
+            background-color: #2d3748 !important;
+            color: #e2e8f0 !important;
+        }
+        
+        .dark .text-gray-900 {
+            color: #e2e8f0 !important;
+        }
+        
+        .dark .text-gray-800 {
+            color: #e2e8f0 !important;
+        }
+        
+        .dark .text-gray-700 {
+            color: #cbd5e0 !important;
+        }
+        
+        .dark .text-gray-600 {
+            color: #a0aec0 !important;
+        }
+        
+        .dark .border-gray-200 {
+            border-color: #4a5568 !important;
+        }
+        
+        .dark .border-gray-300 {
+            border-color: #4a5568 !important;
+        }
+        
+        .dark .border-gray-700 {
+            border-color: #2d3748 !important;
+        }
+        
+        .dark .bg-gray-800 {
+            background-color: #1a202c !important;
+        }
+        
+        .dark .bg-gray-700 {
+            background-color: #2d3748 !important;
+        }
+        
+        .dark .bg-red-50 {
+            background-color: #742a2a !important;
+            color: #feb2b2 !important;
+        }
+        
+        .dark .bg-red-500 {
+            background-color: #e53e3e !important;
+        }
+        
+        .dark .bg-red-600 {
+            background-color: #c53030 !important;
+        }
+        
+        .dark .text-red-800 {
+            color: #fc8181 !important;
+        }
+        
+        .dark .bg-green-50 {
+            background-color: #22543d !important;
+            color: #9ae6b4 !important;
+        }
+        
+        .dark .text-green-800 {
+            color: #9ae6b4 !important;
+        }
+        
+        .dark .bg-yellow-50 {
+            background-color: #744210 !important;
+            color: #faf089 !important;
+        }
+        
+        .dark .text-yellow-800 {
+            color: #faf089 !important;
+        }
+        
+        .dark .bg-blue-50 {
+            background-color: #2c5282 !important;
+            color: #90cdf4 !important;
+        }
+        
+        .dark .text-blue-800 {
+            color: #90cdf4 !important;
+        }
+        
+        .dark .bg-indigo-50 {
+            background-color: #312e81 !important;
+            color: #a5b4fc !important;
+        }
+        
+        .dark .text-indigo-800 {
+            color: #a5b4fc !important;
+        }
+        
+        .dark .bg-purple-50 {
+            background-color: #44337a !important;
+            color: #d6bcfa !important;
+        }
+        
+        .dark .text-purple-800 {
+            color: #d6bcfa !important;
+        }
+        
+        .dark .bg-orange-50 {
+            background-color: #7c2d12 !important;
+            color: #fbd38d !important;
+        }
+        
+        .dark .text-orange-800 {
+            color: #fbd38d !important;
+        }
+        
+        .dark .bg-pink-50 {
+            background-color: #702459 !important;
+            color: #fbb6ce !important;
+        }
+        
+        .dark .text-pink-800 {
+            color: #fbb6ce !important;
+        }
+        
+        .dark .bg-teal-50 {
+            background-color: #134e4a !important;
+            color: #5eead4 !important;
+        }
+        
+        .dark .text-teal-800 {
+            color: #5eead4 !important;
+        }
+        
+        .dark .bg-cyan-50 {
+            background-color: #164e63 !important;
+            color: #67e8f9 !important;
+        }
+        
+        .dark .text-cyan-800 {
+            color: #67e8f9 !important;
+        }
+        
+        .dark .bg-lime-50 {
+            background-color: #4a5c2a !important;
+            color: #bef264 !important;
+        }
+        
+        .dark .text-lime-800 {
+            color: #bef264 !important;
+        }
+        
+        .dark .bg-emerald-50 {
+            background-color: #064e3b !important;
+            color: #6ee7b7 !important;
+        }
+        
+        .dark .text-emerald-800 {
+            color: #6ee7b7 !important;
+        }
+        
+        .dark .bg-violet-50 {
+            background-color: #4c1d95 !important;
+            color: #c4b5fd !important;
+        }
+        
+        .dark .text-violet-800 {
+            color: #c4b5fd !important;
+        }
+        
+        .dark .bg-fuchsia-50 {
+            background-color: #701a75 !important;
+            color: #f0abfc !important;
+        }
+        
+        .dark .text-fuchsia-800 {
+            color: #f0abfc !important;
+        }
+        
+        .dark .bg-rose-50 {
+            background-color: #7f1d1d !important;
+            color: #fda4af !important;
+        }
+        
+        .dark .text-rose-800 {
+            color: #fda4af !important;
+        }
+        
+        .dark .bg-sky-50 {
+            background-color: #075985 !important;
+            color: #7dd3fc !important;
+        }
+        
+        .dark .text-sky-800 {
+            color: #7dd3fc !important;
+        }
+        
+        .dark .bg-amber-50 {
+            background-color: #78350f !important;
+            color: #fde047 !important;
+        }
+        
+        .dark .text-amber-800 {
+            color: #fde047 !important;
+        }
+        
+        .dark input, .dark select, .dark textarea {
+            background-color: #4a5568 !important;
+            color: #e2e8f0 !important;
+            border-color: #718096 !important;
+        }
+        
+        .dark input:focus, .dark select:focus, .dark textarea:focus {
+            border-color: #4299e1 !important;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1) !important;
+        }
+        
+        .dark .modal-content {
+            background-color: #2d3748 !important;
+            color: #e2e8f0 !important;
+        }
+        
+        .dark .dropdown-content {
+            background-color: #2d3748 !important;
+            color: #e2e8f0 !important;
+        }
+        
+        .dark .table {
+            background-color: #2d3748 !important;
+            color: #e2e8f0 !important;
+        }
+        
+        .dark .table th {
+            background-color: #4a5568 !important;
+            color: #e2e8f0 !important;
+        }
+        
+        .dark .table tr:hover {
+            background-color: #4a5568 !important;
+        }
+        
+        .dark .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
+        }
+        
+        .dark .shadow-md {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+        }
+        
+        .dark .shadow {
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3) !important;
+        }
+        
+        .dark footer {
+            background-color: #1a202c !important;
+            color: #a0aec0 !important;
+            border-color: #2d3748 !important;
+        }
+        
+        .dark .text-green-400 {
+            color: #68d391 !important;
+        }
+        
+        .dark .text-green-600 {
+            color: #48bb78 !important;
+        }
+        
+        .dark .text-green-700 {
+            color: #38a169 !important;
+        }
+        
+        .dark .text-blue-400 {
+            color: #63b3ed !important;
+        }
+        
+        .dark .text-blue-600 {
+            color: #4299e1 !important;
+        }
+        
+        .dark .text-blue-700 {
+            color: #3182ce !important;
+        }
+        
+        .dark .text-red-400 {
+            color: #fc8181 !important;
+        }
+        
+        .dark .text-red-600 {
+            color: #e53e3e !important;
+        }
+        
+        .dark .text-red-700 {
+            color: #c53030 !important;
+        }
+        
+        .dark .text-yellow-400 {
+            color: #f6e05e !important;
+        }
+        
+        .dark .text-yellow-600 {
+            color: #d69e2e !important;
+        }
+        
+        .dark .text-yellow-700 {
+            color: #b7791f !important;
+        }
+        
+        .dark .text-purple-400 {
+            color: #b794f4 !important;
+        }
+        
+        .dark .text-purple-600 {
+            color: #9f7aea !important;
+        }
+        
+        .dark .text-purple-700 {
+            color: #805ad5 !important;
+        }
+        
+        .dark .text-indigo-400 {
+            color: #818cf8 !important;
+        }
+        
+        .dark .text-indigo-600 {
+            color: #6366f1 !important;
+        }
+        
+        .dark .text-indigo-700 {
+            color: #4f46e5 !important;
+        }
+        
+        .dark .text-orange-400 {
+            color: #fb923c !important;
+        }
+        
+        .dark .text-orange-600 {
+            color: #ea580c !important;
+        }
+        
+        .dark .text-orange-700 {
+            color: #c2410c !important;
+        }
+        
+        .dark .text-pink-400 {
+            color: #f472b6 !important;
+        }
+        
+        .dark .text-pink-600 {
+            color: #db2777 !important;
+        }
+        
+        .dark .text-pink-700 {
+            color: #be185d !important;
+        }
+        
+        .dark .text-teal-400 {
+            color: #2dd4bf !important;
+        }
+        
+        .dark .text-teal-600 {
+            color: #14b8a6 !important;
+        }
+        
+        .dark .text-teal-700 {
+            color: #0d9488 !important;
+        }
+        
+        .dark .text-cyan-400 {
+            color: #22d3ee !important;
+        }
+        
+        .dark .text-cyan-600 {
+            color: #06b6d4 !important;
+        }
+        
+        .dark .text-cyan-700 {
+            color: #0891b2 !important;
+        }
+        
+        .dark .text-lime-400 {
+            color: #a3e635 !important;
+        }
+        
+        .dark .text-lime-600 {
+            color: #84cc16 !important;
+        }
+        
+        .dark .text-lime-700 {
+            color: #65a30d !important;
+        }
+        
+        .dark .text-emerald-400 {
+            color: #34d399 !important;
+        }
+        
+        .dark .text-emerald-600 {
+            color: #10b981 !important;
+        }
+        
+        .dark .text-emerald-700 {
+            color: #059669 !important;
+        }
+        
+        .dark .text-violet-400 {
+            color: #a78bfa !important;
+        }
+        
+        .dark .text-violet-600 {
+            color: #8b5cf6 !important;
+        }
+        
+        .dark .text-violet-700 {
+            color: #7c3aed !important;
+        }
+        
+        .dark .text-fuchsia-400 {
+            color: #f0abfc !important;
+        }
+        
+        .dark .text-fuchsia-600 {
+            color: #e879f9 !important;
+        }
+        
+        .dark .text-fuchsia-700 {
+            color: #d946ef !important;
+        }
+        
+        .dark .text-rose-400 {
+            color: #fb7185 !important;
+        }
+        
+        .dark .text-rose-600 {
+            color: #f43f5e !important;
+        }
+        
+        .dark .text-rose-700 {
+            color: #e11d48 !important;
+        }
+        
+        .dark .text-sky-400 {
+            color: #38bdf8 !important;
+        }
+        
+        .dark .text-sky-600 {
+            color: #0284c7 !important;
+        }
+        
+        .dark .text-sky-700 {
+            color: #0369a1 !important;
+        }
+        
+        .dark .text-amber-400 {
+            color: #fbbf24 !important;
+        }
+        
+        .dark .text-amber-600 {
+            color: #f59e0b !important;
+        }
+        
+        .dark .text-amber-700 {
+            color: #d97706 !important;
+        }
+        
+        .dark .hover\:bg-gray-100:hover {
+            background-color: #4a5568 !important;
+        }
+        
+        .dark .hover\:bg-gray-200:hover {
+            background-color: #718096 !important;
+        }
+        
+        .dark .hover\:bg-gray-300:hover {
+            background-color: #a0aec0 !important;
+        }
+        
+        .dark .hover\:bg-green-700:hover {
+            background-color: #4a5568 !important;
+        }
+        
+        .dark .hover\:bg-red-600:hover {
+            background-color: #c53030 !important;
+        }
+        
+        .dark .hover\:bg-red-700:hover {
+            background-color: #9b2c2c !important;
+        }
+        
+        .dark .hover\:bg-blue-600:hover {
+            background-color: #2b6cb0 !important;
+        }
+        
+        .dark .hover\:bg-blue-700:hover {
+            background-color: #2c5282 !important;
+        }
+        
+        .dark .hover\:bg-yellow-600:hover {
+            background-color: #b7791f !important;
+        }
+        
+        .dark .hover\:bg-yellow-700:hover {
+            background-color: #975a16 !important;
+        }
+        
+        .dark .hover\:bg-purple-600:hover {
+            background-color: #805ad5 !important;
+        }
+        
+        .dark .hover\:bg-purple-700:hover {
+            background-color: #6b46c1 !important;
+        }
+        
+        .dark .hover\:bg-indigo-600:hover {
+            background-color: #4f46e5 !important;
+        }
+        
+        .dark .hover\:bg-indigo-700:hover {
+            background-color: #4338ca !important;
+        }
+        
+        .dark .hover\:bg-orange-600:hover {
+            background-color: #c2410c !important;
+        }
+        
+        .dark .hover\:bg-orange-700:hover {
+            background-color: #9a3412 !important;
+        }
+        
+        .dark .hover\:bg-pink-600:hover {
+            background-color: #be185d !important;
+        }
+        
+        .dark .hover\:bg-pink-700:hover {
+            background-color: #9f1239 !important;
+        }
+        
+        .dark .hover\:bg-teal-600:hover {
+            background-color: #0d9488 !important;
+        }
+        
+        .dark .hover\:bg-teal-700:hover {
+            background-color: #0f766e !important;
+        }
+        
+        .dark .hover\:bg-cyan-600:hover {
+            background-color: #0891b2 !important;
+        }
+        
+        .dark .hover\:bg-cyan-700:hover {
+            background-color: #0e7490 !important;
+        }
+        
+        .dark .hover\:bg-lime-600:hover {
+            background-color: #65a30d !important;
+        }
+        
+        .dark .hover\:bg-lime-700:hover {
+            background-color: #4d7c0f !important;
+        }
+        
+        .dark .hover\:bg-emerald-600:hover {
+            background-color: #059669 !important;
+        }
+        
+        .dark .hover\:bg-emerald-700:hover {
+            background-color: #047857 !important;
+        }
+        
+        .dark .hover\:bg-violet-600:hover {
+            background-color: #7c3aed !important;
+        }
+        
+        .dark .hover\:bg-violet-700:hover {
+            background-color: #6d28d9 !important;
+        }
+        
+        .dark .hover\:bg-fuchsia-600:hover {
+            background-color: #d946ef !important;
+        }
+        
+        .dark .hover\:bg-fuchsia-700:hover {
+            background-color: #c026d3 !important;
+        }
+        
+        .dark .hover\:bg-rose-600:hover {
+            background-color: #e11d48 !important;
+        }
+        
+        .dark .hover\:bg-rose-700:hover {
+            background-color: #be123c !important;
+        }
+        
+        .dark .hover\:bg-sky-600:hover {
+            background-color: #0284c7 !important;
+        }
+        
+        .dark .hover\:bg-sky-700:hover {
+            background-color: #0369a1 !important;
+        }
+        
+        .dark .hover\:bg-amber-600:hover {
+            background-color: #d97706 !important;
+        }
+        
+        .dark .hover\:bg-amber-700:hover {
+            background-color: #b45309 !important;
+        }
     </style>
 </head>
-<body class="min-h-screen">
+<body class="min-h-screen" data-logged-in="{{ 'true' if session.username else 'false' }}">
     <nav class="bg-green-600 shadow-lg fixed-nav">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
@@ -103,19 +778,39 @@
                     </div>
                     <div class="hidden sm:ml-10 sm:flex space-x-1">
                         <a href="{{ url_for('index') }}" class="nav-link {{ 'bg-green-700 shadow-md' if request.endpoint == 'index' else 'hover:bg-green-700' }}">
-                            <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                            <i class="fas fa-house mr-2 text-sm"></i>Dashboard
                         </a>
                         <a href="{{ url_for('add_delivery') }}" class="nav-link {{ 'bg-green-700 shadow-md' if request.endpoint == 'add_delivery' else 'hover:bg-green-700' }}">
-                            <i class="fas fa-plus-circle mr-2"></i>Add Delivery
+                            <i class="fas fa-plus mr-2 text-sm"></i>Add Delivery
                         </a>
+                        {% if session.user_role == 'admin' %}
                         <a href="{{ url_for('reports') }}" class="nav-link {{ 'bg-green-700 shadow-md' if request.endpoint == 'reports' else 'hover:bg-green-700' }}">
-                            <i class="fas fa-chart-bar mr-2"></i>Reports
+                            <i class="fas fa-chart-line mr-2 text-sm"></i>Reports
                         </a>
+                        <a href="{{ url_for('audit_logs') }}" class="nav-link {{ 'bg-green-700 shadow-md' if request.endpoint == 'audit_logs' else 'hover:bg-green-700' }}">
+                            <i class="fas fa-file-shield mr-2 text-sm"></i>Audit Logs
+                        </a>
+                        <a href="{{ url_for('system_health') }}" class="nav-link {{ 'bg-green-700 shadow-md' if request.endpoint == 'system_health' else 'hover:bg-green-700' }}">
+                            <i class="fas fa-heart-pulse mr-2 text-sm"></i>System Health
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
-                <!-- Current System Time -->
-                <div class="flex items-center">
-                    <div class="bg-green-700 px-4 py-2 rounded-lg shadow-md">
+                <div class="flex items-center space-x-3">
+                    {% if session.username and request.endpoint != 'login' %}
+                    <!-- Logout Button -->
+                    <a href="{{ url_for('logout') }}" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-md flex items-center space-x-2 transition-colors duration-200">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span class="hidden sm:inline">Logout</span>
+                    </a>
+                    {% endif %}
+                    <!-- Dark Mode Toggle -->
+                    <button id="darkModeToggle" class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-all duration-200 group">
+                        <i class="fas fa-moon dark:hidden text-base group-hover:scale-110 transition-transform"></i>
+                        <i class="fas fa-sun hidden dark:inline text-base group-hover:rotate-180 transition-transform duration-300"></i>
+                    </button>
+                    <!-- Current Time -->
+                    <div class="bg-green-700 dark:bg-green-800 px-4 py-2 rounded-lg shadow-md">
                         <div class="flex items-center space-x-2">
                             <i class="fas fa-clock text-white"></i>
                             <span id="currentTime" class="text-white font-mono font-semibold text-lg">00:00:00</span>
@@ -147,19 +842,48 @@
     <div class="mobile-bottom-nav sm:hidden">
         <div class="flex justify-around py-2">
             <a href="{{ url_for('index') }}" class="flex flex-col items-center p-2 text-white {{ 'text-green-200' if request.endpoint == 'index' else '' }}">
-                <i class="fas fa-home text-lg"></i>
+                <i class="fas fa-house text-base"></i>
                 <span class="text-xs mt-1">Home</span>
             </a>
             <a href="{{ url_for('add_delivery') }}" class="flex flex-col items-center p-2 text-white {{ 'text-green-200' if request.endpoint == 'add_delivery' else '' }}">
-                <i class="fas fa-plus text-lg"></i>
+                <i class="fas fa-plus text-base"></i>
                 <span class="text-xs mt-1">Add</span>
             </a>
+            {% if session.user_role == 'admin' %}
             <a href="{{ url_for('reports') }}" class="flex flex-col items-center p-2 text-white {{ 'text-green-200' if request.endpoint == 'reports' else '' }}">
-                <i class="fas fa-chart-bar text-lg"></i>
+                <i class="fas fa-chart-line text-base"></i>
                 <span class="text-xs mt-1">Reports</span>
             </a>
+            <a href="{{ url_for('audit_logs') }}" class="flex flex-col items-center p-2 text-white {{ 'text-green-200' if request.endpoint == 'audit_logs' else '' }}">
+                <i class="fas fa-file-shield text-base"></i>
+                <span class="text-xs mt-1">Audit</span>
+            </a>
+            <a href="{{ url_for('system_health') }}" class="flex flex-col items-center p-2 text-white {{ 'text-green-200' if request.endpoint == 'system_health' else '' }}">
+                <i class="fas fa-heart-pulse text-base"></i>
+                <span class="text-xs mt-1">Health</span>
+            </a>
+            {% endif %}
         </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-gray-300 py-6 mt-auto border-t border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
+                <div class="text-center sm:text-left">
+                    <p class="text-sm">
+                        &copy; <span id="currentYear">2025</span> Xandega. All rights reserved.
+                    </p>
+                </div>
+                <div class="text-center sm:text-right">
+                    <p class="text-sm flex items-center justify-center sm:justify-end">
+                        <i class="fas fa-code mr-2 text-green-400"></i>
+                        Created by Xandega AI Solutions
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <script>
         // Update current time every second
@@ -176,12 +900,83 @@
             }
         }
 
+        // Update copyright year
+        function updateCopyrightYear() {
+            const currentYear = new Date().getFullYear();
+            const yearElement = document.getElementById('currentYear');
+            if (yearElement) {
+                yearElement.textContent = currentYear;
+            }
+        }
+
+        // Dark Mode Management
+        function initDarkMode() {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const body = document.body;
+            
+            // Load saved preference or default to light mode
+            const savedMode = localStorage.getItem('darkMode');
+            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const isDarkMode = savedMode === 'dark' || (!savedMode && systemPrefersDark);
+            
+            // Apply initial theme
+            if (isDarkMode) {
+                body.classList.add('dark');
+            }
+            
+            // Toggle dark mode on button click
+            if (darkModeToggle) {
+                darkModeToggle.addEventListener('click', function() {
+                    const isCurrentlyDark = body.classList.toggle('dark');
+                    localStorage.setItem('darkMode', isCurrentlyDark ? 'dark' : 'light');
+                    
+                    // Show notification
+                    showDarkModeNotification(isCurrentlyDark);
+                });
+            }
+            
+            // Listen for system theme changes
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+                if (!localStorage.getItem('darkMode')) {
+                    // Only apply system preference if user hasn't set a preference
+                    body.classList.toggle('dark', e.matches);
+                }
+            });
+        }
+        
+        function showDarkModeNotification(isDarkMode) {
+            const message = isDarkMode ? 'Dark mode enabled' : 'Light mode enabled';
+            const notification = document.createElement('div');
+            notification.className = `fixed top-20 right-4 z-50 px-4 py-2 rounded-lg text-white text-sm transition-all duration-300 transform translate-x-full ${
+                isDarkMode ? 'bg-gray-800' : 'bg-gray-700'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <i class="fas ${isDarkMode ? 'fa-moon' : 'fa-sun'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Remove after 2 seconds
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => notification.remove(), 300);
+            }, 2000);
+        }
+
         // Flash message auto-remove
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize time display immediately
-            updateCurrentTime();
+            // Initialize dark mode first
+            initDarkMode();
             
-            // Update time every second
+            updateCurrentTime();
             setInterval(updateCurrentTime, 1000);
             
             const flashMessages = document.querySelectorAll('.mb-4 > div');
