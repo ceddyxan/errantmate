@@ -26,7 +26,18 @@ db = SQLAlchemy(app)
 
 # Initialize database tables
 with app.app_context():
-    db.create_all()
+    try:
+        db.create_all()
+        print("Database tables created/verified successfully")
+    except Exception as e:
+        print(f"Error creating tables: {e}")
+        # Try to drop and recreate if needed
+        try:
+            db.drop_all()
+            db.create_all()
+            print("Database tables recreated successfully")
+        except Exception as e2:
+            print(f"Fatal database error: {e2}")
 
 # Models
 class User(db.Model):
@@ -1807,16 +1818,48 @@ def internal_error(error):
 
 def create_default_admin():
     """Create default admin user if it doesn't exist."""
-    admin_user = User.query.filter_by(username='Admin').first()
-    if not admin_user:
-        admin_user = User(username='Admin', role='admin')
-        admin_user.set_password('Admin123')
-        db.session.add(admin_user)
-        db.session.commit()
-        print("Default admin user created: Admin / Admin123 (role: admin)")
+    try:
+        # Check for admin user (case-insensitive)
+        admin_user = User.query.filter(User.username.ilike('admin')).first()
+        if not admin_user:
+            admin_user = User(username='admin', role='admin')
+            admin_user.set_password('admin123')
+            db.session.add(admin_user)
+            db.session.commit()
+            print("Default admin user created: admin / admin123 (role: admin)")
+        else:
+            print("Admin user already exists")
+    except Exception as e:
+        print(f"Error creating admin user: {e}")
+        db.session.rollback()
+
+def main():
+    """Main application entry point."""
+    print("Starting ErrantMate Application...")
+    print(f"Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
+    
+    with app.app_context():
+        try:
+            # Ensure database tables exist
+            db.create_all()
+            print("Database tables verified")
+            
+            # Create admin user if needed
+            create_default_admin()
+            
+            print("Application ready!")
+            print("Access the app at: http://localhost:5001")
+            print("Login with: admin / admin123")
+            
+        except Exception as e:
+            print(f"Startup error: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    try:
+        app.run(debug=True, host='0.0.0.0', port=5001)
+    except Exception as e:
+        print(f"Failed to start server: {e}")
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        create_default_admin()
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    main()
