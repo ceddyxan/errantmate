@@ -27,19 +27,17 @@ db = SQLAlchemy(app)
 # Initialize database tables
 with app.app_context():
     try:
-        # Force drop and recreate to ensure clean state
-        db.drop_all()
         db.create_all()
-        print("Database tables recreated successfully")
+        print("Database tables initialized successfully")
     except Exception as e:
-        print(f"Error creating tables: {e}")
-        # Try one more time
+        print(f"Database initialization error: {e}")
+        # Force recreation if needed
         try:
+            db.drop_all()
             db.create_all()
-            print("Database tables created on retry")
+            print("Database tables recreated successfully")
         except Exception as e2:
             print(f"Fatal database error: {e2}")
-            raise e2
 
 # Models
 class User(db.Model):
@@ -199,23 +197,14 @@ def init_database():
 def index():
     """Render the dashboard with operational statistics and overview."""
     try:
-        # Temporarily disable audit logging to isolate the issue
-        # log_page_view("Dashboard")
-        
         # Get all deliveries for statistics
         deliveries = Delivery.query.order_by(Delivery.created_at.desc()).all()
-        
-        # Debug: Print to console
-        print(f"=== DASHBOARD DEBUG ===")
-        print(f"Found {len(deliveries)} deliveries in database")
         
         # Calculate statistics
         total_deliveries = len(deliveries)
         pending_count = len([d for d in deliveries if d.status == 'Pending'])
         in_transit_count = len([d for d in deliveries if d.status == 'In Transit'])
         delivered_count = len([d for d in deliveries if d.status == 'Delivered'])
-        
-        print(f"Statistics - Total: {total_deliveries}, Pending: {pending_count}, In Transit: {in_transit_count}, Delivered: {delivered_count}")
         
         # Active deliveries (pending + in transit)
         active_deliveries = pending_count + in_transit_count
@@ -262,7 +251,6 @@ def index():
                 'delivery_person': delivery.delivery_person
             })
         
-        print(f"Rendering template with statistics...")
         return render_template('index.html', 
                              deliveries=deliveries_dict,
                              total_deliveries=total_deliveries,
@@ -278,9 +266,6 @@ def index():
                              total_expenses=total_expenses,
                              net_profit=net_profit)
     except Exception as e:
-        print(f"ERROR IN DASHBOARD: {str(e)}")
-        import traceback
-        traceback.print_exc()
         app.logger.error(f"Error loading dashboard: {str(e)}")
         flash('An error occurred while loading the dashboard.', 'danger')
         return render_template('index.html', 
