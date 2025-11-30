@@ -126,6 +126,29 @@ def get_date_ranges():
         'all': (datetime(2000, 1, 1), today_end)  # All time from year 2000
     }
 
+@app.route('/create-admin')
+def create_admin():
+    """Create initial admin user (remove after use)."""
+    try:
+        # Check if admin already exists
+        admin = User.query.filter_by(username='admin').first()
+        if admin:
+            return jsonify({'status': 'exists', 'message': 'Admin user already exists'})
+        
+        # Create admin user
+        admin = User(
+            username='admin',
+            role='admin'
+        )
+        admin.set_password('admin123')  # Change this password!
+        
+        db.session.add(admin)
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'message': 'Admin user created', 'username': 'admin', 'password': 'admin123'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
 @app.route('/health')
 def health_check():
     """Health check endpoint for Render."""
