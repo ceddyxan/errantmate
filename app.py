@@ -1329,6 +1329,20 @@ def get_delivery_trends():
 def get_revenue_charts():
     """Get revenue data for charts."""
     try:
+        # Check if user is authenticated
+        if 'user_id' not in session:
+            app.logger.warning("Unauthorized access attempt to get_revenue_charts")
+            return jsonify({
+                'line_chart': {'labels': [], 'datasets': []},
+                'summary': {
+                    'total_revenue': 0,
+                    'total_expenses': 0,
+                    'total_profit': 0,
+                    'profit_margin': 0
+                },
+                'error': 'Authentication required'
+            }), 401
+        
         # Get date range from query params (default to last 30 days)
         days = request.args.get('days', 30, type=int)
         end_date = datetime.now()

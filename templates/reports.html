@@ -3327,7 +3327,22 @@ window.updateRevenueCharts = function() {
     const period = document.getElementById('revenuePeriod').value;
     
     fetch(`/get_revenue_charts?days=${period}`)
-        .then(response => response.json())
+        .then(response => {
+            // Check if response is ok (status 200-299)
+            if (!response.ok) {
+                if (response.status === 401) {
+                    console.error('Authentication required for revenue charts');
+                    throw new Error('Authentication required');
+                } else if (response.status === 500) {
+                    console.error('Server error loading revenue charts');
+                    throw new Error('Server error');
+                } else {
+                    console.error('Unexpected response status:', response.status);
+                    throw new Error('Network error');
+                }
+            }
+            return response.json();
+        })
         .then(data => {
             // Defensive programming - ensure data has expected structure
             if (!data) {
