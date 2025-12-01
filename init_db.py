@@ -22,19 +22,17 @@ def init_database():
         # Create Flask app
         app = Flask(__name__)
         
-        # Database configuration
+        # Database configuration - PostgreSQL only
         database_url = os.environ.get('DATABASE_URL')
-        if database_url and database_url.startswith('postgres'):
-            app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-            print("Using PostgreSQL database")
-        else:
-            # SQLite for local development
-            instance_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
-            if not os.path.exists(instance_dir):
-                os.makedirs(instance_dir)
-            database_url = f'sqlite:///{os.path.join(instance_dir, "deliveries.db")}'
-            app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-            print("Using SQLite database for local development")
+        if not database_url:
+            raise ValueError("DATABASE_URL environment variable is required")
+        
+        # Ensure it's a PostgreSQL connection
+        if not database_url.startswith('postgres'):
+            raise ValueError("DATABASE_URL must be a PostgreSQL connection string")
+        
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+        print("Using PostgreSQL database")
         
         app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
         db = SQLAlchemy(app)
