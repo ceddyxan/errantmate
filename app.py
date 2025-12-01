@@ -27,17 +27,27 @@ db = SQLAlchemy(app)
 # Initialize database tables
 with app.app_context():
     try:
+        # Check if database is accessible
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
+        print("Database connection verified")
+        
+        # Create tables
         db.create_all()
-        print("Database tables initialized successfully")
+        print("Database tables created successfully")
+        
     except Exception as e:
         print(f"Database initialization error: {e}")
-        # Force recreation if needed
+        # Try to force recreation
         try:
             db.drop_all()
             db.create_all()
             print("Database tables recreated successfully")
         except Exception as e2:
             print(f"Fatal database error: {e2}")
+            # Don't crash the app, but log the error
+            import traceback
+            traceback.print_exc()
 
 # Models
 class User(db.Model):
@@ -182,6 +192,40 @@ def health_check():
         return jsonify({'status': 'healthy', 'database': 'connected'}), 200
     except Exception as e:
         return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
+
+@app.route('/check-db')
+def check_database():
+    """Check database status and tables."""
+    try:
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        tables = inspector.get_table_names()
+        
+        # Check if all required tables exist
+        required_tables = ['user', 'delivery', 'audit_log']
+        missing_tables = [table for table in required_tables if table not in tables]
+        
+        if missing_tables:
+            return jsonify({
+                'status': 'incomplete', 
+                'message': f'Missing tables: {missing_tables}',
+                'existing_tables': tables
+            }), 200
+        
+        # Test queries
+        user_count = User.query.count()
+        delivery_count = Delivery.query.count()
+        
+        return jsonify({
+            'status': 'ready',
+            'message': 'Database is ready',
+            'tables': tables,
+            'users': user_count,
+            'deliveries': delivery_count
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'status': 'error', 'error': str(e)}), 500
 
 @app.route('/init-db')
 def init_database():
