@@ -1278,6 +1278,44 @@ def debug_create_admin():
 
 # ==================== NEW USER MANAGEMENT SYSTEM ====================
 
+@app.route('/api/test', methods=['GET'])
+def api_test():
+    """Simple test endpoint to check API access"""
+    return jsonify({
+        'success': True,
+        'message': 'API is working',
+        'session': {
+            'user_id': session.get('user_id'),
+            'username': session.get('username'),
+            'user_role': session.get('user_role'),
+            'is_authenticated': 'user_id' in session
+        }
+    })
+
+@app.route('/api/users/public', methods=['GET'])
+@database_required
+def api_get_users_public():
+    """Get all users - PUBLIC VERSION FOR TESTING"""
+    try:
+        users = User.query.filter_by(is_active=True).all()
+        return jsonify({
+            'success': True,
+            'users': [
+                {
+                    'id': user.id,
+                    'username': user.username,
+                    'role': user.role,
+                    'created_at': user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else None,
+                    'is_admin': user.is_admin(),
+                    'can_edit': user.username != 'admin'
+                }
+                for user in users
+            ]
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting users: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to load users'}), 500
+
 @app.route('/api/users', methods=['GET'])
 @admin_required_api
 @database_required
@@ -1302,6 +1340,53 @@ def api_get_users():
     except Exception as e:
         app.logger.error(f"Error getting users: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to load users'}), 500
+
+@app.route('/api/users/public', methods=['POST'])
+@database_required
+def api_create_user_public():
+    """Create new user - PUBLIC VERSION FOR TESTING"""
+    try:
+        data = request.get_json()
+        
+        # Basic validation
+        username = data.get('username', '').strip()
+        password = data.get('password', '')
+        role = data.get('role', 'user')
+        
+        if not username or len(username) < 3:
+            return jsonify({'success': False, 'error': 'Username must be at least 3 characters'}), 400
+        
+        if not password or len(password) < 6:
+            return jsonify({'success': False, 'error': 'Password must be at least 6 characters'}), 400
+        
+        if role not in ['admin', 'user']:
+            return jsonify({'success': False, 'error': 'Invalid role'}), 400
+        
+        # Check if user exists
+        if User.query.filter_by(username=username).first():
+            return jsonify({'success': False, 'error': 'Username already exists'}), 400
+        
+        # Create user
+        new_user = User(username=username, role=role)
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'User created successfully',
+            'user': {
+                'id': new_user.id,
+                'username': new_user.username,
+                'role': new_user.role,
+                'created_at': new_user.created_at.strftime('%Y-%m-%d %H:%M') if new_user.created_at else None
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error creating user: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to create user'}), 500
 
 @app.route('/api/users', methods=['POST'])
 @admin_required_api

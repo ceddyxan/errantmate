@@ -3904,7 +3904,15 @@ window.ensureRevenueMetricsVisible = function() {
 
 // Load users on page load
 window.loadNewUsers = function() {
-    fetch('/api/users')
+    // First test the basic API
+    fetch('/api/test')
+        .then(response => response.json())
+        .then(testData => {
+            console.log('API Test Result:', testData);
+            
+            // Now try the public users endpoint
+            return fetch('/api/users/public');
+        })
         .then(response => {
             // Check if response is JSON
             const contentType = response.headers.get("content-type");
@@ -3915,6 +3923,7 @@ window.loadNewUsers = function() {
             }
         })
         .then(data => {
+            console.log('Public Users Data:', data);
             const usersList = document.getElementById('newUsersList');
             if (!data.success) {
                 usersList.innerHTML = `<p class="text-red-500 text-sm text-center py-4">Error: ${data.error || 'Unknown error'}</p>`;
@@ -4041,7 +4050,7 @@ window.saveNewUser = function() {
     }
     
     const isEdit = !!userId;
-    const url = isEdit ? `/api/users/${userId}` : '/api/users';
+    const url = isEdit ? `/api/users/${userId}` : '/api/users/public'; // Use public endpoint for testing
     const method = isEdit ? 'PUT' : 'POST';
     
     const payload = { username, role };
