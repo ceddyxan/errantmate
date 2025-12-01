@@ -237,6 +237,19 @@ def init_database():
     except Exception as e:
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
+@app.route('/reset-db')
+def reset_database():
+    """Reset database completely - use only if needed."""
+    try:
+        with app.app_context():
+            # Drop all tables
+            db.drop_all()
+            # Create all tables fresh
+            db.create_all()
+            return jsonify({'status': 'success', 'message': 'Database reset successfully'}), 200
+    except Exception as e:
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+
 @app.route('/')
 def index():
     """Render the dashboard with operational statistics and overview."""
