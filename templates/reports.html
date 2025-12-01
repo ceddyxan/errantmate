@@ -3329,9 +3329,35 @@ window.updateRevenueCharts = function() {
     fetch(`/get_revenue_charts?days=${period}`)
         .then(response => response.json())
         .then(data => {
+            // Defensive programming - ensure data has expected structure
+            if (!data) {
+                data = {
+                    summary: {
+                        total_revenue: 0,
+                        total_expenses: 0,
+                        total_profit: 0,
+                        profit_margin: 0
+                    },
+                    line_chart: {
+                        labels: [],
+                        datasets: []
+                    }
+                };
+            }
+            
             if (data.error) {
                 console.error('Error loading revenue charts:', data.error);
-                return;
+                // Don't return early - still try to update with default data
+            }
+            
+            // Ensure summary exists
+            if (!data.summary) {
+                data.summary = {
+                    total_revenue: 0,
+                    total_expenses: 0,
+                    total_profit: 0,
+                    profit_margin: 0
+                };
             }
             
             // Update summary cards
@@ -3486,6 +3512,15 @@ window.updateRevenueCharts = function() {
 
 // Update revenue summary section
 window.updateRevenueSummary = function(summary) {
+    // Defensive programming - ensure summary exists
+    if (!summary) {
+        summary = {
+            total_revenue: 0,
+            total_expenses: 0,
+            total_profit: 0
+        };
+    }
+    
     // Update text values
     document.getElementById('pieRevenue').textContent = `Kshs ${summary.total_revenue.toLocaleString()}`;
     document.getElementById('pieExpenses').textContent = `Kshs ${summary.total_expenses.toLocaleString()}`;
