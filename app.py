@@ -120,7 +120,7 @@ def ensure_database_tables():
                             role='admin',
                             is_active=True
                         )
-                        admin_user.set_password('ErrantMate@2024!Secure')
+                        admin_user.set_password('ErrantMate@24!')
                         db.session.add(admin_user)
                         db.session.commit()
                         print("Default admin user created")
@@ -270,12 +270,12 @@ def create_admin():
             username='admin',
             role='admin'
         )
-        admin.set_password('ErrantMate@2024!Secure')  # Change this password!
+        admin.set_password('ErrantMate@24!')  # Change this password!
         
         db.session.add(admin)
         db.session.commit()
         
-        return jsonify({'status': 'success', 'message': 'Admin user created', 'username': 'admin', 'password': 'ErrantMate@2024!Secure'})
+        return jsonify({'status': 'success', 'message': 'Admin user created', 'username': 'admin', 'password': 'ErrantMate@24!'})
     except Exception as e:
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
@@ -378,7 +378,7 @@ def force_init_database():
                         role='admin',
                         is_active=True
                     )
-                    admin_user.set_password('ErrantMate@2024!Secure')
+                    admin_user.set_password('ErrantMate@24!')
                     db.session.add(admin_user)
                     db.session.commit()
                     print("Default admin user created")
@@ -2088,10 +2088,10 @@ def create_default_admin():
         admin_user = User.query.filter(User.username.ilike('admin')).first()
         if not admin_user:
             admin_user = User(username='admin', role='admin')
-            admin_user.set_password('ErrantMate@2024!Secure')
+            admin_user.set_password('ErrantMate@24!')
             db.session.add(admin_user)
             db.session.commit()
-            print("Default admin user created: admin / ErrantMate@2024!Secure (role: admin)")
+            print("Default admin user created: admin / ErrantMate@24! (role: admin)")
         else:
             print("Admin user already exists")
     except Exception as e:
@@ -2114,7 +2114,7 @@ def main():
             
             print("Application ready!")
             print("Access the app at: http://localhost:5001")
-            print("Login with: admin / ErrantMate@2024!Secure")
+            print("Login with: admin / ErrantMate@24!")
             
         except Exception as e:
             print(f"Startup error: {e}")

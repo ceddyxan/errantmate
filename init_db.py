@@ -114,10 +114,10 @@ def init_database():
                     role='admin',
                     is_active=True
                 )
-                admin_user.set_password('ErrantMate@2024!Secure')
+                admin_user.set_password('ErrantMate@24!')
                 db.session.add(admin_user)
                 db.session.commit()
-                print("Default admin user created: admin / ErrantMate@2024!Secure")
+                print("Default admin user created: admin / ErrantMate@24!")
             else:
                 print("Admin user already exists")
             
@@ -149,7 +149,7 @@ if __name__ == "__main__":
         print("Database initialization completed successfully!")
         print("\nLogin credentials:")
         print("   Username: admin")
-        print("   Password: ErrantMate@2024!Secure")
+        print("   Password: ErrantMate@24!")
     else:
         print("Database initialization failed!")
         sys.exit(1)

@@ -52,7 +52,7 @@ After deployment:
 
 ### 5. Login Credentials
 - **Username**: `admin`
-- **Password**: `ErrantMate@2024!Secure`
+- **Password**: `ErrantMate@24!`
 
 ## Security Features Enabled
 ✅ CSRF Protection
@@ -84,7 +84,7 @@ After deployment:
 - Check application startup logs
 
 #### 4. Login Issues
-- Use the new secure password: `ErrantMate@2024!Secure`
+- Use the new secure password: `ErrantMate@24!`
 - Check rate limiting (wait 5 minutes if locked out)
 
 ### Useful Endpoints
