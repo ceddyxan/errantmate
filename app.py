@@ -1161,6 +1161,118 @@ def get_users():
         app.logger.error(f"Error getting users: {str(e)}")
         return jsonify({'error': 'Failed to load users'}), 500
 
+@app.route('/debug/test_db')
+def debug_test_db():
+    """Test database connectivity and basic operations."""
+    try:
+        # Test basic database connection
+        db.session.execute(text('SELECT 1'))
+        
+        # Test User model
+        user_count = User.query.count()
+        
+        # Test creating a test user (and rollback)
+        test_user = User(username='test_user_debug', role='user')
+        test_user.set_password('test123')
+        db.session.add(test_user)
+        db.session.flush()  # Don't commit yet
+        
+        test_user_id = test_user.id
+        db.session.rollback()  # Rollback the test user
+        
+        return jsonify({
+            'success': True,
+            'message': 'Database is working correctly',
+            'details': {
+                'connection': 'OK',
+                'user_count': user_count,
+                'test_user_id_created': test_user_id,
+                'test_user_rollback': 'OK'
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Database test failed'
+        }), 500
+
+@app.route('/debug/session')
+def debug_session():
+    """Debug endpoint to check session and authentication state."""
+    session_info = {
+        'session_data': dict(session),
+        'is_authenticated': 'user_id' in session,
+        'user_role': session.get('user_role'),
+        'username': session.get('username')
+    }
+    
+    # Check if admin user exists
+    try:
+        admin_user = User.query.filter_by(username='admin').first()
+        session_info['admin_user_exists'] = admin_user is not None
+        if admin_user:
+            session_info['admin_user_active'] = admin_user.is_active
+            session_info['admin_user_role'] = admin_user.role
+    except Exception as e:
+        session_info['admin_user_check_error'] = str(e)
+    
+    # Count total users
+    try:
+        user_count = User.query.count()
+        session_info['total_users'] = user_count
+    except Exception as e:
+        session_info['user_count_error'] = str(e)
+    
+    return jsonify(session_info)
+
+@app.route('/debug/create_admin', methods=['POST'])
+def debug_create_admin():
+    """Debug endpoint to create admin user."""
+    try:
+        # Check if admin already exists
+        existing_admin = User.query.filter_by(username='admin').first()
+        if existing_admin:
+            return jsonify({
+                'success': False,
+                'error': 'Admin user already exists',
+                'admin_info': {
+                    'username': existing_admin.username,
+                    'role': existing_admin.role,
+                    'is_active': existing_admin.is_active,
+                    'id': existing_admin.id
+                }
+            })
+        
+        # Create new admin
+        admin_user = User(
+            username='admin',
+            role='admin',
+            is_active=True
+        )
+        admin_user.set_password('ErrantMate@24!')
+        db.session.add(admin_user)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Admin user created successfully',
+            'admin_info': {
+                'username': admin_user.username,
+                'role': admin_user.role,
+                'is_active': admin_user.is_active,
+                'id': admin_user.id
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @app.route('/create_user', methods=['POST'])
 @admin_required_api
 @database_required

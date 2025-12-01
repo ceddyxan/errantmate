@@ -3136,6 +3136,8 @@ window.saveUser = function() {
     const role = document.getElementById('roleSelect').value;
     const userId = document.getElementById('userIdInput').value;
     
+    console.log('saveUser called with:', { username, password: '***', role, userId });
+    
     if (!username) {
         showNotification('Username is required', 'error');
         return;
@@ -3149,10 +3151,14 @@ window.saveUser = function() {
     const url = userId ? `/update_user/${userId}` : '/create_user';
     const method = userId ? 'PUT' : 'POST';
     
+    const payload = { username, password, role };
+    console.log('Sending request to:', url, 'with method:', method);
+    console.log('Payload:', { ...payload, password: '***' });
+    
     fetch(url, {
         method: method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, role })
+        body: JSON.stringify(payload)
     })
     .then(response => {
         // Check if response is ok (status 200-299)
@@ -3169,10 +3175,23 @@ window.saveUser = function() {
                 console.error('Admin access required for user management');
                 showNotification('Admin access required for user management', 'error');
                 throw new Error('Admin access required');
+            } else if (response.status === 400) {
+                // For 400 errors, try to get the error message from the response
+                return response.json().then(data => {
+                    const errorMessage = data.error || 'Invalid request data';
+                    console.error('Bad Request:', errorMessage);
+                    showNotification(errorMessage, 'error');
+                    throw new Error(errorMessage);
+                }).catch(() => {
+                    // If parsing JSON fails, show generic error
+                    console.error('Bad Request: Invalid data sent to server');
+                    showNotification('Invalid data. Please check all fields.', 'error');
+                    throw new Error('Invalid request data');
+                });
             } else {
                 console.error('Server error:', response.status);
-                showNotification('Server error. Please try again.', 'error');
-                throw new Error('Server error');
+                showNotification(`Server error: ${response.status}`, 'error');
+                throw new Error(`Server error: ${response.status}`);
             }
         }
         
