@@ -1165,6 +1165,9 @@ def get_users():
 def debug_test_db():
     """Test database connectivity and basic operations."""
     try:
+        # Import text for SQLAlchemy
+        from sqlalchemy import text
+        
         # Test basic database connection
         db.session.execute(text('SELECT 1'))
         
