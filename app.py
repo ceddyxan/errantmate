@@ -1165,11 +1165,9 @@ def get_users():
 def debug_test_db():
     """Test database connectivity and basic operations."""
     try:
-        # Import text for SQLAlchemy
-        from sqlalchemy import text
-        
-        # Test basic database connection
-        db.session.execute(text('SELECT 1'))
+        # Test basic database connection using raw SQL
+        result = db.session.execute('SELECT 1')
+        test_row = result.fetchone()
         
         # Test User model
         user_count = User.query.count()
@@ -1188,6 +1186,7 @@ def debug_test_db():
             'message': 'Database is working correctly',
             'details': {
                 'connection': 'OK',
+                'test_query_result': str(test_row),
                 'user_count': user_count,
                 'test_user_id_created': test_user_id,
                 'test_user_rollback': 'OK'
