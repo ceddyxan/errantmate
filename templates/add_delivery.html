@@ -24,7 +24,28 @@
                 Delivery Information
             </h2>
         </div>
-        <form method="POST" action="{{ url_for('add_delivery') }}" class="space-y-6">
+        <form method="POST" action="{{ url_for('add_delivery') }}" class="space-y-6" autocomplete="off">
+            <!-- Fake datalist to prevent autocomplete -->
+            <datalist id="autocompleteOff">
+                <option value=""></option>
+            </datalist>
+            <style>
+                /* Hide autocomplete dropdowns */
+                input[list]::-webkit-calendar-picker-indicator,
+                input[list]::-webkit-inner-spin-button {
+                    display: none;
+                }
+                /* Prevent browser autocomplete */
+                input::-webkit-credentials-auto-fill-button,
+                input::-webkit-contacts-auto-fill-button,
+                input::-webkit-strong-password-auto-fill-button {
+                    visibility: hidden;
+                    display: none !important;
+                    pointer-events: none;
+                    position: absolute;
+                    right: 0;
+                }
+            </style>
             <div class="p-6 space-y-8">
                 <!-- Sender Information -->
                 <div class="space-y-4">
@@ -41,7 +62,7 @@
                                 </div>
                                 <input type="text" id="sender_name" name="sender_name" autocomplete="off" required
                                        class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                                       placeholder="John Doe">
+                                       placeholder="John Doe" list="autocompleteOff" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false">
                             </div>
                         </div>
                         <div class="space-y-1">
@@ -52,7 +73,7 @@
                                 </div>
                                 <input type="tel" id="sender_phone" name="sender_phone" autocomplete="off" required
                                        class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                                       pattern="[0-9]{10,15}" placeholder="0712345678">
+                                       pattern="[0-9]{10,15}" placeholder="0712345678" list="autocompleteOff" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false">
                             </div>
                         </div>
                     </div>
@@ -74,7 +95,7 @@
                                     </div>
                                     <input type="text" id="recipient_name" name="recipient_name" autocomplete="off" required
                                            class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                                           placeholder="Jane Smith">
+                                           placeholder="Jane Smith" list="autocompleteOff" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false">
                                 </div>
                             </div>
                             <div class="space-y-1">
@@ -85,7 +106,7 @@
                                     </div>
                                     <input type="tel" id="recipient_phone" name="recipient_phone" autocomplete="off" required
                                            class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                                           pattern="[0-9]{10,15}" placeholder="0723456789">
+                                           pattern="[0-9]{10,15}" placeholder="0723456789" list="autocompleteOff" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false">
                                 </div>
                             </div>
                         </div>
@@ -97,7 +118,7 @@
                                 </div>
                                 <textarea id="recipient_address" name="recipient_address" autocomplete="off" rows="2" required
                                           class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                                          placeholder="123 Main St, City, Country"></textarea>
+                                          placeholder="123 Main St, City, Country" list="autocompleteOff" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
                             </div>
                         </div>
                     </div>
@@ -118,7 +139,7 @@
                                 </div>
                                 <input type="text" id="goods_type" name="goods_type" autocomplete="off" required
                                        class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                                       placeholder="e.g., Documents, Electronics">
+                                       placeholder="e.g., Documents, Electronics" list="autocompleteOff" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false">
                             </div>
                         </div>
                         <div class="space-y-1">
@@ -129,7 +150,7 @@
                                 </div>
                                 <input type="number" id="quantity" name="quantity" autocomplete="off" min="1" required
                                        class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                                       placeholder="1">
+                                       placeholder="1" list="autocompleteOff" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false">
                             </div>
                         </div>
                         <div class="space-y-1">
@@ -140,7 +161,7 @@
                                 </div>
                                 <input type="number" id="amount" name="amount" autocomplete="off" step="0.01" min="0" required
                                        class="pl-16 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
-                                       placeholder="0.00">
+                                       placeholder="0.00" list="autocompleteOff" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false">
                             </div>
                         </div>
                         <div class="space-y-1">
