@@ -1139,7 +1139,18 @@ def get_users():
 def create_user():
     """Create a new user."""
     try:
+        # Check if user is authenticated
+        if 'user_id' not in session:
+            app.logger.warning("Unauthorized access attempt to create_user")
+            return jsonify({
+                'error': 'Authentication required',
+                'redirect': '/login'
+            }), 401
+        
         data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+            
         username = data.get('username', '').strip()
         password = data.get('password', '')
         role = data.get('role', 'user')  # Default to 'user' if not specified
