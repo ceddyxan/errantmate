@@ -918,6 +918,15 @@ def get_summary():
         
         return jsonify({
             'deliveries': deliveries_data,  # Add individual delivery records
+            'summary': {
+                'total_revenue': sum(d.amount for d in all_deliveries),
+                'total_expenses': sum(d.expenses for d in all_deliveries),
+                'total_profit': sum(d.amount for d in all_deliveries) - sum(d.expenses for d in all_deliveries),
+                'total_deliveries': len(all_deliveries),
+                'pending': len([d for d in all_deliveries if d.status == 'Pending']),
+                'in_transit': len([d for d in all_deliveries if d.status == 'In Transit']),
+                'delivered': len([d for d in all_deliveries if d.status == 'Delivered'])
+            },
             'today': get_summary_data(Delivery.query.filter(Delivery.created_at >= dates['today'][0])),
             'week': get_summary_data(Delivery.query.filter(Delivery.created_at >= dates['week'][0])),
             'month': get_summary_data(Delivery.query.filter(Delivery.created_at >= dates['month'][0])),
