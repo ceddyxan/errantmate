@@ -3904,8 +3904,16 @@ window.ensureRevenueMetricsVisible = function() {
 
 // Load users on page load
 window.loadNewUsers = function() {
-    // First test the basic API
-    fetch('/api/test')
+    // First test the health endpoint
+    fetch('/api/health')
+        .then(response => response.json())
+        .then(healthData => {
+            console.log('Health Check Result:', healthData);
+            console.log('Available routes:', healthData.routes_registered);
+            
+            // Now test the basic API
+            return fetch('/api/test');
+        })
         .then(response => response.json())
         .then(testData => {
             console.log('API Test Result:', testData);

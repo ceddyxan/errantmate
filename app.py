@@ -1278,6 +1278,15 @@ def debug_create_admin():
 
 # ==================== NEW USER MANAGEMENT SYSTEM ====================
 
+@app.route('/api/health')
+def api_health():
+    """Health check endpoint"""
+    return jsonify({
+        'status': 'healthy',
+        'message': 'API is working',
+        'routes_registered': [str(rule) for rule in app.url_map.iter_rules()]
+    })
+
 @app.route('/api/test', methods=['GET'])
 def api_test():
     """Simple test endpoint to check API access"""
