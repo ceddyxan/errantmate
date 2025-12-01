@@ -92,100 +92,54 @@ def is_rate_limited(ip_address):
 
 # Initialize database tables with robust error handling
 def ensure_database_tables():
-    """Ensure database tables exist with multiple fallback strategies."""
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            with app.app_context():
-                # Print database info for debugging
-                print(f"🔍 Database URL: {app.config['SQLALCHEMY_DATABASE_URI']}")
-                if database_url and database_url.startswith('postgres'):
-                    print(f"🔍 PostgreSQL Database")
-                else:
-                    print(f"🔍 Instance directory: {instance_dir}")
+    """Ensure database tables exist with simple, reliable approach."""
+    try:
+        with app.app_context():
+            # Simple approach: just create all tables
+            print("Creating database tables...")
+            db.create_all()
+            print("Database tables created successfully")
+            
+            # Verify tables exist
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            tables = inspector.get_table_names()
+            required_tables = ['user', 'delivery', 'audit_log']
+            
+            print(f"Tables found: {tables}")
+            
+            if all(table in tables for table in required_tables):
+                print("All required tables exist")
                 
-                # Test database connection first
-                from sqlalchemy import text
-                result = db.session.execute(text('SELECT 1'))
-                print(f"✅ Database connection verified (attempt {attempt + 1}): {result.fetchone()}")
-                
-                # Check if tables already exist
-                from sqlalchemy import inspect
-                inspector = inspect(db.engine)
-                existing_tables = inspector.get_table_names()
-                required_tables = ['user', 'delivery', 'audit_log']
-                
-                print(f"🔍 Existing tables: {existing_tables}")
-                print(f"🔍 Required tables: {required_tables}")
-                
-                if all(table in existing_tables for table in required_tables):
-                    print("✅ All required tables already exist")
-                    return True
-                
-                # Try to create tables with explicit metadata
-                print("🔧 Creating tables with explicit metadata...")
-                db.metadata.create_all(db.engine, checkfirst=True)
-                print("✅ Database tables created successfully")
-                
-                # Alternative: try db.create_all() if metadata doesn't work
-                if not all(table in existing_tables for table in required_tables):
-                    print("🔧 Trying db.create_all() as fallback...")
-                    db.create_all()
-                    print("✅ Database tables created with db.create_all()")
-                
-                # Verify tables were created
-                inspector = inspect(db.engine)
-                tables = inspector.get_table_names()
-                print(f"🔍 Tables after creation: {tables}")
-                
-                if all(table in tables for table in required_tables):
-                    print(f"✅ All tables verified: {tables}")
-                    
-                    # Create default admin user if not exists
-                    try:
-                        admin_user = User.query.filter_by(username='admin').first()
-                        if not admin_user:
-                            admin_user = User(
-                                username='admin',
-                                role='admin',
-                                is_active=True
-                            )
-                            admin_user.set_password('ErrantMate@2024!Secure')
-                            db.session.add(admin_user)
-                            db.session.commit()
-                            print("✅ Default admin user created")
-                    except Exception as admin_error:
-                        print(f"⚠️  Warning: Could not create admin user: {admin_error}")
-                    
-                    return True
-                else:
-                    raise Exception(f"Tables not created properly. Found: {tables}")
-                    
-        except Exception as e:
-            print(f"❌ Database initialization attempt {attempt + 1} failed: {e}")
-            if attempt < max_retries - 1:
-                print(f"🔄 Retrying in 2 seconds...")
-                import time
-                time.sleep(2)
-            else:
-                print("❌ All database initialization attempts failed")
-                import traceback
-                traceback.print_exc()
-                
-                # Additional diagnostic info
+                # Create default admin user if not exists
                 try:
-                    print(f"🔍 Engine: {db.engine}")
-                    print(f"🔍 Driver: {db.engine.driver}")
-                    print(f"🔍 Database name: {db.engine.url.database}")
-                    if not database_url or not database_url.startswith('postgres'):
-                        print(f"🔍 Instance directory exists: {os.path.exists(instance_dir)}")
-                        print(f"🔍 Instance directory writable: {os.access(instance_dir, os.W_OK)}")
-                except Exception as diag_error:
-                    print(f"❌ Could not get diagnostic info: {diag_error}")
+                    admin_user = User.query.filter_by(username='admin').first()
+                    if not admin_user:
+                        admin_user = User(
+                            username='admin',
+                            role='admin',
+                            is_active=True
+                        )
+                        admin_user.set_password('ErrantMate@2024!Secure')
+                        db.session.add(admin_user)
+                        db.session.commit()
+                        print("Default admin user created")
+                    else:
+                        print("Admin user already exists")
+                except Exception as admin_error:
+                    print(f"Warning: Could not create admin user: {admin_error}")
                 
+                return True
+            else:
+                missing = [table for table in required_tables if table not in tables]
+                print(f"Missing tables: {missing}")
                 return False
-    
-    return False
+                
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 # Initialize database on startup
 if not ensure_database_tables():
@@ -394,115 +348,63 @@ def reset_database():
 
 @app.route('/force-init-db')
 def force_init_database():
-    """Force database initialization with comprehensive diagnostics."""
+    """Force database initialization with simple approach."""
     try:
         with app.app_context():
-            # Print comprehensive diagnostic info
-            print(" FORCE INIT DATABASE - Comprehensive Diagnostics")
-            print(f" Database URL: {app.config['SQLALCHEMY_DATABASE_URI']}")
-            database_url = app.config['SQLALCHEMY_DATABASE_URI']
-            if database_url and database_url.startswith('postgres'):
-                print(f" PostgreSQL Database")
-            else:
-                print(f" Instance directory: {instance_dir}")
+            print("Force initializing database...")
             
-            # Test database connection
-            from sqlalchemy import text, inspect
-            result = db.session.execute(text('SELECT 1'))
-            print(f" Database connection test: {result.fetchone()}")
-            
-            # Check current state
-            inspector = inspect(db.engine)
-            existing_tables = inspector.get_table_names()
-            print(f" Current tables: {existing_tables}")
-            
-            # Force drop all tables
-            print(" Dropping all existing tables...")
+            # Drop all tables
+            print("Dropping existing tables...")
             db.drop_all()
-            print(" All tables dropped")
             
-            # Verify tables are dropped
-            inspector = inspect(db.engine)
-            tables_after_drop = inspector.get_table_names()
-            print(f" Tables after drop: {tables_after_drop}")
-            
-            # Create tables with metadata
-            print(" Creating tables with metadata.create_all()...")
-            db.metadata.create_all(db.engine, checkfirst=False)
-            print(" Tables created with metadata")
-            
-            # Also try db.create_all() as backup
-            print(" Running db.create_all() as backup...")
+            # Create all tables
+            print("Creating tables...")
             db.create_all()
-            print(" Tables created with db.create_all()")
             
             # Verify tables were created
+            from sqlalchemy import inspect
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
-            print(f" Final tables: {tables}")
-            
             required_tables = ['user', 'delivery', 'audit_log']
-            missing_tables = [table for table in required_tables if table not in tables]
             
-            if missing_tables:
-                raise Exception(f"Missing tables after creation: {missing_tables}")
-            
-            # Create default admin user
-            print(" Creating default admin user...")
-            admin_user = User.query.filter_by(username='admin').first()
-            if not admin_user:
-                admin_user = User(
-                    username='admin',
-                    role='admin',
-                    is_active=True
-                )
-                admin_user.set_password('ErrantMate@2024!Secure')
-                db.session.add(admin_user)
-                db.session.commit()
-                print(" Default admin user created")
+            if all(table in tables for table in required_tables):
+                print(f"Tables created successfully: {tables}")
+                
+                # Create default admin user
+                admin_user = User.query.filter_by(username='admin').first()
+                if not admin_user:
+                    admin_user = User(
+                        username='admin',
+                        role='admin',
+                        is_active=True
+                    )
+                    admin_user.set_password('ErrantMate@2024!Secure')
+                    db.session.add(admin_user)
+                    db.session.commit()
+                    print("Default admin user created")
+                else:
+                    print("Admin user already exists")
+                
+                return jsonify({
+                    'status': 'success', 
+                    'message': 'Database force initialized successfully',
+                    'tables': tables,
+                    'database_url': str(app.config['SQLALCHEMY_DATABASE_URI']),
+                    'admin_created': True
+                }), 200
             else:
-                print(" Admin user already exists")
-            
-            # Test basic operations
-            print(" Testing basic database operations...")
-            test_user = User.query.filter_by(username='admin').first()
-            if test_user:
-                print(" User query test passed")
-            else:
-                print(" User query test failed")
-            
-            return jsonify({
-                'status': 'success', 
-                'message': 'Database force initialized successfully',
-                'tables': tables,
-                'database_url': str(app.config['SQLALCHEMY_DATABASE_URI']),
-                'admin_created': True
-            }), 200
+                missing = [table for table in required_tables if table not in tables]
+                raise Exception(f"Missing tables: {missing}")
             
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        print(f" Force init error: {error_details}")
-        
-        # Additional diagnostic info
-        diagnostic_info = {}
-        try:
-            database_url = app.config['SQLALCHEMY_DATABASE_URI']
-            diagnostic_info['database_url'] = str(database_url)
-            diagnostic_info['engine'] = str(db.engine)
-            diagnostic_info['driver'] = str(db.engine.driver)
-            diagnostic_info['database_name'] = str(db.engine.url.database)
-            if not database_url or not database_url.startswith('postgres'):
-                diagnostic_info['instance_dir_exists'] = os.path.exists(instance_dir)
-                diagnostic_info['instance_dir_writable'] = os.access(instance_dir, os.W_OK) if os.path.exists(instance_dir) else False
-        except Exception as diag_error:
-            diagnostic_info['diagnostic_error'] = str(diag_error)
+        print(f"Force init error: {error_details}")
         
         return jsonify({
             'status': 'error', 
             'error': str(e),
-            'details': error_details,
-            'diagnostics': diagnostic_info
+            'traceback': error_details
         }), 500
 
 @app.route('/')
