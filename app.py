@@ -138,11 +138,6 @@ def ensure_database_tables():
         traceback.print_exc()
         return False
 
-# Initialize database on startup
-if not ensure_database_tables():
-    print("⚠️  Warning: Database tables could not be created during startup")
-    print("⚠️  Please visit /force-init-db to manually initialize the database")
-
 # Models
 class User(db.Model):
     __tablename__ = 'user'
@@ -2103,6 +2098,11 @@ def create_default_admin():
     except Exception as e:
         print(f"Error creating admin user: {e}")
         db.session.rollback()
+
+# Initialize database on startup (after models are defined)
+if not ensure_database_tables():
+    print("⚠️  Warning: Database tables could not be created during startup")
+    print("⚠️  Please visit /force-init-db to manually initialize the database")
 
 def main():
     """Main application entry point."""
