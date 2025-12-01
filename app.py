@@ -611,6 +611,18 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# Admin required decorator
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login', next=request.url))
+        if session.get('user_role') != 'admin':
+            flash('Admin access required', 'danger')
+            return redirect(url_for('add_delivery'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 # Login required decorator for API endpoints (returns JSON instead of redirects)
 def login_required_api(f):
     @wraps(f)
