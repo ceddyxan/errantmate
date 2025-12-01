@@ -24,30 +24,59 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# Initialize database tables
-with app.app_context():
-    try:
-        # Check if database is accessible
-        from sqlalchemy import text
-        db.session.execute(text('SELECT 1'))
-        print("Database connection verified")
-        
-        # Create tables
-        db.create_all()
-        print("Database tables created successfully")
-        
-    except Exception as e:
-        print(f"Database initialization error: {e}")
-        # Try to force recreation
+# Initialize database tables with robust error handling
+def ensure_database_tables():
+    """Ensure database tables exist with multiple fallback strategies."""
+    max_retries = 3
+    for attempt in range(max_retries):
         try:
-            db.drop_all()
-            db.create_all()
-            print("Database tables recreated successfully")
-        except Exception as e2:
-            print(f"Fatal database error: {e2}")
-            # Don't crash the app, but log the error
-            import traceback
-            traceback.print_exc()
+            with app.app_context():
+                # Test database connection first
+                from sqlalchemy import text
+                db.session.execute(text('SELECT 1'))
+                print(f"✅ Database connection verified (attempt {attempt + 1})")
+                
+                # Check if tables already exist
+                from sqlalchemy import inspect
+                inspector = inspect(db.engine)
+                existing_tables = inspector.get_table_names()
+                required_tables = ['user', 'delivery', 'audit_log']
+                
+                if all(table in existing_tables for table in required_tables):
+                    print("✅ All required tables already exist")
+                    return True
+                
+                # Create tables
+                db.create_all()
+                print("✅ Database tables created successfully")
+                
+                # Verify tables were created
+                inspector = inspect(db.engine)
+                tables = inspector.get_table_names()
+                if all(table in tables for table in required_tables):
+                    print(f"✅ All tables verified: {tables}")
+                    return True
+                else:
+                    raise Exception(f"Tables not created properly. Found: {tables}")
+                    
+        except Exception as e:
+            print(f"❌ Database initialization attempt {attempt + 1} failed: {e}")
+            if attempt < max_retries - 1:
+                print(f"🔄 Retrying in 2 seconds...")
+                import time
+                time.sleep(2)
+            else:
+                print("❌ All database initialization attempts failed")
+                import traceback
+                traceback.print_exc()
+                return False
+    
+    return False
+
+# Initialize database on startup
+if not ensure_database_tables():
+    print("⚠️  Warning: Database tables could not be created during startup")
+    print("⚠️  Please visit /force-init-db to manually initialize the database")
 
 # Models
 class User(db.Model):
@@ -293,6 +322,7 @@ def force_init_database():
         }), 500
 
 @app.route('/')
+@database_required
 def index():
     """Render the dashboard with operational statistics and overview."""
     try:
@@ -464,6 +494,37 @@ def log_page_view(page):
     details = f"Viewed {page} page"
     log_audit("VIEW", resource_type="PAGE", details=details)
 
+# Database check decorator to prevent recurring errors
+def database_required(f):
+    """Decorator to ensure database tables exist before executing route."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            # Quick check if tables exist
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            tables = inspector.get_table_names()
+            required_tables = ['user', 'delivery', 'audit_log']
+            
+            if not all(table in tables for table in required_tables):
+                # Try to create tables if missing
+                if not ensure_database_tables():
+                    return jsonify({
+                        'error': 'Database tables missing',
+                        'message': 'Please visit /force-init-db to initialize database',
+                        'status': 'database_error'
+                    }), 503
+            
+            return f(*args, **kwargs)
+            
+        except Exception as e:
+            return jsonify({
+                'error': 'Database connection failed',
+                'message': str(e),
+                'status': 'database_error'
+            }), 503
+    return decorated_function
+
 # Login required decorator
 def login_required(f):
     @wraps(f)
@@ -487,6 +548,7 @@ def admin_required(f):
 
 @app.route('/add_delivery', methods=['GET', 'POST'])
 @login_required
+@database_required
 def add_delivery():
     """Handle adding a new delivery."""
     if request.method == 'GET':
@@ -530,6 +592,7 @@ def add_delivery():
     return render_template('add_delivery.html')
 
 @app.route('/update_status/<int:delivery_id>/<status>', methods=['GET', 'POST'])
+@database_required
 def update_status(delivery_id, status):
     """Update the status of a delivery."""
     try:
@@ -563,6 +626,7 @@ def update_status(delivery_id, status):
             return redirect(url_for('index'))
 
 @app.route('/delete_delivery/<int:delivery_id>', methods=['DELETE'])
+@database_required
 def delete_delivery(delivery_id):
     """Delete a delivery."""
     try:
@@ -645,6 +709,7 @@ def reports():
 
 @app.route('/get_delivery_persons')
 @login_required
+@database_required
 def get_delivery_persons():
     """Get delivery persons and their delivery counts for a specific period."""
     try:
@@ -720,6 +785,7 @@ def get_delivery_persons():
 
 @app.route('/get_summary')
 @admin_required
+@database_required
 def get_summary():
     """Get summary statistics for deliveries."""
     try:
@@ -772,6 +838,7 @@ def get_summary():
 
 @app.route('/export/<period>')
 @login_required
+@database_required
 def export(period):
     """Export deliveries data as CSV for the specified period."""
     try:
@@ -848,6 +915,7 @@ def export(period):
 
 @app.route('/get_delivery_details/<int:delivery_id>')
 @login_required
+@database_required
 def get_delivery_details(delivery_id):
     """Get detailed information for a specific delivery."""
     try:
@@ -885,6 +953,7 @@ def get_delivery_details(delivery_id):
 
 @app.route('/update_delivery/<int:delivery_id>', methods=['PUT'])
 @login_required
+@database_required
 def update_delivery_details(delivery_id):
     """Update delivery details."""
     try:
@@ -922,6 +991,7 @@ def update_delivery_details(delivery_id):
 
 @app.route('/get_unassigned_deliveries')
 @login_required
+@database_required
 def get_unassigned_deliveries():
     """Get deliveries that don't have a delivery person assigned."""
     try:
@@ -949,6 +1019,7 @@ def get_unassigned_deliveries():
 
 @app.route('/get_users')
 @admin_required
+@database_required
 def get_users():
     """Get all users for admin management."""
     try:
@@ -969,6 +1040,7 @@ def get_users():
 
 @app.route('/create_user', methods=['POST'])
 @admin_required
+@database_required
 def create_user():
     """Create a new user."""
     try:
@@ -1011,6 +1083,7 @@ def create_user():
 
 @app.route('/update_user/<int:user_id>', methods=['PUT'])
 @admin_required
+@database_required
 def update_user(user_id):
     """Update an existing user."""
     try:
@@ -1061,6 +1134,7 @@ def update_user(user_id):
 
 @app.route('/delete_user/<int:user_id>', methods=['DELETE'])
 @admin_required
+@database_required
 def delete_user(user_id):
     """Delete a user."""
     try:
@@ -1082,6 +1156,7 @@ def delete_user(user_id):
 
 @app.route('/get_delivery_trends')
 @login_required
+@database_required
 def get_delivery_trends():
     """Get delivery trends data for charts."""
     try:
@@ -1155,6 +1230,7 @@ def get_delivery_trends():
 
 @app.route('/get_revenue_charts')
 @login_required
+@database_required
 def get_revenue_charts():
     """Get revenue data for charts."""
     try:
@@ -1245,6 +1321,7 @@ def get_revenue_charts():
 
 @app.route('/get_revenue_analytics')
 @login_required
+@database_required
 def get_revenue_analytics():
     """Get revenue analytics data with real-time updates."""
     try:
@@ -1585,6 +1662,7 @@ def get_system_health():
 
 @app.route('/get_status_distribution')
 @login_required
+@database_required
 def get_status_distribution():
     """Get status distribution data for pie chart."""
     try:
@@ -1618,6 +1696,7 @@ def get_status_distribution():
 
 @app.route('/get_delivery_trends_line')
 @login_required
+@database_required
 def get_delivery_trends_line():
     """Get delivery trends line chart data."""
     try:
@@ -1654,6 +1733,7 @@ def get_delivery_trends_line():
 
 @app.route('/get_recent_deliveries')
 @login_required
+@database_required
 def get_recent_deliveries():
     """Get recent deliveries with lazy loading support - shows all deliveries (for reports page)."""
     try:
@@ -1709,6 +1789,7 @@ def get_recent_deliveries():
 
 @app.route('/get_user_recent_deliveries')
 @login_required
+@database_required
 def get_user_recent_deliveries():
     """Get recent deliveries for the current user (for add_delivery page)."""
     try:

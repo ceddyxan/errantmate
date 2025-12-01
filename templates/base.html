@@ -83,7 +83,7 @@
             padding-top: 4rem; /* 64px - height of nav */
         }
         
-        /* Mobile bottom navigation */
+        /* Enhanced Mobile Responsiveness */
         @media (max-width: 640px) {
             .mobile-bottom-nav {
                 position: fixed;
@@ -97,9 +97,77 @@
             
             .main-content-with-fixed-nav {
                 padding-bottom: 4rem; /* Space for bottom nav */
+                padding-top: 3rem; /* Reduced top padding for mobile */
+            }
+            
+            /* Mobile text adjustments */
+            h1 { font-size: 1.5rem; }
+            h2 { font-size: 1.25rem; }
+            h3 { font-size: 1.125rem; }
+            
+            /* Mobile form improvements */
+            .mobile-form input,
+            .mobile-form select,
+            .mobile-form textarea {
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+            
+            /* Mobile table improvements */
+            .mobile-table {
+                font-size: 0.875rem;
+            }
+            
+            .mobile-table td,
+            .mobile-table th {
+                padding: 0.5rem 0.25rem;
+            }
+            
+            /* Mobile card improvements */
+            .mobile-card {
+                margin: 0.5rem;
+                padding: 1rem;
+            }
+            
+            /* Mobile button improvements */
+            .mobile-btn {
+                padding: 0.75rem 1rem;
+                font-size: 0.875rem;
+            }
+            
+            /* Hide desktop elements on mobile */
+            .desktop-only {
+                display: none !important;
             }
         }
-
+        
+        @media (min-width: 641px) {
+            /* Hide mobile elements on desktop */
+            .mobile-only {
+                display: none !important;
+            }
+        }
+        
+        /* Tablet responsiveness */
+        @media (min-width: 641px) and (max-width: 1024px) {
+            .tablet-form input,
+            .tablet-form select,
+            .tablet-form textarea {
+                font-size: 14px;
+            }
+        }
+        
+        /* Small mobile phones */
+        @media (max-width: 380px) {
+            .small-mobile-text {
+                font-size: 0.75rem;
+            }
+            
+            .small-mobile-btn {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.75rem;
+            }
+        }
+        
         /* Dark Mode Styles */
         .dark {
             background-color: #1a202c;

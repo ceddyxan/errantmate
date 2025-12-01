@@ -1,17 +1,17 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+<div class="max-w-3xl mx-auto px-2 sm:px-4">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-green-800">New Delivery</h1>
-            <p class="text-green-600 mt-1">Enter delivery details below</p>
-            <div class="mt-2 text-lg font-bold text-gray-700">
+            <h1 class="text-xl sm:text-2xl font-bold text-green-800">New Delivery</h1>
+            <p class="text-green-600 mt-1 text-sm sm:text-base">Enter delivery details below</p>
+            <div class="mt-2 text-base sm:text-lg font-bold text-gray-700">
                 Welcome {{ session.username }}
             </div>
         </div>
         <div class="flex flex-col sm:flex-row gap-2">
-            <a href="{{ url_for('index') }}" class="bg-teal-500 hover:bg-teal-700 text-teal-50 font-bold py-2 px-4 rounded inline-flex items-center">
+            <a href="{{ url_for('index') }}" class="bg-teal-500 hover:bg-teal-700 text-teal-50 font-bold py-2 px-3 sm:px-4 rounded inline-flex items-center text-sm sm:text-base mobile-btn">
                 <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
             </a>
         </div>
@@ -24,7 +24,7 @@
                 Delivery Information
             </h2>
         </div>
-        <form method="POST" action="{{ url_for('add_delivery') }}" class="space-y-6" autocomplete="off">
+        <form method="POST" action="{{ url_for('add_delivery') }}" class="space-y-6 mobile-form" autocomplete="off">
             <!-- Fake datalist to prevent autocomplete -->
             <datalist id="autocompleteOff">
                 <option value=""></option>
