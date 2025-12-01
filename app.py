@@ -1167,6 +1167,9 @@ def get_users():
 def create_user():
     """Create a new user."""
     try:
+        # Debug logging
+        app.logger.info(f"Create user attempt - Session: {dict(session)}")
+        
         # Check if user is authenticated
         if 'user_id' not in session:
             app.logger.warning("Unauthorized access attempt to create_user")
@@ -1175,23 +1178,36 @@ def create_user():
                 'redirect': '/login'
             }), 401
         
+        # Check if user is admin
+        if session.get('user_role') != 'admin':
+            app.logger.warning(f"Non-admin user attempted to create user. Role: {session.get('user_role')}")
+            return jsonify({
+                'error': 'Admin access required'
+            }), 403
+        
         data = request.get_json()
         if not data:
+            app.logger.error("No JSON data received in create_user")
             return jsonify({'error': 'No data provided'}), 400
             
         username = data.get('username', '').strip()
         password = data.get('password', '')
         role = data.get('role', 'user')  # Default to 'user' if not specified
         
+        app.logger.info(f"Creating user: {username}, role: {role}")
+        
         if not username or not password:
+            app.logger.error(f"Missing username or password. Username: '{username}', Password provided: {bool(password)}")
             return jsonify({'error': 'Username and password are required'}), 400
         
         if role not in ['admin', 'user']:
+            app.logger.error(f"Invalid role: {role}")
             return jsonify({'error': 'Role must be either admin or user'}), 400
         
         # Check if user already exists
         existing_user = User.query.filter_by(username=username).first()
         if existing_user:
+            app.logger.warning(f"Username already exists: {username}")
             return jsonify({'error': 'Username already exists'}), 400
         
         # Create new user
@@ -1199,6 +1215,8 @@ def create_user():
         new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
+        
+        app.logger.info(f"User created successfully: {username}")
         
         return jsonify({
             'success': True, 
@@ -1210,9 +1228,9 @@ def create_user():
                 'created_at': new_user.created_at.strftime('%Y-%m-%d %H:%M') if new_user.created_at else None
             }
         })
+        
     except Exception as e:
-        db.session.rollback()
-        app.logger.error(f"Error creating user: {str(e)}")
+        app.logger.error(f"Error creating user: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to create user'}), 500
 
 @app.route('/update_user/<int:user_id>', methods=['PUT'])
