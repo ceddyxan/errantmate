@@ -1309,6 +1309,7 @@ def create_user():
         role = data.get('role', 'user')  # Default to 'user' if not specified
         
         app.logger.info(f"Creating user: {username}, role: {role}")
+        app.logger.info(f"Received data: {dict(data)}")
         
         if not username or not password:
             app.logger.error(f"Missing username or password. Username: '{username}', Password provided: {bool(password)}")
