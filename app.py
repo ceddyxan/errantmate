@@ -623,6 +623,22 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# Admin required decorator for API endpoints (returns JSON instead of redirects)
+def admin_required_api(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({
+                'error': 'Authentication required',
+                'redirect': '/login'
+            }), 401
+        if session.get('user_role') != 'admin':
+            return jsonify({
+                'error': 'Admin access required'
+            }), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/add_delivery', methods=['GET', 'POST'])
 @login_required
 @database_required
@@ -1113,7 +1129,7 @@ def get_unassigned_deliveries():
         return jsonify([])
 
 @app.route('/get_users')
-@admin_required
+@admin_required_api
 @database_required
 def get_users():
     """Get all users for admin management."""
@@ -1134,7 +1150,7 @@ def get_users():
         return jsonify({'error': 'Failed to load users'}), 500
 
 @app.route('/create_user', methods=['POST'])
-@admin_required
+@admin_required_api
 @database_required
 def create_user():
     """Create a new user."""
@@ -1188,7 +1204,7 @@ def create_user():
         return jsonify({'error': 'Failed to create user'}), 500
 
 @app.route('/update_user/<int:user_id>', methods=['PUT'])
-@admin_required
+@admin_required_api
 @database_required
 def update_user(user_id):
     """Update an existing user."""
@@ -1239,7 +1255,7 @@ def update_user(user_id):
         return jsonify({'error': 'Failed to update user'}), 500
 
 @app.route('/delete_user/<int:user_id>', methods=['DELETE'])
-@admin_required
+@admin_required_api
 @database_required
 def delete_user(user_id):
     """Delete a user."""
