@@ -250,6 +250,48 @@ def reset_database():
     except Exception as e:
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
+@app.route('/force-init-db')
+def force_init_database():
+    """Force database initialization with detailed error reporting."""
+    try:
+        with app.app_context():
+            # Get database info
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            
+            # Test connection
+            from sqlalchemy import text
+            result = db.session.execute(text('SELECT 1'))
+            print(f"Database connection test: {result.fetchone()}")
+            
+            # Force drop all
+            db.drop_all()
+            print("Dropped all tables")
+            
+            # Force create all
+            db.create_all()
+            print("Created all tables")
+            
+            # Verify tables exist
+            inspector = inspect(db.engine)
+            tables = inspector.get_table_names()
+            print(f"Tables after creation: {tables}")
+            
+            return jsonify({
+                'status': 'success', 
+                'message': 'Database force initialized',
+                'tables': tables
+            }), 200
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Force init error: {error_details}")
+        return jsonify({
+            'status': 'error', 
+            'error': str(e),
+            'details': error_details
+        }), 500
+
 @app.route('/')
 def index():
     """Render the dashboard with operational statistics and overview."""
