@@ -1412,7 +1412,20 @@ def get_revenue_charts():
         
     except Exception as e:
         app.logger.error(f"Error getting revenue charts: {str(e)}")
-        return jsonify({'error': 'Failed to load revenue charts'}), 500
+        # Return empty data structure with zeros to prevent JavaScript errors
+        return jsonify({
+            'line_chart': {
+                'labels': [],
+                'datasets': []
+            },
+            'summary': {
+                'total_revenue': 0,
+                'total_expenses': 0,
+                'total_profit': 0,
+                'profit_margin': 0
+            },
+            'error': 'Failed to load revenue charts'
+        }), 500
 
 @app.route('/get_revenue_analytics')
 @login_required
