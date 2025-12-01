@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, make_response
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
@@ -7,22 +8,87 @@ import csv
 import io
 import os
 import platform
+import secrets
+import logging
+from logging.handlers import RotatingFileHandler
+import time
+from collections import defaultdict
 
 # Initialize Flask app
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY') or 'dev-key-please-change-in-production'
 
-# Ensure instance directory exists
-instance_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
-if not os.path.exists(instance_dir):
-    os.makedirs(instance_dir)
+# Secure secret key configuration
+secret_key = os.environ.get('SECRET_KEY')
+if not secret_key:
+    if app.debug:
+        # Generate a secure random key for development
+        secret_key = secrets.token_hex(32)
+        print("⚠️  WARNING: Using generated development secret key. Set SECRET_KEY in production!")
+    else:
+        raise ValueError("SECRET_KEY environment variable is required in production")
+app.secret_key = secret_key
 
-# Database configuration
-database_url = os.environ.get('DATABASE_URL', f'sqlite:///{os.path.join(instance_dir, "deliveries.db")}')
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+# Database configuration - PostgreSQL on Render, SQLite for local development
+database_url = os.environ.get('DATABASE_URL')
+if database_url and database_url.startswith('postgres'):
+    # PostgreSQL on Render
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    print("🐘 Using PostgreSQL database")
+else:
+    # SQLite for local development
+    instance_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance')
+    if not os.path.exists(instance_dir):
+        os.makedirs(instance_dir)
+    database_url = f'sqlite:///{os.path.join(instance_dir, "deliveries.db")}'
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    print("🗄️  Using SQLite database for local development")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
+# Initialize CSRF protection
+csrf = CSRFProtect(app)
+
+# Configure logging
+if not app.debug:
+    # Production logging configuration
+    if not os.path.exists('logs'):
+        os.mkdir('logs')
+    
+    file_handler = RotatingFileHandler('logs/errantmate.log', maxBytes=10240000, backupCount=10)
+    file_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+    ))
+    file_handler.setLevel(logging.INFO)
+    app.logger.addHandler(file_handler)
+    
+    app.logger.setLevel(logging.INFO)
+    app.logger.info('ErrantMate startup')
+else:
+    # Development logging
+    logging.basicConfig(level=logging.DEBUG)
+
+# Rate limiting for login attempts
+login_attempts = defaultdict(list)
+LOGIN_ATTEMPT_LIMIT = 5  # Max 5 attempts
+LOGIN_ATTEMPT_WINDOW = 300  # 5 minutes window
+
+def is_rate_limited(ip_address):
+    """Check if IP address is rate limited for login attempts."""
+    now = time.time()
+    # Remove old attempts outside the window
+    login_attempts[ip_address] = [
+        attempt_time for attempt_time in login_attempts[ip_address]
+        if now - attempt_time < LOGIN_ATTEMPT_WINDOW
+    ]
+    
+    # Check if limit exceeded
+    if len(login_attempts[ip_address]) >= LOGIN_ATTEMPT_LIMIT:
+        return True
+    
+    # Add current attempt
+    login_attempts[ip_address].append(now)
+    return False
 
 # Initialize database tables with robust error handling
 def ensure_database_tables():
@@ -33,7 +99,10 @@ def ensure_database_tables():
             with app.app_context():
                 # Print database info for debugging
                 print(f"🔍 Database URL: {app.config['SQLALCHEMY_DATABASE_URI']}")
-                print(f"🔍 Instance directory: {instance_dir}")
+                if database_url and database_url.startswith('postgres'):
+                    print(f"🔍 PostgreSQL Database")
+                else:
+                    print(f"🔍 Instance directory: {instance_dir}")
                 
                 # Test database connection first
                 from sqlalchemy import text
@@ -81,7 +150,7 @@ def ensure_database_tables():
                                 role='admin',
                                 is_active=True
                             )
-                            admin_user.set_password('admin123')
+                            admin_user.set_password('ErrantMate@2024!Secure')
                             db.session.add(admin_user)
                             db.session.commit()
                             print("✅ Default admin user created")
@@ -108,8 +177,9 @@ def ensure_database_tables():
                     print(f"🔍 Engine: {db.engine}")
                     print(f"🔍 Driver: {db.engine.driver}")
                     print(f"🔍 Database name: {db.engine.url.database}")
-                    print(f"🔍 Instance directory exists: {os.path.exists(instance_dir)}")
-                    print(f"🔍 Instance directory writable: {os.access(instance_dir, os.W_OK)}")
+                    if not database_url or not database_url.startswith('postgres'):
+                        print(f"🔍 Instance directory exists: {os.path.exists(instance_dir)}")
+                        print(f"🔍 Instance directory writable: {os.access(instance_dir, os.W_OK)}")
                 except Exception as diag_error:
                     print(f"❌ Could not get diagnostic info: {diag_error}")
                 
@@ -246,12 +316,12 @@ def create_admin():
             username='admin',
             role='admin'
         )
-        admin.set_password('admin123')  # Change this password!
+        admin.set_password('ErrantMate@2024!Secure')  # Change this password!
         
         db.session.add(admin)
         db.session.commit()
         
-        return jsonify({'status': 'success', 'message': 'Admin user created', 'username': 'admin', 'password': 'admin123'})
+        return jsonify({'status': 'success', 'message': 'Admin user created', 'username': 'admin', 'password': 'ErrantMate@2024!Secure'})
     except Exception as e:
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
@@ -330,7 +400,11 @@ def force_init_database():
             # Print comprehensive diagnostic info
             print(" FORCE INIT DATABASE - Comprehensive Diagnostics")
             print(f" Database URL: {app.config['SQLALCHEMY_DATABASE_URI']}")
-            print(f" Instance directory: {instance_dir}")
+            database_url = app.config['SQLALCHEMY_DATABASE_URI']
+            if database_url and database_url.startswith('postgres'):
+                print(f" PostgreSQL Database")
+            else:
+                print(f" Instance directory: {instance_dir}")
             
             # Test database connection
             from sqlalchemy import text, inspect
@@ -382,7 +456,7 @@ def force_init_database():
                     role='admin',
                     is_active=True
                 )
-                admin_user.set_password('admin123')
+                admin_user.set_password('ErrantMate@2024!Secure')
                 db.session.add(admin_user)
                 db.session.commit()
                 print(" Default admin user created")
@@ -413,12 +487,14 @@ def force_init_database():
         # Additional diagnostic info
         diagnostic_info = {}
         try:
-            diagnostic_info['database_url'] = str(app.config['SQLALCHEMY_DATABASE_URI'])
+            database_url = app.config['SQLALCHEMY_DATABASE_URI']
+            diagnostic_info['database_url'] = str(database_url)
             diagnostic_info['engine'] = str(db.engine)
             diagnostic_info['driver'] = str(db.engine.driver)
             diagnostic_info['database_name'] = str(db.engine.url.database)
-            diagnostic_info['instance_dir_exists'] = os.path.exists(instance_dir)
-            diagnostic_info['instance_dir_writable'] = os.access(instance_dir, os.W_OK) if os.path.exists(instance_dir) else False
+            if not database_url or not database_url.startswith('postgres'):
+                diagnostic_info['instance_dir_exists'] = os.path.exists(instance_dir)
+                diagnostic_info['instance_dir_writable'] = os.access(instance_dir, os.W_OK) if os.path.exists(instance_dir) else False
         except Exception as diag_error:
             diagnostic_info['diagnostic_error'] = str(diag_error)
         
@@ -716,7 +792,7 @@ def update_status(delivery_id, status):
             })
         else:
             flash(f'Delivery status updated to {status}', 'success')
-            return redirect(url_for('index'))
+            return redirect(url_for('dashboard'))
             
     except Exception as e:
         db.session.rollback()
@@ -730,7 +806,7 @@ def update_status(delivery_id, status):
             }), 500
         else:
             flash('Error updating status', 'danger')
-            return redirect(url_for('index'))
+            return redirect(url_for('dashboard'))
 
 @app.route('/delete_delivery/<int:delivery_id>', methods=['DELETE'])
 @database_required
@@ -750,6 +826,15 @@ def delete_delivery(delivery_id):
 def login():
     """Handle user login."""
     if request.method == 'POST':
+        # Get client IP for rate limiting
+        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'unknown'))
+        
+        # Check rate limiting
+        if is_rate_limited(client_ip):
+            app.logger.warning(f'Rate limit exceeded for IP: {client_ip}')
+            flash('Too many login attempts. Please try again later.', 'danger')
+            return render_template('login.html')
+        
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
         
@@ -1994,7 +2079,11 @@ def update_delivery():
     """Alternative simple endpoint to update delivery."""
     
     if request.method == 'OPTIONS':
-        return '', 200
+        response = make_response()
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add('Access-Control-Allow-Headers', "*")
+        response.headers.add('Access-Control-Allow-Methods', "*")
+        return response
     
     try:
         data = request.get_json()
@@ -2097,10 +2186,10 @@ def create_default_admin():
         admin_user = User.query.filter(User.username.ilike('admin')).first()
         if not admin_user:
             admin_user = User(username='admin', role='admin')
-            admin_user.set_password('admin123')
+            admin_user.set_password('ErrantMate@2024!Secure')
             db.session.add(admin_user)
             db.session.commit()
-            print("Default admin user created: admin / admin123 (role: admin)")
+            print("Default admin user created: admin / ErrantMate@2024!Secure (role: admin)")
         else:
             print("Admin user already exists")
     except Exception as e:
@@ -2123,7 +2212,7 @@ def main():
             
             print("Application ready!")
             print("Access the app at: http://localhost:5001")
-            print("Login with: admin / admin123")
+            print("Login with: admin / ErrantMate@2024!Secure")
             
         except Exception as e:
             print(f"Startup error: {e}")

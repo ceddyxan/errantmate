@@ -58,7 +58,21 @@ def run_app():
     try:
         # Import and run the app
         import app
-        app.main()
+        # For Render, we need to use the production server
+        if os.environ.get('FLASK_ENV') == 'production':
+            # Use Gunicorn for production
+            import subprocess
+            print("Starting with Gunicorn for production...")
+            subprocess.run([
+                "gunicorn", 
+                "--bind", "0.0.0.0:10000",
+                "--workers", "1",
+                "--timeout", "120",
+                "app:app"
+            ], check=True)
+        else:
+            # Use Flask development server for local development
+            app.main()
     except ImportError as e:
         print(f"Failed to import app: {e}")
         print("Try installing dependencies: pip install -r requirements.txt")
