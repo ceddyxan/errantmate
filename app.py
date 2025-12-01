@@ -31,10 +31,14 @@ def ensure_database_tables():
     for attempt in range(max_retries):
         try:
             with app.app_context():
+                # Print database info for debugging
+                print(f"🔍 Database URL: {app.config['SQLALCHEMY_DATABASE_URI']}")
+                print(f"🔍 Instance directory: {instance_dir}")
+                
                 # Test database connection first
                 from sqlalchemy import text
-                db.session.execute(text('SELECT 1'))
-                print(f"✅ Database connection verified (attempt {attempt + 1})")
+                result = db.session.execute(text('SELECT 1'))
+                print(f"✅ Database connection verified (attempt {attempt + 1}): {result.fetchone()}")
                 
                 # Check if tables already exist
                 from sqlalchemy import inspect
@@ -42,19 +46,48 @@ def ensure_database_tables():
                 existing_tables = inspector.get_table_names()
                 required_tables = ['user', 'delivery', 'audit_log']
                 
+                print(f"🔍 Existing tables: {existing_tables}")
+                print(f"🔍 Required tables: {required_tables}")
+                
                 if all(table in existing_tables for table in required_tables):
                     print("✅ All required tables already exist")
                     return True
                 
-                # Create tables
-                db.create_all()
+                # Try to create tables with explicit metadata
+                print("🔧 Creating tables with explicit metadata...")
+                db.metadata.create_all(db.engine, checkfirst=True)
                 print("✅ Database tables created successfully")
+                
+                # Alternative: try db.create_all() if metadata doesn't work
+                if not all(table in existing_tables for table in required_tables):
+                    print("🔧 Trying db.create_all() as fallback...")
+                    db.create_all()
+                    print("✅ Database tables created with db.create_all()")
                 
                 # Verify tables were created
                 inspector = inspect(db.engine)
                 tables = inspector.get_table_names()
+                print(f"🔍 Tables after creation: {tables}")
+                
                 if all(table in tables for table in required_tables):
                     print(f"✅ All tables verified: {tables}")
+                    
+                    # Create default admin user if not exists
+                    try:
+                        admin_user = User.query.filter_by(username='admin').first()
+                        if not admin_user:
+                            admin_user = User(
+                                username='admin',
+                                role='admin',
+                                is_active=True
+                            )
+                            admin_user.set_password('admin123')
+                            db.session.add(admin_user)
+                            db.session.commit()
+                            print("✅ Default admin user created")
+                    except Exception as admin_error:
+                        print(f"⚠️  Warning: Could not create admin user: {admin_error}")
+                    
                     return True
                 else:
                     raise Exception(f"Tables not created properly. Found: {tables}")
@@ -69,6 +102,17 @@ def ensure_database_tables():
                 print("❌ All database initialization attempts failed")
                 import traceback
                 traceback.print_exc()
+                
+                # Additional diagnostic info
+                try:
+                    print(f"🔍 Engine: {db.engine}")
+                    print(f"🔍 Driver: {db.engine.driver}")
+                    print(f"🔍 Database name: {db.engine.url.database}")
+                    print(f"🔍 Instance directory exists: {os.path.exists(instance_dir)}")
+                    print(f"🔍 Instance directory writable: {os.access(instance_dir, os.W_OK)}")
+                except Exception as diag_error:
+                    print(f"❌ Could not get diagnostic info: {diag_error}")
+                
                 return False
     
     return False
@@ -274,56 +318,119 @@ def reset_database():
             # Drop all tables
             db.drop_all()
             # Create all tables fresh
-            db.create_all()
             return jsonify({'status': 'success', 'message': 'Database reset successfully'}), 200
     except Exception as e:
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
 @app.route('/force-init-db')
 def force_init_database():
-    """Force database initialization with detailed error reporting."""
+    """Force database initialization with comprehensive diagnostics."""
     try:
         with app.app_context():
-            # Get database info
-            from sqlalchemy import inspect
-            inspector = inspect(db.engine)
+            # Print comprehensive diagnostic info
+            print(" FORCE INIT DATABASE - Comprehensive Diagnostics")
+            print(f" Database URL: {app.config['SQLALCHEMY_DATABASE_URI']}")
+            print(f" Instance directory: {instance_dir}")
             
-            # Test connection
-            from sqlalchemy import text
+            # Test database connection
+            from sqlalchemy import text, inspect
             result = db.session.execute(text('SELECT 1'))
-            print(f"Database connection test: {result.fetchone()}")
+            print(f" Database connection test: {result.fetchone()}")
             
-            # Force drop all
+            # Check current state
+            inspector = inspect(db.engine)
+            existing_tables = inspector.get_table_names()
+            print(f" Current tables: {existing_tables}")
+            
+            # Force drop all tables
+            print(" Dropping all existing tables...")
             db.drop_all()
-            print("Dropped all tables")
+            print(" All tables dropped")
             
-            # Force create all
+            # Verify tables are dropped
+            inspector = inspect(db.engine)
+            tables_after_drop = inspector.get_table_names()
+            print(f" Tables after drop: {tables_after_drop}")
+            
+            # Create tables with metadata
+            print(" Creating tables with metadata.create_all()...")
+            db.metadata.create_all(db.engine, checkfirst=False)
+            print(" Tables created with metadata")
+            
+            # Also try db.create_all() as backup
+            print(" Running db.create_all() as backup...")
             db.create_all()
-            print("Created all tables")
+            print(" Tables created with db.create_all()")
             
-            # Verify tables exist
+            # Verify tables were created
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
-            print(f"Tables after creation: {tables}")
+            print(f" Final tables: {tables}")
+            
+            required_tables = ['user', 'delivery', 'audit_log']
+            missing_tables = [table for table in required_tables if table not in tables]
+            
+            if missing_tables:
+                raise Exception(f"Missing tables after creation: {missing_tables}")
+            
+            # Create default admin user
+            print(" Creating default admin user...")
+            admin_user = User.query.filter_by(username='admin').first()
+            if not admin_user:
+                admin_user = User(
+                    username='admin',
+                    role='admin',
+                    is_active=True
+                )
+                admin_user.set_password('admin123')
+                db.session.add(admin_user)
+                db.session.commit()
+                print(" Default admin user created")
+            else:
+                print(" Admin user already exists")
+            
+            # Test basic operations
+            print(" Testing basic database operations...")
+            test_user = User.query.filter_by(username='admin').first()
+            if test_user:
+                print(" User query test passed")
+            else:
+                print(" User query test failed")
             
             return jsonify({
                 'status': 'success', 
-                'message': 'Database force initialized',
-                'tables': tables
+                'message': 'Database force initialized successfully',
+                'tables': tables,
+                'database_url': str(app.config['SQLALCHEMY_DATABASE_URI']),
+                'admin_created': True
             }), 200
+            
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        print(f"Force init error: {error_details}")
+        print(f" Force init error: {error_details}")
+        
+        # Additional diagnostic info
+        diagnostic_info = {}
+        try:
+            diagnostic_info['database_url'] = str(app.config['SQLALCHEMY_DATABASE_URI'])
+            diagnostic_info['engine'] = str(db.engine)
+            diagnostic_info['driver'] = str(db.engine.driver)
+            diagnostic_info['database_name'] = str(db.engine.url.database)
+            diagnostic_info['instance_dir_exists'] = os.path.exists(instance_dir)
+            diagnostic_info['instance_dir_writable'] = os.access(instance_dir, os.W_OK) if os.path.exists(instance_dir) else False
+        except Exception as diag_error:
+            diagnostic_info['diagnostic_error'] = str(diag_error)
+        
         return jsonify({
             'status': 'error', 
             'error': str(e),
-            'details': error_details
+            'details': error_details,
+            'diagnostics': diagnostic_info
         }), 500
 
 @app.route('/')
-@database_required
-def index():
+def dashboard():
     """Render the dashboard with operational statistics and overview."""
     try:
         # Get all deliveries for statistics
