@@ -3905,11 +3905,19 @@ window.ensureRevenueMetricsVisible = function() {
 // Load users on page load
 window.loadNewUsers = function() {
     fetch('/api/users')
-        .then(response => response.json())
+        .then(response => {
+            // Check if response is JSON
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                return response.json();
+            } else {
+                throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}`);
+            }
+        })
         .then(data => {
             const usersList = document.getElementById('newUsersList');
             if (!data.success) {
-                usersList.innerHTML = '<p class="text-red-500 text-sm text-center py-4">Error loading users</p>';
+                usersList.innerHTML = `<p class="text-red-500 text-sm text-center py-4">Error: ${data.error || 'Unknown error'}</p>`;
                 return;
             }
             
@@ -3950,7 +3958,8 @@ window.loadNewUsers = function() {
         })
         .catch(error => {
             console.error('Error loading users:', error);
-            document.getElementById('newUsersList').innerHTML = '<p class="text-red-500 text-sm text-center py-4">Error loading users</p>';
+            const usersList = document.getElementById('newUsersList');
+            usersList.innerHTML = `<p class="text-red-500 text-sm text-center py-4">Error loading users: ${error.message}</p>`;
         });
 };
 
@@ -3984,7 +3993,15 @@ window.editNewUser = function(userId, username, role) {
 window.deleteNewUser = function(userId, username) {
     if (confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
         fetch(`/api/users/${userId}`, { method: 'DELETE' })
-            .then(response => response.json())
+            .then(response => {
+                // Check if response is JSON
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    return response.json();
+                } else {
+                    throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}`);
+                }
+            })
             .then(result => {
                 if (result.success) {
                     showNotification('User deleted successfully', 'success');
@@ -3995,7 +4012,7 @@ window.deleteNewUser = function(userId, username) {
             })
             .catch(error => {
                 console.error('Error deleting user:', error);
-                showNotification('Error deleting user', 'error');
+                showNotification('Error deleting user: ' + error.message, 'error');
             });
     }
 };
@@ -4037,7 +4054,17 @@ window.saveNewUser = function() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     })
-    .then(response => response.json())
+    .then(response => {
+        // Check if response is JSON
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+            return response.json();
+        } else {
+            return response.text().then(text => {
+                throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}`);
+            });
+        }
+    })
     .then(result => {
         if (result.success) {
             showNotification(result.message, 'success');
@@ -4049,7 +4076,7 @@ window.saveNewUser = function() {
     })
     .catch(error => {
         console.error('Error saving user:', error);
-        showNotification('Error saving user', 'error');
+        showNotification('Error saving user: ' + error.message, 'error');
     });
 };
 
