@@ -476,32 +476,30 @@
             </div>
         </div>
 
-        <!-- User Management Card (Admin Only) -->
+        <!-- User Management Card (Admin Only) - NEW VERSION -->
         {% if session.user_role == 'admin' %}
         <div class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-lg transition-all duration-300">
             <div class="p-3">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-sm font-semibold text-gray-800">Users</h3>
+                    <h3 class="text-sm font-semibold text-gray-800">User Management</h3>
                     <div class="flex items-center gap-2">
-                        <button onclick="showAddUserModal()" 
+                        <button onclick="showNewUserModal()" 
                                 class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors duration-200">
-                            <i class="fas fa-plus mr-1"></i>Add
+                            <i class="fas fa-plus mr-1"></i>Add User
                         </button>
-                        <button onclick="toggleUsersList()" 
-                                id="toggleUsersBtn"
+                        <button onclick="refreshUsers()" 
                                 class="text-gray-600 hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-100 transition-colors flex items-center gap-1 text-xs"
-                                title="Toggle users list">
-                            <span>Users List</span>
-                            <i class="fas fa-chevron-down text-xs transition-transform duration-200"></i>
+                                title="Refresh users">
+                            <i class="fas fa-sync-alt"></i>
                         </button>
                     </div>
                 </div>
                 
-                <!-- Collapsible Users List -->
-                <div id="usersListContainer" class="hidden">
-                    <div class="border-t border-gray-200 mt-3 pt-3">
-                        <div id="usersList" class="space-y-1">
-                            <!-- Users will be loaded here -->
+                <!-- Users List -->
+                <div class="mt-3 border-t border-gray-200 pt-3">
+                    <div id="newUsersList" class="space-y-2 max-h-64 overflow-y-auto">
+                        <div class="text-center text-gray-500 text-sm py-4">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>Loading users...
                         </div>
                     </div>
                 </div>
@@ -3148,7 +3146,7 @@ window.saveUser = function() {
         return;
     }
     
-    const url = userId ? `/update_user/${userId}` : '/create_user';
+    const url = userId ? `/update_user/${userId}` : '/debug/create_user_simple';
     const method = userId ? 'PUT' : 'POST';
     
     const payload = { username, password, role };
@@ -3267,11 +3265,11 @@ window.toggleQuickActions = function() {
     }
 };
 
-// Load users on page load (only if container is visible)
+// Load users on page load (only if admin)
 document.addEventListener('DOMContentLoaded', function() {
-    const container = document.getElementById('usersListContainer');
-    if (!container.classList.contains('hidden')) {
-        loadUsers();
+    // Load new users system
+    if (document.body.dataset.userRole === 'admin') {
+        loadNewUsers();
     }
     
     // Initialize charts
@@ -3902,33 +3900,200 @@ window.ensureRevenueMetricsVisible = function() {
 };
 
 
+// ==================== NEW USER MANAGEMENT SYSTEM ====================
+
+// Load users on page load
+window.loadNewUsers = function() {
+    fetch('/api/users')
+        .then(response => response.json())
+        .then(data => {
+            const usersList = document.getElementById('newUsersList');
+            if (!data.success) {
+                usersList.innerHTML = '<p class="text-red-500 text-sm text-center py-4">Error loading users</p>';
+                return;
+            }
+            
+            if (data.users.length === 0) {
+                usersList.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">No users found</p>';
+                return;
+            }
+            
+            const usersHtml = data.users.map(user => `
+                <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm font-bold">${user.username[0].toUpperCase()}</span>
+                        </div>
+                        <div>
+                            <div class="text-sm font-medium text-gray-800">${user.username}</div>
+                            <div class="text-xs text-gray-500">${user.role} • ${user.created_at}</div>
+                        </div>
+                    </div>
+                    ${user.can_edit ? `
+                        <div class="flex items-center gap-1">
+                            <button onclick="editNewUser(${user.id}, '${user.username}', '${user.role}')" 
+                                    class="text-blue-600 hover:bg-blue-100 p-1.5 rounded transition-colors"
+                                    title="Edit">
+                                <i class="fas fa-edit text-xs"></i>
+                            </button>
+                            <button onclick="deleteNewUser(${user.id}, '${user.username}')" 
+                                    class="text-red-600 hover:bg-red-100 p-1.5 rounded transition-colors"
+                                    title="Delete">
+                                <i class="fas fa-trash text-xs"></i>
+                            </button>
+                        </div>
+                    ` : '<span class="text-xs text-gray-400 font-medium">Protected</span>'}
+                </div>
+            `).join('');
+            
+            usersList.innerHTML = usersHtml;
+        })
+        .catch(error => {
+            console.error('Error loading users:', error);
+            document.getElementById('newUsersList').innerHTML = '<p class="text-red-500 text-sm text-center py-4">Error loading users</p>';
+        });
+};
+
+// Show new user modal
+window.showNewUserModal = function() {
+    const modal = document.getElementById('newUserModal');
+    document.getElementById('newModalTitle').textContent = 'Add New User';
+    document.getElementById('newUsernameInput').value = '';
+    document.getElementById('newPasswordInput').value = '';
+    document.getElementById('newRoleSelect').value = 'user';
+    document.getElementById('newUserIdInput').value = '';
+    document.getElementById('passwordRequired').style.display = 'inline';
+    document.getElementById('saveButtonText').textContent = 'Add User';
+    modal.classList.remove('hidden');
+};
+
+// Edit user
+window.editNewUser = function(userId, username, role) {
+    const modal = document.getElementById('newUserModal');
+    document.getElementById('newModalTitle').textContent = 'Edit User';
+    document.getElementById('newUsernameInput').value = username;
+    document.getElementById('newPasswordInput').value = '';
+    document.getElementById('newRoleSelect').value = role || 'user';
+    document.getElementById('newUserIdInput').value = userId;
+    document.getElementById('passwordRequired').style.display = 'none';
+    document.getElementById('saveButtonText').textContent = 'Update User';
+    modal.classList.remove('hidden');
+};
+
+// Delete user
+window.deleteNewUser = function(userId, username) {
+    if (confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
+        fetch(`/api/users/${userId}`, { method: 'DELETE' })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showNotification('User deleted successfully', 'success');
+                    loadNewUsers();
+                } else {
+                    showNotification(result.error || 'Error deleting user', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting user:', error);
+                showNotification('Error deleting user', 'error');
+            });
+    }
+};
+
+// Save user (create or update)
+window.saveNewUser = function() {
+    const username = document.getElementById('newUsernameInput').value.trim();
+    const password = document.getElementById('newPasswordInput').value;
+    const role = document.getElementById('newRoleSelect').value;
+    const userId = document.getElementById('newUserIdInput').value;
+    
+    // Validation
+    if (!username || username.length < 3) {
+        showNotification('Username must be at least 3 characters', 'error');
+        return;
+    }
+    
+    if (!userId && (!password || password.length < 6)) {
+        showNotification('Password must be at least 6 characters for new users', 'error');
+        return;
+    }
+    
+    if (role !== 'admin' && role !== 'user') {
+        showNotification('Invalid role selected', 'error');
+        return;
+    }
+    
+    const isEdit = !!userId;
+    const url = isEdit ? `/api/users/${userId}` : '/api/users';
+    const method = isEdit ? 'PUT' : 'POST';
+    
+    const payload = { username, role };
+    if (password) {
+        payload.password = password;
+    }
+    
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showNotification(result.message, 'success');
+            closeNewUserModal();
+            loadNewUsers();
+        } else {
+            showNotification(result.error || 'Error saving user', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving user:', error);
+        showNotification('Error saving user', 'error');
+    });
+};
+
+// Close modal
+window.closeNewUserModal = function() {
+    document.getElementById('newUserModal').classList.add('hidden');
+};
+
+// Refresh users
+window.refreshUsers = function() {
+    const usersList = document.getElementById('newUsersList');
+    usersList.innerHTML = '<div class="text-center text-gray-500 text-sm py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Refreshing...</div>';
+    loadNewUsers();
+};
+
+// ==================== END NEW USER MANAGEMENT SYSTEM ====================
+
 </script>
 
-<!-- User Management Modal -->
-<div id="userModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+<!-- NEW User Management Modal -->
+<div id="newUserModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
     <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
         <div class="px-6 py-4 border-b border-gray-200">
-            <h3 id="modalTitle" class="text-lg font-semibold text-gray-800">Add New User</h3>
+            <h3 id="newModalTitle" class="text-lg font-semibold text-gray-800">Add New User</h3>
         </div>
         <div class="p-6">
-            <input type="hidden" id="userIdInput">
+            <input type="hidden" id="newUserIdInput">
             
             <div class="mb-4">
-                <label for="usernameInput" class="block text-sm font-medium text-gray-700 mb-2">
-                    Username
+                <label for="newUsernameInput" class="block text-sm font-medium text-gray-700 mb-2">
+                    Username <span class="text-red-500">*</span>
                 </label>
                 <input type="text" 
-                       id="usernameInput" 
+                       id="newUsernameInput" 
                        autocomplete="off"
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                       placeholder="Enter username">
+                       placeholder="Enter username (min 3 chars)">
             </div>
             
             <div class="mb-4">
-                <label for="roleSelect" class="block text-sm font-medium text-gray-700 mb-2">
+                <label for="newRoleSelect" class="block text-sm font-medium text-gray-700 mb-2">
                     Role
                 </label>
-                <select id="roleSelect" 
+                <select id="newRoleSelect" 
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <option value="user">User</option>
                     <option value="admin">Admin</option>
@@ -3936,23 +4101,25 @@ window.ensureRevenueMetricsVisible = function() {
             </div>
             
             <div class="mb-4">
-                <label for="passwordInput" class="block text-sm font-medium text-gray-700 mb-2">
-                    Password <span class="text-gray-500 text-xs">(leave blank to keep current)</span>
+                <label for="newPasswordInput" class="block text-sm font-medium text-gray-700 mb-2">
+                    Password <span id="passwordRequired" class="text-red-500">*</span>
                 </label>
                 <input type="password" 
-                       id="passwordInput" 
+                       id="newPasswordInput" 
+                       autocomplete="new-password"
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                       placeholder="Enter password">
+                       placeholder="Enter password (min 6 chars)">
+                <p class="text-xs text-gray-500 mt-1">Leave blank to keep current password (for edits)</p>
             </div>
         </div>
         <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-            <button onclick="closeUserModal()" 
+            <button onclick="closeNewUserModal()" 
                     class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
                 Cancel
             </button>
-            <button onclick="saveUser()" 
+            <button onclick="saveNewUser()" 
                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                Save
+                <span id="saveButtonText">Save User</span>
             </button>
         </div>
     </div>

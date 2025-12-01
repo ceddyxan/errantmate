@@ -1276,6 +1276,196 @@ def debug_create_admin():
             'error': str(e)
         }), 500
 
+# ==================== NEW USER MANAGEMENT SYSTEM ====================
+
+@app.route('/api/users', methods=['GET'])
+@admin_required_api
+@database_required
+def api_get_users():
+    """Get all users - NEW CLEAN VERSION"""
+    try:
+        users = User.query.filter_by(is_active=True).all()
+        return jsonify({
+            'success': True,
+            'users': [
+                {
+                    'id': user.id,
+                    'username': user.username,
+                    'role': user.role,
+                    'created_at': user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else None,
+                    'is_admin': user.is_admin(),
+                    'can_edit': user.username != 'admin'
+                }
+                for user in users
+            ]
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting users: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to load users'}), 500
+
+@app.route('/api/users', methods=['POST'])
+@admin_required_api
+@database_required
+def api_create_user():
+    """Create new user - NEW CLEAN VERSION"""
+    try:
+        data = request.get_json()
+        
+        # Basic validation
+        username = data.get('username', '').strip()
+        password = data.get('password', '')
+        role = data.get('role', 'user')
+        
+        if not username or len(username) < 3:
+            return jsonify({'success': False, 'error': 'Username must be at least 3 characters'}), 400
+        
+        if not password or len(password) < 6:
+            return jsonify({'success': False, 'error': 'Password must be at least 6 characters'}), 400
+        
+        if role not in ['admin', 'user']:
+            return jsonify({'success': False, 'error': 'Invalid role'}), 400
+        
+        # Check if user exists
+        if User.query.filter_by(username=username).first():
+            return jsonify({'success': False, 'error': 'Username already exists'}), 400
+        
+        # Create user
+        new_user = User(username=username, role=role)
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'User created successfully',
+            'user': {
+                'id': new_user.id,
+                'username': new_user.username,
+                'role': new_user.role,
+                'created_at': new_user.created_at.strftime('%Y-%m-%d %H:%M') if new_user.created_at else None
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error creating user: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to create user'}), 500
+
+@app.route('/api/users/<int:user_id>', methods=['PUT'])
+@admin_required_api
+@database_required
+def api_update_user(user_id):
+    """Update user - NEW CLEAN VERSION"""
+    try:
+        user = User.query.get_or_404(user_id)
+        
+        # Protect admin user
+        if user.username == 'admin':
+            return jsonify({'success': False, 'error': 'Cannot modify admin user'}), 403
+        
+        data = request.get_json()
+        username = data.get('username', '').strip()
+        password = data.get('password', '')
+        role = data.get('role', user.role)
+        
+        if not username or len(username) < 3:
+            return jsonify({'success': False, 'error': 'Username must be at least 3 characters'}), 400
+        
+        if role not in ['admin', 'user']:
+            return jsonify({'success': False, 'error': 'Invalid role'}), 400
+        
+        # Check username conflict
+        existing = User.query.filter(User.username == username, User.id != user_id).first()
+        if existing:
+            return jsonify({'success': False, 'error': 'Username already exists'}), 400
+        
+        # Update user
+        user.username = username
+        user.role = role
+        if password:
+            user.set_password(password)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'User updated successfully',
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'role': user.role,
+                'created_at': user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else None
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error updating user: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to update user'}), 500
+
+@app.route('/api/users/<int:user_id>', methods=['DELETE'])
+@admin_required_api
+@database_required
+def api_delete_user(user_id):
+    """Delete user - NEW CLEAN VERSION"""
+    try:
+        user = User.query.get_or_404(user_id)
+        
+        # Protect admin user
+        if user.username == 'admin':
+            return jsonify({'success': False, 'error': 'Cannot delete admin user'}), 403
+        
+        # Soft delete
+        user.is_active = False
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'User deleted successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error deleting user: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to delete user'}), 500
+
+# ==================== LEGACY USER MANAGEMENT (KEEP FOR COMPATIBILITY) ====================
+
+@app.route('/debug/create_user_simple', methods=['POST'])
+@admin_required_api
+@database_required
+def debug_create_user_simple():
+    """Simple user creation for debugging."""
+    try:
+        data = request.get_json()
+        app.logger.info(f"Simple debug - Raw data: {data}")
+        
+        username = data.get('username', '').strip()
+        password = data.get('password', '')
+        role = data.get('role', 'user')
+        
+        app.logger.info(f"Simple debug - Parsed: username='{username}', password_len={len(password)}, role='{role}'")
+        
+        # Check existing users
+        existing_users = User.query.all()
+        app.logger.info(f"Simple debug - Existing users: {[u.username for u in existing_users]}")
+        
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            app.logger.warning(f"Simple debug - Username '{username}' already exists!")
+            return jsonify({'error': f'Username "{username}" already exists', 'debug': True}), 400
+        
+        # Create user without validation
+        new_user = User(username=username, role=role)
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+        
+        app.logger.info(f"Simple debug - User created successfully: {username}")
+        return jsonify({'success': True, 'message': 'User created successfully', 'debug': True})
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Simple debug - Error: {str(e)}", exc_info=True)
+        return jsonify({'error': str(e), 'debug': True}), 500
+
 @app.route('/create_user', methods=['POST'])
 @admin_required_api
 @database_required

@@ -836,7 +836,7 @@
         }
     </style>
 </head>
-<body class="min-h-screen" data-logged-in="{{ 'true' if session.username else 'false' }}">
+<body class="min-h-screen" data-logged-in="{{ 'true' if session.username else 'false' }}" data-user-role="{{ session.user_role or 'none' }}">
     <nav class="bg-green-600 shadow-lg fixed-nav">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
