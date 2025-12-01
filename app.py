@@ -1270,6 +1270,7 @@ def debug_create_admin():
         
     except Exception as e:
         db.session.rollback()
+        app.logger.error(f"Error creating admin user: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -1299,7 +1300,14 @@ def create_user():
                 'error': 'Admin access required'
             }), 403
         
-        data = request.get_json()
+        # Get JSON data with better error handling
+        try:
+            data = request.get_json()
+            app.logger.info(f"Raw request data: {data}")
+        except Exception as json_error:
+            app.logger.error(f"JSON parsing error: {str(json_error)}")
+            return jsonify({'error': 'Invalid JSON data'}), 400
+        
         if not data:
             app.logger.error("No JSON data received in create_user")
             return jsonify({'error': 'No data provided'}), 400
@@ -1311,42 +1319,66 @@ def create_user():
         app.logger.info(f"Creating user: {username}, role: {role}")
         app.logger.info(f"Received data: {dict(data)}")
         
-        if not username or not password:
-            app.logger.error(f"Missing username or password. Username: '{username}', Password provided: {bool(password)}")
-            return jsonify({'error': 'Username and password are required'}), 400
+        # Enhanced validation
+        if not username:
+            app.logger.error("Username is empty")
+            return jsonify({'error': 'Username is required'}), 400
+            
+        if not password:
+            app.logger.error("Password is empty")
+            return jsonify({'error': 'Password is required'}), 400
+            
+        if len(username) < 3:
+            app.logger.error(f"Username too short: {username}")
+            return jsonify({'error': 'Username must be at least 3 characters long'}), 400
+            
+        if len(password) < 6:
+            app.logger.error(f"Password too short: {len(password)} characters")
+            return jsonify({'error': 'Password must be at least 6 characters long'}), 400
         
         if role not in ['admin', 'user']:
             app.logger.error(f"Invalid role: {role}")
             return jsonify({'error': 'Role must be either admin or user'}), 400
         
         # Check if user already exists
-        existing_user = User.query.filter_by(username=username).first()
-        if existing_user:
-            app.logger.warning(f"Username already exists: {username}")
-            return jsonify({'error': 'Username already exists'}), 400
+        try:
+            existing_user = User.query.filter_by(username=username).first()
+            if existing_user:
+                app.logger.warning(f"Username already exists: {username}")
+                return jsonify({'error': 'Username already exists'}), 400
+        except Exception as db_error:
+            app.logger.error(f"Database query error: {str(db_error)}")
+            return jsonify({'error': 'Database error checking username'}), 500
         
-        # Create new user
-        new_user = User(username=username, role=role)
-        new_user.set_password(password)
-        db.session.add(new_user)
-        db.session.commit()
-        
-        app.logger.info(f"User created successfully: {username}")
-        
-        return jsonify({
-            'success': True, 
-            'message': 'User created successfully',
-            'user': {
-                'id': new_user.id,
-                'username': new_user.username,
-                'role': new_user.role,
-                'created_at': new_user.created_at.strftime('%Y-%m-%d %H:%M') if new_user.created_at else None
-            }
-        })
+        # Create new user with transaction handling
+        try:
+            new_user = User(username=username, role=role)
+            new_user.set_password(password)
+            db.session.add(new_user)
+            db.session.commit()
+            
+            app.logger.info(f"User created successfully: {username} (ID: {new_user.id})")
+            
+            return jsonify({
+                'success': True, 
+                'message': 'User created successfully',
+                'user': {
+                    'id': new_user.id,
+                    'username': new_user.username,
+                    'role': new_user.role,
+                    'created_at': new_user.created_at.strftime('%Y-%m-%d %H:%M') if new_user.created_at else None
+                }
+            })
+            
+        except Exception as commit_error:
+            db.session.rollback()
+            app.logger.error(f"Database commit error: {str(commit_error)}")
+            return jsonify({'error': 'Failed to save user to database'}), 500
         
     except Exception as e:
-        app.logger.error(f"Error creating user: {str(e)}", exc_info=True)
-        return jsonify({'error': 'Failed to create user'}), 500
+        db.session.rollback()
+        app.logger.error(f"Unexpected error creating user: {str(e)}", exc_info=True)
+        return jsonify({'error': 'An unexpected error occurred while creating the user'}), 500
 
 @app.route('/update_user/<int:user_id>', methods=['PUT'])
 @admin_required_api
