@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import csv
@@ -11,6 +11,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import time
 from collections import defaultdict
+import pytz
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -58,6 +59,28 @@ if not app.debug:
 else:
     # Development logging
     logging.basicConfig(level=logging.DEBUG)
+
+# Timezone configuration - East Africa Time (EAT)
+EAT = pytz.timezone('Africa/Nairobi')  # EAT is UTC+3
+
+def get_current_time():
+    """Get current East Africa Time for consistent timestamp handling."""
+    return datetime.now(EAT)
+
+def get_local_time(eat_time=None):
+    """Get East Africa Time (same as current time for EAT)."""
+    if eat_time is None:
+        return get_current_time()
+    return eat_time
+
+def convert_to_eat(utc_time=None):
+    """Convert UTC time to East Africa Time."""
+    if utc_time is None:
+        return get_current_time()
+    if utc_time.tzinfo is None:
+        # Assume UTC if no timezone info
+        utc_time = utc_time.replace(tzinfo=pytz.utc)
+    return utc_time.astimezone(EAT)
 
 # Rate limiting for login attempts
 login_attempts = defaultdict(list)
@@ -135,7 +158,7 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), default='user')  # 'admin' or 'user'
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=get_current_time)
     is_active = db.Column(db.Boolean, default=True)
     
     def set_password(self, password):
@@ -166,7 +189,7 @@ class Delivery(db.Model):
     expenses = db.Column(db.Float, default=0.0)
     payment_by = db.Column(db.String(50), nullable=False)
     status = db.Column(db.String(20), default='Pending')
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=get_current_time)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
     # Relationship to User
@@ -186,7 +209,7 @@ class AuditLog(db.Model):
     details = db.Column(db.Text, nullable=True)  # Additional details about the action
     ip_address = db.Column(db.String(45), nullable=True)  # User's IP address
     user_agent = db.Column(db.String(500), nullable=True)  # Browser/device info
-    timestamp = db.Column(db.DateTime, default=datetime.now)
+    timestamp = db.Column(db.DateTime, default=get_current_time)
     
     # Relationship to User
     user = db.relationship('User', backref='audit_logs')
@@ -196,11 +219,11 @@ class AuditLog(db.Model):
 
 def generate_display_id():
     """Generate a unique display ID for new deliveries."""
-    now = datetime.now()
+    now = get_local_time()  # Use local time for display ID generation
     date_str = now.strftime('%y%m%d')
     
     # Get the last delivery for TODAY only to reset sequence daily
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = get_current_time().replace(hour=0, minute=0, second=0, microsecond=0)
     today_deliveries = Delivery.query.filter(Delivery.created_at >= today_start).order_by(Delivery.created_at.desc()).all()
     
     # Count deliveries made today to determine the next sequence number
@@ -211,7 +234,7 @@ def generate_display_id():
 
 def get_date_ranges():
     """Get common date ranges used throughout the application."""
-    now = datetime.now()
+    now = get_local_time()
     today = now.replace(hour=0, minute=0, second=0, microsecond=0)
     today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
     
