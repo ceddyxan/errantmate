@@ -2436,63 +2436,178 @@ def get_user_recent_deliveries():
     except Exception as e:
         return jsonify({'error': 'Failed to load recent deliveries'}), 500
 
-@app.route('/update_delivery_expenses_and_person', methods=['POST', 'OPTIONS'])
-@login_required
-def update_delivery_expenses_and_person():
-    """Update delivery expenses and delivery person."""
-    
-    # Handle preflight OPTIONS request
-    if request.method == 'OPTIONS':
-        response = make_response()
-        response.headers.add("Access-Control-Allow-Origin", "*")
-        response.headers.add('Access-Control-Allow-Headers', "*")
-        response.headers.add('Access-Control-Allow-Methods', "*")
-        return response
-    
+@app.route('/api/test', methods=['GET'])
+def api_test():
+    """Simple test endpoint to verify API is working."""
+    return jsonify({
+        'success': True,
+        'message': 'API is working',
+        'timestamp': datetime.now().isoformat()
+    })
+
+@app.route('/api/simple-update', methods=['POST'])
+def simple_update_delivery():
+    """Simple delivery update endpoint without decorators."""
     try:
         data = request.get_json()
-        
         if not data:
-            return jsonify({'error': 'No data provided'}), 400
+            return jsonify({'success': False, 'message': 'No data'}), 400
         
         delivery_id = data.get('delivery_id')
         expenses = data.get('expenses', 0.0)
         delivery_person = data.get('delivery_person', '')
         
         if not delivery_id:
-            return jsonify({'error': 'Delivery ID is required'}), 400
+            return jsonify({'success': False, 'message': 'Delivery ID required'}), 400
+        
+        delivery = Delivery.query.filter_by(display_id=delivery_id).first()
+        if not delivery:
+            return jsonify({'success': False, 'message': 'Delivery not found'}), 404
+        
+        delivery.expenses = float(expenses) if expenses else 0.0
+        delivery.delivery_person = delivery_person or ''
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Delivery updated successfully'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/api/delivery/update', methods=['POST', 'OPTIONS'])
+@csrf.exempt  # Exempt from CSRF since it's an API endpoint
+@login_required
+@database_required
+def api_update_delivery():
+    """Dedicated API endpoint for quick actions card delivery updates."""
+    
+    # Handle preflight OPTIONS request for CORS
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        response.headers.add('Access-Control-Allow-Headers', "Content-Type, X-CSRFToken")
+        response.headers.add('Access-Control-Allow-Methods', "POST, OPTIONS")
+        return response
+    
+    try:
+        # Validate JSON content type
+        if not request.is_json:
+            return jsonify({
+                'success': False,
+                'error': 'Invalid content type',
+                'message': 'Request must be JSON'
+            }), 400
+        
+        # Parse and validate request data
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'No data provided',
+                'message': 'Request body is empty'
+            }), 400
+        
+        # Extract and validate required fields
+        delivery_id = data.get('delivery_id')
+        expenses = data.get('expenses', 0.0)
+        delivery_person = data.get('delivery_person', '')
+        
+        # Validate delivery_id
+        if not delivery_id:
+            return jsonify({
+                'success': False,
+                'error': 'Validation failed',
+                'message': 'Delivery ID is required'
+            }), 400
+        
+        # Validate expenses
+        try:
+            expenses = float(expenses) if expenses is not None else 0.0
+            if expenses < 0:
+                return jsonify({
+                    'success': False,
+                    'error': 'Validation failed',
+                    'message': 'Expenses cannot be negative'
+                }), 400
+        except (ValueError, TypeError):
+            return jsonify({
+                'success': False,
+                'error': 'Validation failed',
+                'message': 'Expenses must be a valid number'
+            }), 400
+        
+        # Validate delivery_person
+        if delivery_person and not isinstance(delivery_person, str):
+            return jsonify({
+                'success': False,
+                'error': 'Validation failed',
+                'message': 'Delivery person must be a string'
+            }), 400
         
         # Find the delivery by display_id
         delivery = Delivery.query.filter_by(display_id=delivery_id).first()
         if not delivery:
-            return jsonify({'error': 'Delivery not found'}), 404
+            return jsonify({
+                'success': False,
+                'error': 'Not found',
+                'message': f'Delivery with ID {delivery_id} not found'
+            }), 404
         
-        # Update expenses and delivery person
-        delivery.expenses = float(expenses) if expenses else 0.0
-        delivery.delivery_person = delivery_person or ''
+        # Log the update attempt
+        app.logger.info(f"Updating delivery {delivery_id}: expenses={expenses}, person={delivery_person}")
         
+        # Store old values for audit
+        old_expenses = delivery.expenses
+        old_person = delivery.delivery_person
+        
+        # Update the delivery
+        delivery.expenses = expenses
+        delivery.delivery_person = delivery_person.strip() if delivery_person else ''
+        
+        # Commit the changes
         db.session.commit()
         
-        response = jsonify({
+        # Log the successful update
+        details = f"Updated delivery {delivery_id}: expenses {old_expenses}→{expenses}, person '{old_person}'→'{delivery_person}'"
+        log_delivery_action("UPDATE", delivery.id, details)
+        
+        # Return success response with updated data
+        response_data = {
             'success': True,
             'message': 'Delivery updated successfully',
-            'delivery': {
+            'data': {
                 'id': delivery.id,
                 'display_id': delivery.display_id,
                 'expenses': float(delivery.expenses),
-                'delivery_person': delivery.delivery_person
+                'delivery_person': delivery.delivery_person,
+                'updated_at': delivery.created_at.isoformat() if delivery.created_at else None
             }
-        })
-        response.headers.add("Access-Control-Allow-Origin", "*")
-        return response
+        }
+        
+        app.logger.info(f"Successfully updated delivery {delivery_id}")
+        return jsonify(response_data), 200
         
     except Exception as e:
+        # Rollback any database changes
         db.session.rollback()
-        app.logger.error(f"Error updating delivery: {str(e)}")
-        return jsonify({'error': 'Failed to update delivery'}), 500
+        
+        # Log the error
+        app.logger.error(f"Error in api_update_delivery: {str(e)}")
+        app.logger.error(f"Request data: {data if 'data' in locals() else 'N/A'}")
+        
+        # Return error response
+        return jsonify({
+            'success': False,
+            'error': 'Internal server error',
+            'message': 'An unexpected error occurred while updating the delivery'
+        }), 500
 
 @app.route('/update_delivery', methods=['POST', 'OPTIONS'])
 @login_required
+@csrf.exempt  # Exempt from CSRF since it's an API endpoint
 def update_delivery():
     """Alternative simple endpoint to update delivery."""
     
@@ -2586,15 +2701,26 @@ def audit_logs():
         flash('Error loading audit logs', 'danger')
         return render_template('audit_logs.html', audit_logs=[], pagination=None)
 
+@app.errorhandler(400)
+def bad_request_error(error):
+    """Handle 400 errors - return JSON for API requests."""
+    if request.path.startswith('/api/') or request.path.startswith('/update_') or request.path.startswith('/get_'):
+        return jsonify({'error': 'Bad request', 'message': str(error)}), 400
+    return render_template('400.html'), 400
+
 @app.errorhandler(404)
 def not_found_error(error):
-    """Handle 404 errors."""
+    """Handle 404 errors - return JSON for API requests."""
+    if request.path.startswith('/api/') or request.path.startswith('/update_') or request.path.startswith('/get_'):
+        return jsonify({'error': 'Not found', 'message': 'Endpoint not found'}), 404
     return render_template('404.html'), 404
 
 @app.errorhandler(500)
 def internal_error(error):
-    """Handle 500 errors."""
+    """Handle 500 errors - return JSON for API requests."""
     db.session.rollback()
+    if request.path.startswith('/api/') or request.path.startswith('/update_') or request.path.startswith('/get_'):
+        return jsonify({'error': 'Internal server error', 'message': 'Something went wrong'}), 500
     return render_template('500.html'), 500
 
 def create_default_admin():

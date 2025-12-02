@@ -1358,16 +1358,41 @@ function updateDelivery() {
         delivery_person: deliveryPerson
     };
     
-    fetch('/update_delivery_expenses_and_person', {
+    console.log('Sending update request:', data);
+    
+    // Get CSRF token from meta tag or form
+    const csrfToken = document.querySelector('meta[name=csrf-token]')?.getAttribute('content') ||
+                      document.querySelector('input[name=csrf_token]')?.value;
+    
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+    
+    // Add CSRF token if available
+    if (csrfToken) {
+        headers['X-CSRFToken'] = csrfToken;
+    }
+    
+    fetch('/api/simple-update', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: headers,
         body: JSON.stringify(data)
     })
     .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+        
+        if (!response.ok) {
+            // Log the response text for debugging
+            return response.text().then(text => {
+                console.error('Error response text:', text);
+                throw new Error(`HTTP ${response.status}: ${text}`);
+            });
+        }
+        
         if (response.status === 404) {
             // Try alternative endpoint
+            console.log('Trying alternative endpoint...');
             return fetch('/update_delivery', {
                 method: 'POST',
                 headers: {
