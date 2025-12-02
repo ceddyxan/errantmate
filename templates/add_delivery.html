@@ -26,8 +26,7 @@
         </div>
         <form method="POST" action="{{ url_for('add_delivery') }}" class="space-y-6 mobile-form" autocomplete="off">
             <!-- CSRF Token -->
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <!-- Fake datalist to prevent autocomplete -->
+                        <!-- Fake datalist to prevent autocomplete -->
             <datalist id="autocompleteOff">
                 <option value=""></option>
             </datalist>
