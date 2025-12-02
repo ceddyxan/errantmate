@@ -426,7 +426,7 @@ def dashboard():
         active_deliveries = pending_count + in_transit_count
         
         # Today's completed deliveries
-        today = datetime.now().date()
+        today = get_current_time().date()
         completed_today = len([d for d in deliveries if d.status == 'Delivered' and d.created_at.date() == today])
         
         # Monthly completion rate
@@ -504,7 +504,7 @@ def get_time_ago(created_at):
     if not created_at:
         return "Unknown"
     
-    now = datetime.now()
+    now = get_current_time()
     diff = now - created_at
     
     if diff.days > 0:
@@ -671,8 +671,8 @@ def add_delivery():
         log_page_view("Add Delivery")
     if request.method == 'POST':
         try:
-            # Capture the exact current local time when saving
-            current_time = datetime.now()
+            # Capture the exact current East Africa Time when saving
+            current_time = get_current_time()
             
             delivery = Delivery(
                 display_id=generate_display_id(),
@@ -980,19 +980,19 @@ def export(period):
         # Define date ranges using the new format
         if period == 'daily':
             start_date, end_date = date_ranges['today']
-            filename = f'deliveries_{datetime.now().strftime("%Y-%m-%d")}.csv'
+            filename = f'deliveries_{get_current_time().strftime("%Y-%m-%d")}.csv'
             date_range = 'today'
         elif period == 'weekly':
             start_date, end_date = date_ranges['week']
-            filename = f'deliveries_week_{datetime.now().strftime("%Y-%U")}.csv'
+            filename = f'deliveries_week_{get_current_time().strftime("%Y-%U")}.csv'
             date_range = 'this week'
         elif period == 'monthly':
             start_date, end_date = date_ranges['month']
-            filename = f'deliveries_{datetime.now().strftime("%Y-%m")}.csv'
+            filename = f'deliveries_{get_current_time().strftime("%Y-%m")}.csv'
             date_range = 'this month'
         else:  # yearly
             start_date, end_date = date_ranges['year']
-            filename = f'deliveries_{datetime.now().year}.csv'
+            filename = f'deliveries_{get_current_time().year}.csv'
             date_range = 'this year'
         
         # Query deliveries
