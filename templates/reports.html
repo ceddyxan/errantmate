@@ -2293,8 +2293,18 @@ window.updateStatusDistributionForPeriod = function(period) {
                     });
                 });
                 
-                // Update chart (implementation depends on your chart library)
-                updateStatusChart(statusCounts);
+                // Update chart using the existing chart system
+                if (typeof updateChartsData === 'function') {
+                    // Get current deliveries data and update with new period
+                    fetch('/api/deliveries')
+                        .then(response => response.json())
+                        .then(deliveriesData => {
+                            if (deliveriesData.success && deliveriesData.deliveries) {
+                                updateChartsData(deliveriesData.deliveries, period);
+                            }
+                        })
+                        .catch(error => console.error('Error fetching deliveries for chart update:', error));
+                }
             }
         })
         .catch(error => console.error('Error fetching status distribution:', error));
@@ -2309,10 +2319,17 @@ window.updateDeliveryTrendsForPeriod = function(days) {
                 return;
             }
             
-            // Update delivery trends chart
+            // Update delivery trends chart using existing chart system
             const trendsCanvas = document.getElementById('deliveryTrendsChart');
             if (trendsCanvas && data.dates) {
-                updateTrendsChart(data);
+                // Update the trends chart with new data
+                if (typeof updateDeliveryTrends === 'function') {
+                    // Call the existing function which will fetch fresh data
+                    updateDeliveryTrends();
+                } else {
+                    // Fallback: manually update the chart if the function doesn't exist
+                    console.log('Delivery trends data:', data);
+                }
             }
         })
         .catch(error => console.error('Error fetching delivery trends:', error));
