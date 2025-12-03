@@ -1742,7 +1742,7 @@ def get_delivery_trends():
     try:
         # Get date range from query params (default to last 30 days)
         days = request.args.get('days', 30, type=int)
-        end_date = datetime.now()
+        end_date = get_current_time()
         start_date = end_date - timedelta(days=days)
         
         # Get deliveries within date range
@@ -1830,7 +1830,7 @@ def get_revenue_charts():
         
         # Get date range from query params (default to last 30 days)
         days = request.args.get('days', 30, type=int)
-        end_date = datetime.now()
+        end_date = get_current_time()
         start_date = end_date - timedelta(days=days)
         
         # Get deliveries within date range
@@ -1936,7 +1936,7 @@ def get_revenue_analytics():
         period = request.args.get('period', 'daily')
         
         # Calculate date ranges based on period
-        end_date = datetime.now()
+        end_date = get_current_time()
         
         if period == 'daily':
             start_date = end_date - timedelta(days=7)
@@ -2016,7 +2016,7 @@ def process_daily_data(daily_data, days):
     revenue = []
     
     for i in range(days):
-        date = datetime.now() - timedelta(days=days-1-i)
+        date = get_current_time() - timedelta(days=days-1-i)
         date_key = date.strftime('%Y-%m-%d')
         
         # Format label as day name
@@ -2036,7 +2036,7 @@ def process_weekly_data(daily_data, days):
     
     for date_key, data in daily_data.items():
         date_obj = datetime.strptime(date_key, '%Y-%m-%d')
-        days_ago = (datetime.now() - date_obj).days
+        days_ago = (get_current_time() - date_obj).days
         
         if days_ago < 35:  # Within 5 weeks
             week_num = min(days_ago // 7, 4)
@@ -2056,7 +2056,7 @@ def process_monthly_data(daily_data, days):
         month_num = date_obj.month - 1  # 0-indexed
         
         # Only include data from the last 12 months
-        if (datetime.now() - date_obj).days < 365:
+        if (get_current_time() - date_obj).days < 365:
             revenue[month_num] += data['revenue']
     
     return labels, revenue
@@ -2275,7 +2275,7 @@ def get_status_distribution():
     try:
         # Get date range from query params (default to last 30 days)
         days = request.args.get('days', 30, type=int)
-        end_date = datetime.now()
+        end_date = get_current_time()
         start_date = end_date - timedelta(days=days)
         
         # Get deliveries within date range
@@ -2309,7 +2309,7 @@ def get_delivery_trends_line():
     try:
         # Get date range from query params (default to last 30 days)
         days = request.args.get('days', 30, type=int)
-        end_date = datetime.now()
+        end_date = get_current_time()
         start_date = end_date - timedelta(days=days)
         
         # Get deliveries within date range
