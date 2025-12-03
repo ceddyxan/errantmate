@@ -427,16 +427,19 @@ def dashboard():
         
         # Today's completed deliveries
         today = get_current_time().date()
-        completed_today = len([d for d in deliveries if d.status == 'Delivered' and d.created_at.date() == today])
+        completed_today = len([d for d in deliveries if d.status == 'Delivered' and 
+                              (d.created_at.date() if d.created_at.tzinfo is None else d.created_at.astimezone(EAT).date()) == today])
         
         # Monthly completion rate
         current_month = today.replace(day=1)
-        month_deliveries = [d for d in deliveries if d.created_at.date() >= current_month]
+        month_deliveries = [d for d in deliveries if 
+                           (d.created_at.date() if d.created_at.tzinfo is None else d.created_at.astimezone(EAT).date()) >= current_month]
         month_delivered = [d for d in month_deliveries if d.status == 'Delivered']
         completion_rate = round((len(month_delivered) / len(month_deliveries) * 100), 1) if month_deliveries else 0
         
         # Today's deliveries
-        today_deliveries = [d for d in deliveries if d.created_at.date() == today]
+        today_deliveries = [d for d in deliveries if 
+                           (d.created_at.date() if d.created_at.tzinfo is None else d.created_at.astimezone(EAT).date()) == today]
         
         # Financial statistics
         total_revenue = sum(float(d.amount) for d in deliveries if d.amount)
@@ -505,6 +508,18 @@ def get_time_ago(created_at):
         return "Unknown"
     
     now = get_current_time()
+    
+    # Handle timezone differences - ensure both are comparable
+    if created_at.tzinfo is None:
+        # If created_at is naive, treat it as EAT (same timezone as now)
+        created_at = EAT.localize(created_at) if hasattr(EAT, 'localize') else created_at.replace(tzinfo=EAT)
+    
+    # If now is timezone-aware and created_at is not, or vice versa, make them comparable
+    if now.tzinfo is None and created_at.tzinfo is not None:
+        now = now.replace(tzinfo=created_at.tzinfo)
+    elif created_at.tzinfo is None and now.tzinfo is not None:
+        created_at = created_at.replace(tzinfo=now.tzinfo)
+    
     diff = now - created_at
     
     if diff.days > 0:
