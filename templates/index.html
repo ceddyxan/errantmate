@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
+{% set eat_tz = pytz.timezone('Africa/Nairobi') %}
 <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
@@ -274,7 +275,7 @@
                                 {% else %}
                                     <span class="text-xs text-gray-400">⏳</span>
                                 {% endif %}
-                                <span class="text-xs text-gray-400">{{ delivery.created_at.strftime('%H:%M') if delivery.created_at else '' }}</span>
+                                <span class="text-xs text-gray-400">{{ (delivery.created_at.replace(tzinfo=pytz.utc) if delivery.created_at.tzinfo is None else delivery.created_at).astimezone(eat_tz).strftime('%H:%M') if delivery.created_at else '' }}</span>
                             </div>
                         </div>
                         {% endfor %}
