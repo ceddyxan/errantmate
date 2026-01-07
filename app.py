@@ -458,7 +458,7 @@ def dashboard():
                 'recipient_name': delivery.recipient_name,
                 'recipient_address': delivery.recipient_address,
                 'status': delivery.status,
-                'created_at': delivery.created_at.strftime('%Y-%m-%dT%H:%M:%S') if delivery.created_at else None,
+                'created_at': delivery.created_at.isoformat() if delivery.created_at else None,
                 'time_ago': get_time_ago(delivery.created_at) if delivery.created_at else "Unknown",
                 'time_ago': time_ago,
                 'delivery_person': delivery.delivery_person
@@ -936,7 +936,7 @@ def get_summary():
                 'amount': float(delivery.amount) if delivery.amount else 0.0,
                 'expenses': float(delivery.expenses) if delivery.expenses else 0.0,
                 'delivery_person': delivery.delivery_person or '',
-                'created_at': delivery.created_at.strftime('%Y-%m-%dT%H:%M:%S') if delivery.created_at else None,
+                'created_at': delivery.created_at.isoformat() if delivery.created_at else None,
                 'time_ago': get_time_ago(delivery.created_at) if delivery.created_at else "Unknown"
             }
             deliveries_data.append(delivery_dict)
@@ -1090,7 +1090,7 @@ def get_delivery_details(delivery_id):
             'goods_type': delivery.goods_type,
             'quantity': delivery.quantity,
             'payment_by': delivery.payment_by,
-            'created_at': delivery.created_at.strftime('%Y-%m-%dT%H:%M:%S') if delivery.created_at else None,
+            'created_at': delivery.created_at.isoformat() if delivery.created_at else None,
                 'time_ago': get_time_ago(delivery.created_at) if delivery.created_at else "Unknown",
             'updated_at': delivery.created_at.isoformat() if delivery.created_at else None  # Use created_at since updated_at doesn't exist
         }
@@ -2422,7 +2422,7 @@ def get_recent_deliveries():
                 'goods_type': delivery.goods_type,
                 'quantity': delivery.quantity,
                 'payment_by': delivery.payment_by,
-                'created_at': delivery.created_at.strftime('%Y-%m-%dT%H:%M:%S') if delivery.created_at else None,
+                'created_at': delivery.created_at.isoformat() if delivery.created_at else None,
                 'time_ago': get_time_ago(delivery.created_at) if delivery.created_at else "Unknown"
             }
             deliveries_data.append(delivery_dict)
@@ -2474,7 +2474,7 @@ def get_user_recent_deliveries():
                 'goods_type': delivery.goods_type,
                 'quantity': delivery.quantity,
                 'payment_by': delivery.payment_by,
-                'created_at': delivery.created_at.strftime('%Y-%m-%dT%H:%M:%S') if delivery.created_at else None,
+                'created_at': delivery.created_at.isoformat() if delivery.created_at else None,
                 'time_ago': get_time_ago(delivery.created_at) if delivery.created_at else "Unknown"
             }
             deliveries_data.append(delivery_dict)
