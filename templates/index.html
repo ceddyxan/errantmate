@@ -275,7 +275,7 @@
                                 {% else %}
                                     <span class="text-xs text-gray-400">⏳</span>
                                 {% endif %}
-                                <span class="text-xs text-gray-400">{{ (delivery.created_at.replace(tzinfo=pytz.utc) if delivery.created_at.tzinfo is None else delivery.created_at).astimezone(eat_tz).strftime('%H:%M') if delivery.created_at else '' }}</span>
+                                <span class="text-xs text-gray-400">{{ (delivery.created_at.replace(tzinfo=pytz.utc) if delivery.created_at.tzinfo == None else delivery.created_at).astimezone(eat_tz).strftime('%H:%M') if delivery.created_at else '' }}</span>
                             </div>
                         </div>
                         {% endfor %}
