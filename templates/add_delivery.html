@@ -413,13 +413,13 @@ function getTimeAgo(dateString) {
     if (!dateString) return "Unknown";
     
     try {
-        // Handle both ISO format and ensure it's treated as local time
+        // Parse ISO string as local time to prevent double UTC conversion
         let createdDate;
         if (dateString.includes('T') && dateString.includes(':')) {
-            // Parse ISO format as local time
             const [datePart, timePart] = dateString.split('T');
             const [year, month, day] = datePart.split('-').map(Number);
             const [hours, minutes, seconds] = timePart.split(':').map(Number);
+            // Create as local time (no timezone conversion)
             createdDate = new Date(year, month - 1, day, hours, minutes, seconds || 0);
         } else {
             createdDate = new Date(dateString);
