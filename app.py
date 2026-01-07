@@ -450,6 +450,7 @@ def dashboard():
         # Convert deliveries to dictionaries for JSON serialization
         deliveries_dict = []
         for delivery in deliveries[:10]:
+            time_ago = get_time_ago(delivery.created_at) if delivery.created_at else "Unknown"
             deliveries_dict.append({
                 'id': delivery.id,
                 'display_id': delivery.display_id,
@@ -458,6 +459,7 @@ def dashboard():
                 'recipient_address': delivery.recipient_address,
                 'status': delivery.status,
                 'created_at': delivery.created_at.isoformat() if delivery.created_at else None,
+                'time_ago': time_ago,
                 'delivery_person': delivery.delivery_person
             })
         
