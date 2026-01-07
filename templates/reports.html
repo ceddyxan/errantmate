@@ -1809,8 +1809,8 @@ function displayRecentDeliveries(deliveries) {
                     </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${getTimeAgo(delivery.created_at)}
-                </td>
+                        ${delivery.time_ago || getTimeAgo(delivery.created_at)}
+                    </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div class="flex space-x-2">
                         <button onclick="viewDeliveryDetails('${delivery.id}')" 
@@ -2338,7 +2338,18 @@ function getTimeAgo(dateString) {
     if (!dateString) return "Unknown";
     
     try {
-        const createdDate = new Date(dateString);
+        // Handle both ISO format and ensure it's treated as local time
+        let createdDate;
+        if (dateString.includes('T') && dateString.includes(':')) {
+            // Parse ISO format as local time
+            const [datePart, timePart] = dateString.split('T');
+            const [year, month, day] = datePart.split('-').map(Number);
+            const [hours, minutes, seconds] = timePart.split(':').map(Number);
+            createdDate = new Date(year, month - 1, day, hours, minutes, seconds || 0);
+        } else {
+            createdDate = new Date(dateString);
+        }
+        
         const now = new Date();
         const diff = now - createdDate;
         
