@@ -373,22 +373,13 @@
     </div>
 
 <script>
-// Format local date time function (parses ISO as local time)
+// Format local date time function (converts UTC timestamp to local time)
 function formatLocalDateTime(dateString) {
     if (!dateString) return "Unknown";
     
     try {
-        // Parse ISO format as local time (same logic as getTimeAgo)
-        let createdDate;
-        if (dateString.includes('T') && dateString.includes(':')) {
-            const [datePart, timePart] = dateString.split('T');
-            const [year, month, day] = datePart.split('-').map(Number);
-            const [hours, minutes, seconds] = timePart.split(':').map(Number);
-            createdDate = new Date(year, month - 1, day, hours, minutes, seconds || 0);
-        } else {
-            createdDate = new Date(dateString);
-        }
-        
+        // Let browser handle UTC to local time conversion correctly
+        const createdDate = new Date(dateString);
         return createdDate.toLocaleString();
     } catch (e) {
         return "Unknown";
