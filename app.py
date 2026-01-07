@@ -1,16 +1,18 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, make_response
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import inspect, text
 from datetime import datetime, timedelta, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
+from collections import defaultdict
+from logging.handlers import RotatingFileHandler
 import csv
 import io
 import os
+import platform
 import secrets
 import logging
-from logging.handlers import RotatingFileHandler
 import time
-from collections import defaultdict
 import pytz
 
 # Initialize Flask app
@@ -18,22 +20,30 @@ app = Flask(__name__)
 
 # Secure secret key configuration
 secret_key = os.environ.get('SECRET_KEY')
+flask_env = os.environ.get('FLASK_ENV', 'development')
+debug_mode = os.environ.get('DEBUG', 'False').lower() == 'true'
+
 if not secret_key:
-    if app.debug:
+    if flask_env == 'development' or debug_mode:
         # Generate a secure random key for development
         secret_key = secrets.token_hex(32)
+        print(f"Generated development secret key: {secret_key[:16]}...")
     else:
         raise ValueError("SECRET_KEY environment variable is required in production")
 app.secret_key = secret_key
 
-# Database configuration - PostgreSQL only
+# Database configuration - PostgreSQL for production, SQLite for development
 database_url = os.environ.get('DATABASE_URL')
-if not database_url:
-    raise ValueError("DATABASE_URL environment variable is required")
+flask_env = os.environ.get('FLASK_ENV', 'development')
 
-# Ensure it's a PostgreSQL connection
-if not database_url.startswith('postgres'):
-    raise ValueError("DATABASE_URL must be a PostgreSQL connection string")
+if not database_url:
+    # Default to SQLite for local development
+    database_url = 'sqlite:///deliveries.db'
+    print(f"Using SQLite for local development: {database_url}")
+
+# For production, ensure PostgreSQL is used
+if flask_env == 'production' and not database_url.startswith('postgres'):
+    raise ValueError("DATABASE_URL must be a PostgreSQL connection string in production")
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -114,8 +124,7 @@ def ensure_database_tables():
             db.create_all()
             
             # Verify tables exist
-            from sqlalchemy import inspect
-            inspector = inspect(db.engine)
+            inspector = db.inspect(db.engine)
             tables = inspector.get_table_names()
             required_tables = ['user', 'delivery', 'audit_log']
             
@@ -147,8 +156,7 @@ def ensure_database_tables():
                 return False
                 
     except Exception as e:
-        import traceback
-        traceback.print_exc()
+        print(f"Error: {e}")
         return False
 
 # Models
@@ -289,7 +297,6 @@ def health_check():
     """Health check endpoint for Render."""
     try:
         # Test database connection
-        from sqlalchemy import text
         db.session.execute(text('SELECT 1'))
         return jsonify({'status': 'healthy', 'database': 'connected'}), 200
     except Exception as e:
@@ -299,7 +306,6 @@ def health_check():
 def check_database():
     """Check database status and tables."""
     try:
-        from sqlalchemy import inspect
         inspector = inspect(db.engine)
         tables = inspector.get_table_names()
         
@@ -366,7 +372,6 @@ def force_init_database():
             db.create_all()
             
             # Verify tables were created
-            from sqlalchemy import inspect
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
             required_tables = ['user', 'delivery', 'audit_log']
@@ -603,7 +608,6 @@ def database_required(f):
     def decorated_function(*args, **kwargs):
         try:
             # Quick check if tables exist
-            from sqlalchemy import inspect
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
             required_tables = ['user', 'delivery', 'audit_log']
@@ -978,7 +982,8 @@ def get_summary():
             'today': get_summary_data(Delivery.query.filter(Delivery.created_at >= dates['today'][0])),
             'week': get_summary_data(Delivery.query.filter(Delivery.created_at >= dates['week'][0])),
             'month': get_summary_data(Delivery.query.filter(Delivery.created_at >= dates['month'][0])),
-            'year': get_summary_data(Delivery.query.filter(Delivery.created_at >= dates['year'][0]))
+            'year': get_summary_data(Delivery.query.filter(Delivery.created_at >= dates['year'][0])),
+            'all': get_summary_data(Delivery.query.filter(Delivery.created_at >= dates['all'][0]))
         })
     except Exception as e:
         app.logger.error(f"Error getting summary: {str(e)}")
@@ -1005,7 +1010,15 @@ def export(period):
             start_date, end_date = date_ranges['month']
             filename = f'deliveries_{get_current_time().strftime("%Y-%m")}.csv'
             date_range = 'this month'
-        else:  # yearly
+        elif period == 'yearly':
+            start_date, end_date = date_ranges['year']
+            filename = f'deliveries_{get_current_time().year}.csv'
+            date_range = 'this year'
+        elif period == 'all':
+            start_date, end_date = date_ranges['all']
+            filename = f'deliveries_all_time_{get_current_time().strftime("%Y-%m-%d")}.csv'
+            date_range = 'all time'
+        else:  # default to yearly for backward compatibility
             start_date, end_date = date_ranges['year']
             filename = f'deliveries_{get_current_time().year}.csv'
             date_range = 'this year'
@@ -1510,6 +1523,38 @@ def api_update_user(user_id):
         app.logger.error(f"Error updating user: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to update user'}), 500
 
+@app.route('/api/senders', methods=['GET'])
+@login_required
+@database_required
+def api_get_senders():
+    """Get unique sender names and phone numbers for autocomplete"""
+    try:
+        query = request.args.get('q', '').strip()
+        
+        if len(query) < 1:
+            return jsonify({'senders': []})
+        
+        # Get unique sender names that contain the query (anywhere in the name)
+        senders = db.session.query(Delivery.sender_name, Delivery.sender_phone)\
+            .filter(Delivery.sender_name.ilike(f'%{query}%'))\
+            .distinct()\
+            .order_by(Delivery.sender_name)\
+            .limit(10)\
+            .all()
+        
+        sender_list = []
+        for name, phone in senders:
+            sender_list.append({
+                'name': name,
+                'phone': phone
+            })
+        
+        return jsonify({'senders': sender_list})
+        
+    except Exception as e:
+        app.logger.error(f"Error getting senders: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to load senders'}), 500
+
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
 @admin_required_api
 @database_required
@@ -1691,7 +1736,7 @@ def update_user(user_id):
         data = request.get_json()
         username = data.get('username', '').strip()
         password = data.get('password', '')
-        role = data.get('role', user.role)  # Keep current role if not specified
+        role = data.get('role', user.role)
         
         if not username:
             return jsonify({'error': 'Username is required'}), 400

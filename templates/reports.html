@@ -77,6 +77,12 @@
                     <i class="fas fa-calendar mr-2 text-cyan-200 group-hover:text-white group-hover:rotate-12 transition-all duration-300"></i>
                     <span class="font-black text-teal-100">Yearly</span>
                 </a>
+                
+                <a href="{{ url_for('export', period='all') }}" 
+                   class="group inline-flex items-center px-3 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg text-sm font-bold hover:from-purple-600 hover:to-indigo-600 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 border border-purple-400 flex-1 justify-center">
+                    <i class="fas fa-infinity mr-2 text-purple-200 group-hover:text-white group-hover:rotate-12 transition-all duration-300"></i>
+                    <span class="font-black text-purple-100">All Time</span>
+                </a>
             </div>
         </div>
     </div>
@@ -90,7 +96,7 @@
             </div>
         </div>
         <div class="p-4">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
                 <button onclick="filterData('today')" 
                         class="filter-btn group relative px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 transform hover:scale-105" 
                         data-period="today">
@@ -121,6 +127,14 @@
                     <div class="flex flex-col items-center">
                         <i class="fas fa-calendar text-lg mb-1 text-gray-400 group-hover:text-blue-500"></i>
                         <span>This Year</span>
+                    </div>
+                </button>
+                <button onclick="filterData('all')" 
+                        class="filter-btn group relative px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all duration-200 transform hover:scale-105" 
+                        data-period="all">
+                    <div class="flex flex-col items-center">
+                        <i class="fas fa-infinity text-lg mb-1 text-gray-400 group-hover:text-blue-500"></i>
+                        <span>All Time</span>
                     </div>
                 </button>
             </div>
@@ -1403,12 +1417,25 @@ function clearDeliveryForm() {
 }
 function fetchDeliveryPersons(period = 'month') {
     fetch(`/get_delivery_persons?period=${period}`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    window.location.href = '/login';
+                    throw new Error('Authentication required');
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(persons => {
             displayDeliveryPersons(persons, period);
         })
         .catch(error => {
             console.error('Error fetching delivery persons:', error);
+            if (error.message !== 'Authentication required') {
+                // Display empty state if fetch fails
+                displayDeliveryPersons([], period);
+            }
         });
 }
 
@@ -1544,7 +1571,17 @@ fetchDeliveryPersons('month');
 
 function fetchSummaryData() {
     fetch("{{ url_for('get_summary') }}")
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    // Authentication error - redirect to login
+                    window.location.href = '/login';
+                    throw new Error('Authentication required');
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             summaryData = data;
             updateSummaryCards(data);
@@ -1553,8 +1590,10 @@ function fetchSummaryData() {
         })
         .catch(error => {
             console.error('Error fetching summary data:', error);
-            // Still create charts with empty data if fetch fails
-            createCharts();
+            if (error.message !== 'Authentication required') {
+                // Still create charts with empty data if fetch fails
+                createCharts();
+            }
         });
 }
 
@@ -1653,11 +1692,8 @@ window.fetchRecentDeliveries = function(append = false) {
     if (isLoadingMore) return;
     
     isLoadingMore = true;
-    const loadingBtn = document.getElementById('loadMoreBtn');
-    if (loadingBtn) {
-        loadingBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Loading...';
-        loadingBtn.disabled = true;
-    }
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    if (loadingIndicator) loadingIndicator.classList.remove('hidden');
     
     const page = append ? currentPage : 1;
     const url = `/get_recent_deliveries?page=${page}&per_page=${deliveriesPerPage}`;
@@ -1665,26 +1701,18 @@ window.fetchRecentDeliveries = function(append = false) {
     fetch(url)
         .then(response => {
             if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    window.location.href = '/login';
+                    throw new Error('Authentication required');
+                }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            if (data.error) {
-                displayRecentDeliveriesError();
-            } else if (data.deliveries && Array.isArray(data.deliveries)) {
-                if (append) {
-                    appendRecentDeliveries(data.deliveries);
-                } else {
-                    displayRecentDeliveries(data.deliveries);
-                }
-                
-                // Update pagination state
-                currentPage = data.pagination.page;
-                hasMoreData = data.pagination.has_next;
-                
-                // Update load more button
-                updateLoadMoreButton();
+            if (data.deliveries && data.pagination) {
+                displayRecentDeliveries(data.deliveries, append);
+                updatePagination(data.pagination);
             } else {
                 console.error('Unexpected data format:', data);
                 displayRecentDeliveriesError();
@@ -1696,10 +1724,7 @@ window.fetchRecentDeliveries = function(append = false) {
         })
         .finally(() => {
             isLoadingMore = false;
-            if (loadingBtn) {
-                loadingBtn.innerHTML = '<i class="fas fa-plus mr-2"></i>Load More';
-                loadingBtn.disabled = false;
-            }
+            if (loadingIndicator) loadingIndicator.classList.add('hidden');
         });
 };
 
@@ -1833,7 +1858,7 @@ window.displayRecentDeliveriesError = function() {
                 <td colspan="8" class="text-center py-8">
                     <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-3"></i>
                     <p class="text-gray-500">Error loading recent deliveries</p>
-                    <button onclick="fetchRecentDeliveries()" class="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                    <button onclick="fetchRecentDeliveriesWithFilter()" class="mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium">
                         <i class="fas fa-retry mr-1"></i>
                         Try Again
                     </button>
@@ -1922,6 +1947,31 @@ window.appendRecentDeliveries = function(newDeliveries) {
     renumberVisibleRows();
 };
 
+// Update pagination information
+window.updatePagination = function(pagination) {
+    const paginationInfo = document.getElementById('paginationInfo');
+    if (paginationInfo) {
+        paginationInfo.innerHTML = `
+            Showing ${pagination.page * pagination.per_page - pagination.per_page + 1} to 
+            ${Math.min(pagination.page * pagination.per_page, pagination.total)} of ${pagination.total} deliveries
+        `;
+    }
+    
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (loadMoreBtn) {
+        if (pagination.has_next) {
+            loadMoreBtn.classList.remove('hidden');
+            loadMoreBtn.disabled = false;
+            loadMoreBtn.innerHTML = '<i class="fas fa-plus mr-2"></i>Load More';
+        } else {
+            loadMoreBtn.classList.add('hidden');
+        }
+    }
+    
+    hasMoreData = pagination.has_next;
+    currentPage = pagination.page;
+};
+
 // Update load more button visibility and state
 window.updateLoadMoreButton = function() {
     const loadMoreContainer = document.getElementById('loadMoreContainer');
@@ -1938,12 +1988,86 @@ window.updateLoadMoreButton = function() {
     }
 };
 
+// Fetch recent deliveries with period filter
+window.fetchRecentDeliveriesWithFilter = function() {
+    if (isLoadingMore) return;
+    
+    isLoadingMore = true;
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    if (loadingIndicator) loadingIndicator.classList.remove('hidden');
+    
+    const url = `/get_recent_deliveries?page=1&per_page=${deliveriesPerPage}`;
+    
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    window.location.href = '/login';
+                    throw new Error('Authentication required');
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.deliveries && data.pagination) {
+                // Filter deliveries based on current period
+                const filteredDeliveries = filterDeliveriesByPeriod(data.deliveries, currentPeriod);
+                displayRecentDeliveries(filteredDeliveries, false);
+                updatePagination(data.pagination);
+            } else {
+                displayRecentDeliveriesError();
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching recent deliveries:', error);
+            if (error.message !== 'Authentication required') {
+                displayRecentDeliveriesError();
+            }
+        })
+        .finally(() => {
+            isLoadingMore = false;
+            if (loadingIndicator) loadingIndicator.classList.add('hidden');
+        });
+};
+
+// Helper function to filter deliveries by period
+window.filterDeliveriesByPeriod = function(deliveries, period) {
+    if (!deliveries || period === 'all') return deliveries;
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    let startDate;
+    switch (period) {
+        case 'today':
+            startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            break;
+        case 'week':
+            startDate = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
+            break;
+        case 'month':
+            startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+            break;
+        case 'year':
+            startDate = new Date(today.getFullYear(), 0, 1);
+            break;
+        default:
+            return deliveries;
+    }
+    
+    return deliveries.filter(delivery => {
+        const deliveryDate = new Date(delivery.created_at);
+        return deliveryDate >= startDate;
+    });
+};
+
 // Load more deliveries
 window.loadMoreDeliveries = function() {
     if (isLoadingMore || !hasMoreData) return;
     
     currentPage++;
-    fetchRecentDeliveries(true); // append = true
+    fetchRecentDeliveriesWithFilter(true); // append = true
 };
 
 // Helper function to get status color
@@ -2776,7 +2900,7 @@ window.updateDeliveryExpensesAndPerson = function() {
                 fetchDeliveryPersons(currentPeriod);
                 
                 // Refresh recent deliveries table
-                fetchRecentDeliveries();
+                fetchRecentDeliveriesWithFilter();
                 
                 // Show additional notification for comprehensive update
                 setTimeout(() => {
@@ -3001,8 +3125,11 @@ window.loadPendingDeliveries = function() {
     
     fetch('/get_recent_deliveries')
         .then(response => response.json())
-        .then(deliveries => {
+        .then(data => {
             select.innerHTML = '<option value="">Select pending delivery...</option>';
+            
+            // Extract deliveries array from the response
+            const deliveries = data.deliveries || [];
             
             if (!Array.isArray(deliveries) || deliveries.length === 0) {
                 select.innerHTML += '<option value="" disabled>No pending deliveries found</option>';
