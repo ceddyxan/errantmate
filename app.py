@@ -447,9 +447,17 @@ def dashboard():
         month_delivered = [d for d in month_deliveries if d.status == 'Delivered']
         completion_rate = round((len(month_delivered) / len(month_deliveries) * 100), 1) if month_deliveries else 0
         
-        # Today's deliveries
-        today_deliveries = [d for d in deliveries if 
-                           (d.created_at.date() if d.created_at.tzinfo is None else d.created_at.astimezone(EAT).date()) == today]
+        # Today's deliveries with timezone conversion
+        today_deliveries_converted = []
+        for delivery in deliveries:
+            delivery_eat_time = delivery.created_at.astimezone(EAT) if delivery.created_at.tzinfo else delivery.created_at.replace(tzinfo=pytz.utc).astimezone(EAT)
+            if delivery_eat_time.date() == today:
+                # Create a copy with converted time for template
+                delivery_converted = delivery
+                delivery_converted.created_at_eat = delivery_eat_time
+                today_deliveries_converted.append(delivery_converted)
+        
+        today_deliveries = today_deliveries_converted
         
         # Financial statistics
         total_revenue = sum(float(d.amount) for d in deliveries if d.amount)
