@@ -97,6 +97,11 @@ login_attempts = defaultdict(list)
 LOGIN_ATTEMPT_LIMIT = 5  # Max 5 attempts
 LOGIN_ATTEMPT_WINDOW = 300  # 5 minutes window
 
+# Make pytz available in templates
+@app.context_processor
+def inject_pytz():
+    return {'pytz': pytz}
+
 def is_rate_limited(ip_address):
     """Check if IP address is rate limited for login attempts."""
     now = time.time()
