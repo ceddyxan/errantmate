@@ -25,6 +25,9 @@
             </h2>
         </div>
         <form method="POST" action="{{ url_for('add_delivery') }}" class="space-y-6 mobile-form" autocomplete="off">
+            <!-- Hidden field for browser local time -->
+            <input type="hidden" name="browser_local_time" id="browser_local_time">
+            
             <!-- CSRF Token -->
                         <!-- Fake datalist to prevent autocomplete -->
             <datalist id="autocompleteOff">
@@ -376,6 +379,17 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Add Delivery page loaded - DOMContentLoaded fired');
+    
+    // Set browser local time when form is submitted
+    const deliveryForm = document.querySelector('form[method="POST"]');
+    if (deliveryForm) {
+        deliveryForm.addEventListener('submit', function() {
+            const now = new Date();
+            const browserLocalTime = now.toISOString();
+            document.getElementById('browser_local_time').value = browserLocalTime;
+            console.log('Browser local time set:', browserLocalTime);
+        });
+    }
     
     // Recent Deliveries Toggle
     const toggleButton = document.getElementById('toggleDeliveries');

@@ -446,24 +446,8 @@ def dashboard():
         month_delivered = [d for d in month_deliveries if d.status == 'Delivered']
         completion_rate = round((len(month_delivered) / len(month_deliveries) * 100), 1) if month_deliveries else 0
         
-        
-        # Today's deliveries with proper timezone conversion for browser display
-        today_deliveries_converted = []
-        for delivery in deliveries:
-            # Convert EAT time to browser local time (remove timezone info)
-            if delivery.created_at.tzinfo:
-                # Convert timezone-aware EAT time to naive datetime for browser local display
-                browser_time = delivery.created_at.replace(tzinfo=None)
-            else:
-                browser_time = delivery.created_at
-            
-            if browser_time.date() == today:
-                # Create a copy with browser-local time for template
-                delivery_converted = delivery
-                delivery_converted.created_at_browser = browser_time
-                today_deliveries_converted.append(delivery_converted)
-        
-        today_deliveries = today_deliveries_converted
+        # Today's deliveries (filter by date only, since database now stores browser local time)
+        today_deliveries = [d for d in deliveries if d.created_at.date() == today]
         
         # Financial statistics
         total_revenue = sum(float(d.amount) for d in deliveries if d.amount)
@@ -708,8 +692,15 @@ def add_delivery():
         log_page_view("Add Delivery")
     if request.method == 'POST':
         try:
-            # Capture the exact current East Africa Time when saving
-            current_time = get_current_time()
+            # Use browser local time if provided, otherwise use current time
+            browser_local_time = request.form.get('browser_local_time')
+            if browser_local_time:
+                # Parse the browser local time (ISO string) and use it directly
+                from datetime import datetime
+                current_time = datetime.fromisoformat(browser_local_time.replace('Z', '+00:00'))
+            else:
+                # Fallback to current time if browser time not available
+                current_time = get_current_time()
             
             delivery = Delivery(
                 display_id=generate_display_id(),
@@ -725,7 +716,7 @@ def add_delivery():
                 expenses=0.0,  # Will be set later via Quick Actions
                 payment_by=request.form['payment_by'],
                 status=request.form.get('status', 'Pending'),
-                created_at=current_time,  # Explicitly set to current local time
+                created_at=current_time,  # Use browser local time
                 created_by=session.get('user_id')  # Set the creator
             )
             db.session.add(delivery)
