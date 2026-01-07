@@ -441,20 +441,29 @@ def dashboard():
                               (d.created_at.date() if d.created_at.tzinfo is None else d.created_at.astimezone(EAT).date()) == today])
         
         # Monthly completion rate
-        current_month = today.replace(day=1)
+        current_month = get_current_time().date().replace(day=1)
         month_deliveries = [d for d in deliveries if d.created_at.date() >= current_month]
         month_delivered = [d for d in month_deliveries if d.status == 'Delivered']
         completion_rate = round((len(month_delivered) / len(month_deliveries) * 100), 1) if month_deliveries else 0
         
-        # Today's deliveries (no timezone conversion - use database time directly)
-        today_deliveries = [d for d in deliveries if d.created_at.date() == today]
         
-        # Financial statistics
-        total_revenue = sum(float(d.amount) for d in deliveries if d.amount)
-        total_expenses = sum(float(d.expenses) for d in deliveries if d.expenses)
-        net_profit = total_revenue - total_expenses
+        # Today's deliveries with proper timezone conversion for browser display
+        today_deliveries_converted = []
+        for delivery in deliveries:
+            # Convert EAT time to browser local time (remove timezone info)
+            if delivery.created_at.tzinfo:
+                # Convert timezone-aware EAT time to naive datetime for browser local display
+                browser_time = delivery.created_at.replace(tzinfo=None)
+            else:
+                browser_time = delivery.created_at
+            
+            if browser_time.date() == today:
+                # Create a copy with browser-local time for template
+                delivery_converted = delivery
+                delivery_converted.created_at_browser = browser_time
+                today_deliveries_converted.append(delivery_converted)
         
-        # Recent activities (last 10 deliveries with time ago)
+        today_deliveries = today_deliveries_converted
         recent_activities = []
         for delivery in deliveries[:10]:
             time_ago = get_time_ago(delivery.created_at) if delivery.created_at else "Unknown"
