@@ -408,7 +408,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set browser local time when form is submitted
     const deliveryForm = document.querySelector('form[method="POST"]');
     if (deliveryForm) {
-        deliveryForm.addEventListener('submit', function() {
+        let isSubmitting = false;
+        
+        deliveryForm.addEventListener('submit', function(e) {
+            // Prevent double submission
+            if (isSubmitting) {
+                e.preventDefault();
+                return false;
+            }
+            
+            isSubmitting = true;
+            
             const now = new Date();
             // Get actual browser local time as ISO string without timezone conversion
             const localTime = new Date(
@@ -419,9 +429,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 now.getMinutes(),
                 now.getSeconds(),
                 now.getMilliseconds()
-            ).toISOString().replace('Z', '');
+            ).toISOString().slice(0, 19); // Remove timezone info completely
             document.getElementById('browser_local_time').value = localTime;
             console.log('Browser local time set:', localTime);
+            
+            // Disable submit button to prevent double submission
+            const submitButton = deliveryForm.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+            }
+            
+            // Re-enable after 5 seconds in case of error
+            setTimeout(() => {
+                isSubmitting = false;
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '<i class="fas fa-save mr-2"></i> Save Delivery';
+                }
+            }, 5000);
         });
     }
     

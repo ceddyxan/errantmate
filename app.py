@@ -673,8 +673,8 @@ def add_delivery():
             if browser_local_time:
                 # Parse browser local time (ISO string) directly as local time
                 from datetime import datetime
-                # Browser sends local time in ISO format, use it directly
-                current_time = datetime.fromisoformat(browser_local_time.replace('Z', '+00:00').replace('+00:00', ''))
+                # Browser sends local time in ISO format without timezone, use it directly as naive datetime
+                current_time = datetime.fromisoformat(browser_local_time)
             else:
                 # Fallback to current time if browser time not available
                 current_time = get_current_time()
