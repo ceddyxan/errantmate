@@ -2343,7 +2343,14 @@ function formatLocalDateTime(dateString) {
     try {
         // Let browser handle UTC to local time conversion correctly
         const createdDate = new Date(dateString);
-        return createdDate.toLocaleString();
+        
+        // Format to match Current Time header: HH:MM:SS
+        const hours = String(createdDate.getHours()).padStart(2, '0');
+        const minutes = String(createdDate.getMinutes()).padStart(2, '0');
+        const seconds = String(createdDate.getSeconds()).padStart(2, '0');
+        const timeString = `${hours}:${minutes}:${seconds}`;
+        
+        return timeString;
     } catch (e) {
         return "Unknown";
     }
