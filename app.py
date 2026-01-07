@@ -13,7 +13,6 @@ import platform
 import secrets
 import logging
 import time
-import pytz
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -70,37 +69,23 @@ else:
     # Development logging
     logging.basicConfig(level=logging.DEBUG)
 
-# Timezone configuration - East Africa Time (EAT)
-EAT = pytz.timezone('Africa/Nairobi')  # EAT is UTC+3
+# Use simple datetime (browser local time will be set from frontend)
+from datetime import datetime
 
 def get_current_time():
-    """Get current East Africa Time for consistent timestamp handling."""
-    return datetime.now(EAT)
+    """Get current datetime."""
+    return datetime.now()
 
-def get_local_time(eat_time=None):
-    """Get East Africa Time (same as current time for EAT)."""
-    if eat_time is None:
+def get_local_time(current_time=None):
+    """Get current time."""
+    if current_time is None:
         return get_current_time()
-    return eat_time
-
-def convert_to_eat(utc_time=None):
-    """Convert UTC time to East Africa Time."""
-    if utc_time is None:
-        return get_current_time()
-    if utc_time.tzinfo is None:
-        # Assume UTC if no timezone info
-        utc_time = utc_time.replace(tzinfo=pytz.utc)
-    return utc_time.astimezone(EAT)
+    return current_time
 
 # Rate limiting for login attempts
-login_attempts = defaultdict(list)
 LOGIN_ATTEMPT_LIMIT = 5  # Max 5 attempts
 LOGIN_ATTEMPT_WINDOW = 300  # 5 minutes window
-
-# Make pytz available in templates
-@app.context_processor
-def inject_pytz():
-    return {'pytz': pytz}
+login_attempts = defaultdict(list)
 
 def is_rate_limited(ip_address):
     """Check if IP address is rate limited for login attempts."""
@@ -437,8 +422,7 @@ def dashboard():
         
         # Today's completed deliveries
         today = get_current_time().date()
-        completed_today = len([d for d in deliveries if d.status == 'Delivered' and 
-                              (d.created_at.date() if d.created_at.tzinfo is None else d.created_at.astimezone(EAT).date()) == today])
+        completed_today = len([d for d in deliveries if d.status == 'Delivered' and d.created_at.date() == today])
         
         # Monthly completion rate
         current_month = get_current_time().date().replace(day=1)
@@ -516,17 +500,7 @@ def get_time_ago(created_at):
     
     now = get_current_time()
     
-    # Handle timezone differences - ensure both are comparable
-    if created_at.tzinfo is None:
-        # If created_at is naive, treat it as EAT (same timezone as now)
-        created_at = EAT.localize(created_at) if hasattr(EAT, 'localize') else created_at.replace(tzinfo=EAT)
-    
-    # If now is timezone-aware and created_at is not, or vice versa, make them comparable
-    if now.tzinfo is None and created_at.tzinfo is not None:
-        now = now.replace(tzinfo=created_at.tzinfo)
-    elif created_at.tzinfo is None and now.tzinfo is not None:
-        created_at = created_at.replace(tzinfo=now.tzinfo)
-    
+    # Simple comparison since both are naive datetimes
     diff = now - created_at
     
     if diff.days > 0:
