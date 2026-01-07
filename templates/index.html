@@ -275,7 +275,7 @@
                                 {% else %}
                                     <span class="text-xs text-gray-400">⏳</span>
                                 {% endif %}
-                                <span class="text-xs text-gray-400">{{ delivery.created_at_eat.strftime('%H:%M') if delivery.created_at_eat else (delivery.created_at.strftime('%H:%M') if delivery.created_at else '') }}</span>
+                                <span class="text-xs text-gray-400">{{ delivery.created_at.strftime('%H:%M') if delivery.created_at else '' }}</span>
                             </div>
                         </div>
                         {% endfor %}
