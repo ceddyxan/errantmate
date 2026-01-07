@@ -466,18 +466,16 @@ document.addEventListener('DOMContentLoaded', function() {
             isSubmitting = true;
             
             const now = new Date();
-            // Get actual browser local time as ISO string without timezone conversion
-            const localTime = new Date(
-                now.getFullYear(),
-                now.getMonth(),
-                now.getDate(),
-                now.getHours(),
-                now.getMinutes(),
-                now.getSeconds(),
-                now.getMilliseconds()
-            ).toISOString().slice(0, 19); // Remove timezone info completely
+            // Get actual browser local time as ISO string WITHOUT UTC conversion
+            const localTime = 
+                String(now.getFullYear()) + '-' +
+                String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                String(now.getDate()).padStart(2, '0') + 'T' +
+                String(now.getHours()).padStart(2, '0') + ':' +
+                String(now.getMinutes()).padStart(2, '0') + ':' +
+                String(now.getSeconds()).padStart(2, '0');
             document.getElementById('browser_local_time').value = localTime;
-            console.log('Browser local time set:', localTime);
+            console.log('Browser local time set (no UTC conversion):', localTime);
             
             // Disable submit button to prevent double submission
             const submitButton = deliveryForm.querySelector('button[type="submit"]');
