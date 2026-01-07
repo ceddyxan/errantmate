@@ -458,7 +458,8 @@ def dashboard():
                 'recipient_name': delivery.recipient_name,
                 'recipient_address': delivery.recipient_address,
                 'status': delivery.status,
-                'created_at': delivery.created_at.isoformat() if delivery.created_at else None,
+                'created_at': delivery.created_at.strftime('%Y-%m-%dT%H:%M:%S') if delivery.created_at else None,
+                'time_ago': get_time_ago(delivery.created_at) if delivery.created_at else "Unknown",
                 'time_ago': time_ago,
                 'delivery_person': delivery.delivery_person
             })
@@ -935,7 +936,8 @@ def get_summary():
                 'amount': float(delivery.amount) if delivery.amount else 0.0,
                 'expenses': float(delivery.expenses) if delivery.expenses else 0.0,
                 'delivery_person': delivery.delivery_person or '',
-                'created_at': delivery.created_at.isoformat() if delivery.created_at else None
+                'created_at': delivery.created_at.strftime('%Y-%m-%dT%H:%M:%S') if delivery.created_at else None,
+                'time_ago': get_time_ago(delivery.created_at) if delivery.created_at else "Unknown"
             }
             deliveries_data.append(delivery_dict)
         
@@ -1088,7 +1090,8 @@ def get_delivery_details(delivery_id):
             'goods_type': delivery.goods_type,
             'quantity': delivery.quantity,
             'payment_by': delivery.payment_by,
-            'created_at': delivery.created_at.isoformat() if delivery.created_at else None,
+            'created_at': delivery.created_at.strftime('%Y-%m-%dT%H:%M:%S') if delivery.created_at else None,
+                'time_ago': get_time_ago(delivery.created_at) if delivery.created_at else "Unknown",
             'updated_at': delivery.created_at.isoformat() if delivery.created_at else None  # Use created_at since updated_at doesn't exist
         }
         
@@ -2419,7 +2422,8 @@ def get_recent_deliveries():
                 'goods_type': delivery.goods_type,
                 'quantity': delivery.quantity,
                 'payment_by': delivery.payment_by,
-                'created_at': delivery.created_at.isoformat() if delivery.created_at else None
+                'created_at': delivery.created_at.strftime('%Y-%m-%dT%H:%M:%S') if delivery.created_at else None,
+                'time_ago': get_time_ago(delivery.created_at) if delivery.created_at else "Unknown"
             }
             deliveries_data.append(delivery_dict)
         
@@ -2470,7 +2474,8 @@ def get_user_recent_deliveries():
                 'goods_type': delivery.goods_type,
                 'quantity': delivery.quantity,
                 'payment_by': delivery.payment_by,
-                'created_at': delivery.created_at.isoformat() if delivery.created_at else None
+                'created_at': delivery.created_at.strftime('%Y-%m-%dT%H:%M:%S') if delivery.created_at else None,
+                'time_ago': get_time_ago(delivery.created_at) if delivery.created_at else "Unknown"
             }
             deliveries_data.append(delivery_dict)
         
@@ -2682,6 +2687,39 @@ def main():
         app.run(debug=True, host='0.0.0.0', port=5001)
     except Exception as e:
         print(f"Failed to start server: {e}")
+
+@app.route('/api/senders')
+@login_required
+@database_required
+def api_senders():
+    """API endpoint for sender autocomplete."""
+    try:
+        query = request.args.get('q', '').strip()
+        
+        if not query:
+            return jsonify({'success': False, 'error': 'Query parameter required'})
+        
+        # Search for unique sender names and phone numbers
+        senders = db.session.query(
+            Delivery.sender_name, 
+            Delivery.sender_phone
+        ).filter(
+            Delivery.sender_name.ilike(f'%{query}%')
+        ).distinct().limit(10).all()
+        
+        # Format results
+        sender_list = []
+        for sender_name, sender_phone in senders:
+            sender_list.append({
+                'name': sender_name,
+                'phone': sender_phone
+            })
+        
+        return jsonify({'success': True, 'senders': sender_list})
+        
+    except Exception as e:
+        app.logger.error(f"Error fetching senders: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to fetch senders'})
 
 if __name__ == '__main__':
     main()
