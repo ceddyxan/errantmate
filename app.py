@@ -669,9 +669,10 @@ def add_delivery():
             # Use browser local time if provided, otherwise use current time
             browser_local_time = request.form.get('browser_local_time')
             if browser_local_time:
-                # Parse the browser local time (ISO string) and use it directly
+                # Parse browser local time (ISO string) directly as local time
                 from datetime import datetime
-                current_time = datetime.fromisoformat(browser_local_time.replace('Z', '+00:00'))
+                # Browser sends local time in ISO format, use it directly
+                current_time = datetime.fromisoformat(browser_local_time.replace('Z', '+00:00').replace('+00:00', ''))
             else:
                 # Fallback to current time if browser time not available
                 current_time = get_current_time()

@@ -385,9 +385,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (deliveryForm) {
         deliveryForm.addEventListener('submit', function() {
             const now = new Date();
-            const browserLocalTime = now.toISOString();
-            document.getElementById('browser_local_time').value = browserLocalTime;
-            console.log('Browser local time set:', browserLocalTime);
+            // Get actual browser local time as ISO string without timezone conversion
+            const localTime = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate(),
+                now.getHours(),
+                now.getMinutes(),
+                now.getSeconds(),
+                now.getMilliseconds()
+            ).toISOString().replace('Z', '');
+            document.getElementById('browser_local_time').value = localTime;
+            console.log('Browser local time set:', localTime);
         });
     }
     
