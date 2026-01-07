@@ -373,6 +373,28 @@
     </div>
 
 <script>
+// Format local date time function (parses ISO as local time)
+function formatLocalDateTime(dateString) {
+    if (!dateString) return "Unknown";
+    
+    try {
+        // Parse ISO format as local time (same logic as getTimeAgo)
+        let createdDate;
+        if (dateString.includes('T') && dateString.includes(':')) {
+            const [datePart, timePart] = dateString.split('T');
+            const [year, month, day] = datePart.split('-').map(Number);
+            const [hours, minutes, seconds] = timePart.split(':').map(Number);
+            createdDate = new Date(year, month - 1, day, hours, minutes, seconds || 0);
+        } else {
+            createdDate = new Date(dateString);
+        }
+        
+        return createdDate.toLocaleString();
+    } catch (e) {
+        return "Unknown";
+    }
+}
+
 // Time ago function (matches dashboard get_time_ago)
 function getTimeAgo(dateString) {
     if (!dateString) return "Unknown";
@@ -556,7 +578,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div class="flex flex-col">
-                            <span class="font-medium text-gray-900">${new Date(delivery.created_at).toLocaleString()}</span>
+                            <span class="font-medium text-gray-900">${formatLocalDateTime(delivery.created_at)}</span>
                             <span class="text-xs text-gray-400">${delivery.time_ago || getTimeAgo(delivery.created_at)}</span>
                         </div>
                     </td>
