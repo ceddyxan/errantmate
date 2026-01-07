@@ -2336,7 +2336,7 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchRecentDeliveries();
 });
 
-// Format local date time function (treats timestamp as local time to prevent double conversion)
+// Format local date time function (shows full date and time)
 function formatLocalDateTime(dateString) {
     if (!dateString) return "Unknown";
     
@@ -2353,13 +2353,19 @@ function formatLocalDateTime(dateString) {
             createdDate = new Date(dateString);
         }
         
-        // Format to match Current Time header: HH:MM:SS
+        // Format to show full date and time: MM/DD/YYYY, HH:MM:SS AM/PM
+        const month = String(createdDate.getMonth() + 1).padStart(2, '0');
+        const day = String(createdDate.getDate()).padStart(2, '0');
+        const year = createdDate.getFullYear();
         const hours = String(createdDate.getHours()).padStart(2, '0');
         const minutes = String(createdDate.getMinutes()).padStart(2, '0');
         const seconds = String(createdDate.getSeconds()).padStart(2, '0');
-        const timeString = `${hours}:${minutes}:${seconds}`;
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours > 12 ? hours - 12 : (hours === 0 ? 12 : hours);
         
-        return timeString;
+        const dateTimeString = `${month}/${day}/${year}, ${displayHours}:${minutes}:${seconds} ${ampm}`;
+        
+        return dateTimeString;
     } catch (e) {
         return "Unknown";
     }
