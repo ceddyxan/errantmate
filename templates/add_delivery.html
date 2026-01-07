@@ -61,9 +61,11 @@
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <i class="fas fa-user text-gray-400"></i>
                                 </div>
-                                <input type="text" id="sender_name" name="sender_name" autocomplete="off" required
+                                <input type="text" id="sender_name" name="sender_name" autocomplete="on" required
                                        class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
                                        placeholder="John Doe" list="autocompleteOff" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false">
+                                <!-- Autocomplete dropdown -->
+                                <div id="sender_autocomplete" class="absolute z-50 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto hidden" style="top: 100%; left: 0; right: 0;"></div>
                             </div>
                         </div>
                         <div class="space-y-1">
@@ -373,6 +375,8 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Add Delivery page loaded - DOMContentLoaded fired');
+    
     // Recent Deliveries Toggle
     const toggleButton = document.getElementById('toggleDeliveries');
     const recentDeliveries = document.getElementById('recentDeliveries');
@@ -466,7 +470,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${new Date(delivery.created_at).toLocaleString()}
+                        ${new Date(delivery.created_at).toLocaleString('en-US', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true,
+                            timeZone: 'Africa/Nairobi'
+                        })}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div class="flex space-x-2">
@@ -1157,20 +1169,210 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     };
 
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function(event) {
-        if (!event.target.matches('.text-amber-600') && !event.target.closest('[id^="status-dropdown-"]')) {
-            document.querySelectorAll('[id^="status-dropdown-"]').forEach(dropdown => {
-                dropdown.classList.add('hidden');
+    // Sender Autocomplete Functionality
+    const senderNameInput = document.getElementById('sender_name');
+    const senderPhoneInput = document.getElementById('sender_phone');
+    const autocompleteDropdown = document.getElementById('sender_autocomplete');
+    let autocompleteTimeout;
+
+    console.log('Autocomplete elements found:', {
+        senderNameInput: !!senderNameInput,
+        senderPhoneInput: !!senderPhoneInput,
+        autocompleteDropdown: !!autocompleteDropdown
+    });
+
+    // Add simple test to verify input events work
+    if (senderNameInput) {
+        console.log('Adding basic input test to sender_name field');
+        senderNameInput.addEventListener('input', function() {
+            console.log('Input event triggered! Value:', this.value);
+        });
+    }
+
+    // Add manual test - show dropdown when typing "test"
+    if (senderNameInput && autocompleteDropdown) {
+        senderNameInput.addEventListener('input', function() {
+            if (this.value.toLowerCase() === 'test') {
+                console.log('Manual test: showing dropdown with test data');
+                autocompleteDropdown.innerHTML = `
+                    <div class="sender-suggestion px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100" 
+                         data-name="Test Sender" 
+                         data-phone="0712345678">
+                        <div class="flex flex-col">
+                            <span class="font-medium text-gray-900">Test Sender</span>
+                            <span class="text-sm text-gray-500">0712345678</span>
+                        </div>
+                    </div>
+                `;
+                autocompleteDropdown.classList.remove('hidden');
+            }
+        });
+    }
+
+    if (senderNameInput && autocompleteDropdown) {
+        // Input event handler for sender name
+        senderNameInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            
+            // Clear existing timeout
+            clearTimeout(autocompleteTimeout);
+            
+            if (query.length < 1) {
+                hideAutocomplete();
+                return;
+            }
+            
+            // Debounce API call
+            autocompleteTimeout = setTimeout(() => {
+                fetchSenders(query);
+            }, 300);
+        });
+
+        // Hide autocomplete when input loses focus
+        senderNameInput.addEventListener('blur', function() {
+            setTimeout(hideAutocomplete, 200); // Small delay to allow click on suggestion
+        });
+
+        // Show autocomplete when input gains focus
+        senderNameInput.addEventListener('focus', function() {
+            const query = this.value.trim();
+            if (query.length >= 1) {
+                fetchSenders(query);
+            }
+        });
+    }
+
+    function fetchSenders(query) {
+        console.log('Fetching senders for query:', query);
+        fetch(`/api/senders?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Received data:', data);
+                if (data.success === false) {
+                    console.error('Error fetching senders:', data.error);
+                    hideAutocomplete();
+                    return;
+                }
+                showAutocomplete(data.senders || []);
+            })
+            .catch(error => {
+                console.error('Error fetching senders:', error);
+                hideAutocomplete();
             });
+    }
+
+    function showAutocomplete(senders) {
+        console.log('Showing autocomplete for senders:', senders);
+        console.log('Dropdown element:', autocompleteDropdown);
+        console.log('Dropdown classes before:', autocompleteDropdown.className);
+        
+        if (senders.length === 0) {
+            hideAutocomplete();
+            return;
+        }
+
+        let html = '';
+        senders.forEach((sender, index) => {
+            html += `
+                <div class="sender-suggestion px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0" 
+                     data-name="${sender.name.replace(/'/g, "\\'")}" 
+                     data-phone="${sender.phone}"
+                     data-index="${index}">
+                    <div class="flex flex-col">
+                        <span class="font-medium text-gray-900">${sender.name}</span>
+                        <span class="text-sm text-gray-500">${sender.phone}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        autocompleteDropdown.innerHTML = html;
+        autocompleteDropdown.classList.remove('hidden');
+        
+        console.log('Dropdown classes after:', autocompleteDropdown.className);
+        console.log('Dropdown visible:', !autocompleteDropdown.classList.contains('hidden'));
+        console.log('Dropdown position:', {
+            top: autocompleteDropdown.style.top,
+            left: autocompleteDropdown.style.left,
+            right: autocompleteDropdown.style.right,
+            zIndex: autocompleteDropdown.style.zIndex || window.getComputedStyle(autocompleteDropdown).zIndex
+        });
+        
+        // Add event listeners using event delegation
+        const suggestions = autocompleteDropdown.querySelectorAll('.sender-suggestion');
+        console.log('Found suggestions:', suggestions.length);
+        
+        suggestions.forEach((suggestion, i) => {
+            console.log(`Adding click listener to suggestion ${i}:`, suggestion);
+            suggestion.addEventListener('click', function(e) {
+                console.log('Click event triggered on suggestion:', this);
+                e.preventDefault();
+                e.stopPropagation();
+                const name = this.getAttribute('data-name');
+                const phone = this.getAttribute('data-phone');
+                console.log('Clicked suggestion data:', { name, phone });
+                selectSender(name, phone);
+            });
+        });
+    }
+
+    function hideAutocomplete() {
+        console.log('Hiding autocomplete');
+        console.log('Dropdown element:', autocompleteDropdown);
+        console.log('Dropdown classes before:', autocompleteDropdown.className);
+        autocompleteDropdown.classList.add('hidden');
+        console.log('Dropdown classes after:', autocompleteDropdown.className);
+        console.log('Dropdown visible:', !autocompleteDropdown.classList.contains('hidden'));
+    }
+
+    window.selectSender = function(name, phone) {
+        console.log('selectSender called with:', { name, phone });
+        console.log('Input elements:', {
+            senderNameInput: senderNameInput,
+            senderPhoneInput: senderPhoneInput
+        });
+        
+        if (senderNameInput && senderPhoneInput) {
+            console.log('Before setting values:', {
+                nameValue: senderNameInput.value,
+                phoneValue: senderPhoneInput.value
+            });
+            
+            senderNameInput.value = name;
+            senderPhoneInput.value = phone;
+            
+            console.log('After setting values:', {
+                nameValue: senderNameInput.value,
+                phoneValue: senderPhoneInput.value
+            });
+            
+            console.log('Fields populated successfully');
+            hideAutocomplete();
+            
+            // Focus on phone field for convenience
+            senderPhoneInput.focus();
+        } else {
+            console.error('Input elements not found');
+        }
+    };
+
+    // Also add a global click handler as backup
+    document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('sender-suggestion')) {
+            console.log('Global click handler triggered');
+            event.preventDefault();
+            event.stopPropagation();
+            const name = event.target.getAttribute('data-name');
+            const phone = event.target.getAttribute('data-phone');
+            console.log('Global handler - clicked suggestion data:', { name, phone });
+            selectSender(name, phone);
         }
     });
 
-    // Close modal when clicking outside
+    // Hide autocomplete when clicking outside
     document.addEventListener('click', function(event) {
-        const modal = document.getElementById('deliveryDetailsModal');
-        if (event.target === modal) {
-            closeDeliveryDetailsModal();
+        if (!event.target.closest('#sender_name') && !event.target.closest('#sender_autocomplete')) {
+            hideAutocomplete();
         }
     });
 });
