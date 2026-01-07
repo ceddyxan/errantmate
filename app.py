@@ -672,15 +672,11 @@ def add_delivery():
             # Use browser local time if provided, otherwise use current time
             browser_local_time = request.form.get('browser_local_time')
             if browser_local_time:
-                # Parse browser local time and add timezone info to prevent UTC conversion
-                from datetime import datetime, timezone, timedelta
+                # Parse browser local time directly as naive datetime
+                from datetime import datetime
                 
-                # Parse browser local time as naive datetime
-                local_dt = datetime.fromisoformat(browser_local_time)
-                
-                # Add timezone offset (EAT = UTC+3) to prevent UTC conversion
-                tz_offset = timedelta(hours=3)
-                current_time = local_dt.replace(tzinfo=timezone(tz_offset))
+                # Parse browser local time as naive datetime (no timezone conversion)
+                current_time = datetime.fromisoformat(browser_local_time)
             else:
                 # Fallback to current time if browser time not available
                 current_time = get_current_time()
