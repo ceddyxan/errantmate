@@ -1809,7 +1809,10 @@ function displayRecentDeliveries(deliveries) {
                     </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${delivery.time_ago || getTimeAgo(delivery.created_at)}
+                        <div class="flex flex-col">
+                            <span class="font-medium text-gray-900">${new Date(delivery.created_at).toLocaleString()}</span>
+                            <span class="text-xs text-gray-400">${delivery.time_ago || getTimeAgo(delivery.created_at)}</span>
+                        </div>
                     </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div class="flex space-x-2">
