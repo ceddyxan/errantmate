@@ -377,6 +377,35 @@
     </div>
 
 <script>
+// Time ago function (matches dashboard get_time_ago)
+function getTimeAgo(dateString) {
+    if (!dateString) return "Unknown";
+    
+    try {
+        const createdDate = new Date(dateString);
+        const now = new Date();
+        const diff = now - createdDate;
+        
+        if (diff < 0) return "Just now";
+        
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        
+        if (days > 0) {
+            return `${days} day${days > 1 ? 's' : ''} ago`;
+        } else if (hours > 0) {
+            return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+        } else if (minutes > 0) {
+            return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+        } else {
+            return "Just now";
+        }
+    } catch (e) {
+        return "Unknown";
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Add Delivery page loaded - DOMContentLoaded fired');
     
@@ -493,14 +522,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${new Date(delivery.created_at).toLocaleString('en-US', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: true
-                        })}
+                        ${getTimeAgo(delivery.created_at)}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div class="flex space-x-2">
