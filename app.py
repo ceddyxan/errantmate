@@ -464,6 +464,12 @@ def dashboard():
                 today_deliveries_converted.append(delivery_converted)
         
         today_deliveries = today_deliveries_converted
+        
+        # Financial statistics
+        total_revenue = sum(float(d.amount) for d in deliveries if d.amount)
+        total_expenses = sum(float(d.expenses) for d in deliveries if d.expenses)
+        net_profit = total_revenue - total_expenses
+        
         recent_activities = []
         for delivery in deliveries[:10]:
             time_ago = get_time_ago(delivery.created_at) if delivery.created_at else "Unknown"
