@@ -220,15 +220,25 @@ document.addEventListener('DOMContentLoaded', function() {
         const timestamp = element.getAttribute('data-timestamp');
         if (timestamp) {
             try {
-                // Parse ISO string and convert to browser local time
-                const date = new Date(timestamp);
-                const localTime = date.toLocaleString('en-US', {
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                });
+                // Parse ISO string as local time to prevent UTC conversion
+                let createdDate;
+                if (timestamp.includes('T') && timestamp.includes(':')) {
+                    const [datePart, timePart] = timestamp.split('T');
+                    const [year, month, day] = datePart.split('-').map(Number);
+                    const [hours, minutes, seconds] = timePart.split(':').map(Number);
+                    // Create as local time (no timezone conversion)
+                    createdDate = new Date(year, month - 1, day, hours, minutes, seconds || 0);
+                } else {
+                    createdDate = new Date(timestamp);
+                }
+                
+                // Format as MM-DD HH:MM
+                const month = String(createdDate.getMonth() + 1).padStart(2, '0');
+                const day = String(createdDate.getDate()).padStart(2, '0');
+                const hours = String(createdDate.getHours()).padStart(2, '0');
+                const minutes = String(createdDate.getMinutes()).padStart(2, '0');
+                
+                const localTime = `${month}-${day} ${hours}:${minutes}`;
                 element.textContent = localTime;
             } catch (e) {
                 console.error('Error parsing timestamp:', timestamp, e);
