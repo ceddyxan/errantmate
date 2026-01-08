@@ -185,7 +185,7 @@
                             <p class="text-xs text-gray-500">{{ activity.status }}</p>
                         </div>
                         <div class="flex-shrink-0">
-                            <p class="text-xs text-gray-400">{{ activity.time_ago }}</p>
+                            <p class="text-xs text-gray-400" data-created-at="{{ activity.created_at }}">{{ activity.time_ago }}</p>
                         </div>
                     </div>
                     {% endfor %}
@@ -294,6 +294,57 @@
 </div>
 
 <script>
+// Time ago function (matches other pages)
+function getTimeAgo(dateString) {
+    if (!dateString) return "Unknown";
+    
+    try {
+        // Parse ISO string as local time to prevent double UTC conversion
+        let createdDate;
+        if (dateString.includes('T') && dateString.includes(':')) {
+            const [datePart, timePart] = dateString.split('T');
+            const [year, month, day] = datePart.split('-').map(Number);
+            const [hours, minutes, seconds] = timePart.split(':').map(Number);
+            // Create as local time (no timezone conversion)
+            createdDate = new Date(year, month - 1, day, hours, minutes, seconds || 0);
+        } else {
+            createdDate = new Date(dateString);
+        }
+        
+        const now = new Date();
+        const diff = now - createdDate;
+        
+        if (diff < 0) return "Just now";
+        
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        
+        if (days > 0) {
+            return `${days} day${days > 1 ? 's' : ''} ago`;
+        } else if (hours > 0) {
+            return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+        } else if (minutes > 0) {
+            return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+        } else {
+            return "Just now";
+        }
+    } catch (e) {
+        return "Unknown";
+    }
+}
+
+// Update Recent Activity times
+document.addEventListener('DOMContentLoaded', function() {
+    const timeElements = document.querySelectorAll('[data-created-at]');
+    timeElements.forEach(element => {
+        const createdAt = element.getAttribute('data-created-at');
+        if (createdAt) {
+            element.textContent = getTimeAgo(createdAt);
+        }
+    });
+});
+
 // Auto-refresh dashboard every 30 seconds
 setInterval(() => {
     window.location.reload();

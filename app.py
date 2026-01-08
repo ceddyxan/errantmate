@@ -444,7 +444,8 @@ def dashboard():
             recent_activities.append({
                 'display_id': delivery.display_id,
                 'status': delivery.status,
-                'time_ago': time_ago
+                'time_ago': time_ago,
+                'created_at': delivery.created_at.isoformat() if delivery.created_at else None
             })
         
         # Convert deliveries to dictionaries for JSON serialization
