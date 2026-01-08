@@ -106,7 +106,7 @@
                     <tbody class="divide-y divide-gray-100">
                         {% for log in audit_logs %}
                         <tr class="audit-log-row">
-                            <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-600">
+                            <td class="px-4 py-2 whitespace-nowrap text-xs text-gray-600" data-timestamp="{{ log.timestamp.isoformat() }}">
                                 {{ log.timestamp.strftime('%m-%d %H:%M') }}
                             </td>
                             <td class="px-4 py-2 whitespace-nowrap">
@@ -211,4 +211,30 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+// Convert audit log timestamps to browser local time
+document.addEventListener('DOMContentLoaded', function() {
+    const timestampElements = document.querySelectorAll('[data-timestamp]');
+    timestampElements.forEach(element => {
+        const timestamp = element.getAttribute('data-timestamp');
+        if (timestamp) {
+            try {
+                // Parse ISO string and convert to browser local time
+                const date = new Date(timestamp);
+                const localTime = date.toLocaleString('en-US', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+                element.textContent = localTime;
+            } catch (e) {
+                console.error('Error parsing timestamp:', timestamp, e);
+            }
+        }
+    });
+});
+</script>
 {% endblock %}
