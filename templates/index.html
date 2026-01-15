@@ -119,7 +119,232 @@
         }
     </style>
 
-    <script>
+    <!-- Charts and Actions Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Status Distribution Chart -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Status Overview</h3>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-gray-400 rounded-full mr-2"></div>
+                        <span class="text-sm text-gray-600">Pending</span>
+                    </div>
+                    <span class="text-sm font-medium text-gray-900">{{ pending_count or 0 }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                        <span class="text-sm text-gray-600">In Transit</span>
+                    </div>
+                    <span class="text-sm font-medium text-gray-900">{{ in_transit_count or 0 }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                        <span class="text-sm text-gray-600">Delivered</span>
+                    </div>
+                    <span class="text-sm font-medium text-gray-900">{{ delivered_count or 0 }}</span>
+                </div>
+            </div>
+            <!-- Simple Progress Bar -->
+            <div class="mt-4 pt-4 border-t border-gray-100">
+                <div class="w-full bg-gray-200 rounded-full h-2 relative">
+                    {% set total = (pending_count or 0) + (in_transit_count or 0) + (delivered_count or 0) %}
+                    {% if total > 0 %}
+                        {% set delivered_pct = ((delivered_count or 0) / total * 100)|round(0) %}
+                        <div class="bg-green-500 h-2 rounded-full transition-all duration-500" 
+                             data-width="{{ delivered_pct }}"></div>
+                    {% else %}
+                        <div class="bg-green-500 h-2 rounded-full transition-all duration-500" 
+                             data-width="0"></div>
+                    {% endif %}
+                </div>
+                <p class="text-xs text-gray-500 mt-2 text-center">{{ delivered_pct or 0 }}% completed</p>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
+            <div class="space-y-3">
+                {% if recent_activities %}
+                    {% for activity in recent_activities[:5] %}
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0">
+                            {% if activity.status == 'Delivered' %}
+                                <div class="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                            {% elif activity.status == 'In Transit' %}
+                                <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                            {% else %}
+                                <div class="w-2 h-2 bg-gray-400 rounded-full mt-2"></div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm text-gray-900 truncate">{{ activity.display_id }}</p>
+                            <p class="text-xs text-gray-500">{{ activity.status }}</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <p class="text-xs text-gray-400" data-created-at="{{ activity.created_at }}">{{ activity.time_ago }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox text-gray-300 text-2xl mb-2"></i>
+                        <p class="text-sm text-gray-500">No recent activity</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+            <div class="space-y-3">
+                <a href="{{ url_for('add_delivery') }}" 
+                   class="block w-full text-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>
+                    Add New Delivery
+                </a>
+                <a href="{{ url_for('reports') }}" 
+                   class="block w-full text-center px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                    <i class="fas fa-chart-bar mr-2"></i>
+                    View Reports
+                </a>
+                <button onclick="window.location.reload()" 
+                        class="block w-full text-center px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-sync-alt mr-2"></i>
+                    Refresh Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Schedule Preview -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-800">Today's Schedule</h3>
+            <a href="{{ url_for('reports') }}" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                View All →
+            </a>
+        </div>
+        {% if today_deliveries %}
+            <div class="space-y-4">
+                <!-- Summary Stats -->
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <div class="flex items-center justify-center mb-1">
+                            <i class="fas fa-clock text-gray-400 text-lg"></i>
+                        </div>
+                        <div class="text-2xl font-bold text-gray-900">{{ today_deliveries|selectattr('status', 'equalto', 'Pending')|list|length or 0 }}</div>
+                        <div class="text-xs text-gray-500">Pending</div>
+                    </div>
+                    <div class="bg-blue-50 rounded-lg p-3">
+                        <div class="flex items-center justify-center mb-1">
+                            <i class="fas fa-truck text-blue-400 text-lg"></i>
+                        </div>
+                        <div class="text-2xl font-bold text-blue-600">{{ today_deliveries|selectattr('status', 'equalto', 'In Transit')|list|length or 0 }}</div>
+                        <div class="text-xs text-blue-500">In Transit</div>
+                    </div>
+                    <div class="bg-green-50 rounded-lg p-3">
+                        <div class="flex items-center justify-center mb-1">
+                            <i class="fas fa-check-circle text-green-400 text-lg"></i>
+                        </div>
+                        <div class="text-2xl font-bold text-green-600">{{ today_deliveries|selectattr('status', 'equalto', 'Delivered')|list|length or 0 }}</div>
+                        <div class="text-xs text-green-500">Delivered</div>
+                    </div>
+                </div>
+                
+                <!-- Recent Deliveries List -->
+                <div class="border-t pt-4">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">Recent Deliveries</h4>
+                    <div class="space-y-2">
+                        {% for delivery in today_deliveries[:5] %}
+                        <div class="flex items-center justify-between text-sm">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-gray-900">{{ delivery.display_id }}</span>
+                                <span class="text-xs text-gray-500">{{ delivery.recipient_name }}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                {% if delivery.status == 'Delivered' %}
+                                    <span class="text-xs text-green-600">✓</span>
+                                {% elif delivery.status == 'In Transit' %}
+                                    <span class="text-xs text-blue-600">🚚</span>
+                                {% else %}
+                                    <span class="text-xs text-gray-400">⏳</span>
+                                {% endif %}
+                                <span class="text-xs text-gray-400">{{ delivery.time_ago }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="text-center py-8">
+                <i class="fas fa-calendar-day text-gray-300 text-3xl mb-3"></i>
+                <p class="text-gray-500">No deliveries scheduled for today</p>
+                <a href="{{ url_for('add_delivery') }}" class="text-sm text-blue-600 hover:text-blue-800 font-medium mt-2 inline-block">
+                    Schedule a delivery →
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Time ago function (matches other pages)
+function getTimeAgo(dateString) {
+    if (!dateString) return "Unknown";
+    
+    try {
+        // Parse ISO string as local time to prevent double UTC conversion
+        let createdDate;
+        if (dateString.includes('T') && dateString.includes(':')) {
+            const [datePart, timePart] = dateString.split('T');
+            const [year, month, day] = datePart.split('-').map(Number);
+            const [hours, minutes, seconds] = timePart.split(':').map(Number);
+            // Create as local time (no timezone conversion)
+            createdDate = new Date(year, month - 1, day, hours, minutes, seconds || 0);
+        } else {
+            createdDate = new Date(dateString);
+        }
+        
+        const now = new Date();
+        const diff = now - createdDate;
+        
+        if (diff < 0) return "Just now";
+        
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        
+        if (days > 0) {
+            return `${days} day${days > 1 ? 's' : ''} ago`;
+        } else if (hours > 0) {
+            return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+        } else if (minutes > 0) {
+            return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+        } else {
+            return "Just now";
+        }
+    } catch (e) {
+        return "Unknown";
+    }
+}
+
+// Update Recent Activity times
+document.addEventListener('DOMContentLoaded', function() {
+    const timeElements = document.querySelectorAll('[data-created-at]');
+    timeElements.forEach(element => {
+        const createdAt = element.getAttribute('data-created-at');
+        if (createdAt) {
+            element.textContent = getTimeAgo(createdAt);
+        }
+    });
+});
+
 // Auto-refresh dashboard every 30 seconds
 setInterval(() => {
     window.location.reload();
@@ -127,7 +352,7 @@ setInterval(() => {
 
 // Add subtle animations
 document.addEventListener('DOMContentLoaded', function() {
-    const cards = document.querySelectorAll('.modern-stat-card');
+    const cards = document.querySelectorAll('.bg-white');
     cards.forEach((card, index) => {
         card.style.opacity = '0';
         card.style.transform = 'translateY(20px)';
@@ -136,6 +361,15 @@ document.addEventListener('DOMContentLoaded', function() {
             card.style.opacity = '1';
             card.style.transform = 'translateY(0)';
         }, index * 100);
+    });
+
+    // Set progress bar widths from data attributes to avoid CSS parsing issues
+    const progressBars = document.querySelectorAll('[data-width]');
+    progressBars.forEach(bar => {
+        const width = bar.getAttribute('data-width');
+        if (width) {
+            bar.style.width = width + '%';
+        }
     });
 });
 </script>
