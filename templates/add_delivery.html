@@ -507,6 +507,189 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }, 5000);
         });
+        
+        // Check for success message and show delivery details popup
+        window.addEventListener('load', function() {
+            // Look for success flash messages
+            const successAlert = document.querySelector('.alert-success');
+            if (successAlert) {
+                // Get the delivery ID from the success message or recent deliveries
+                showDeliveryDetailsPopup();
+            }
+        });
+        
+        // Function to show delivery details popup
+        function showDeliveryDetailsPopup() {
+            // Get the most recent delivery details
+            fetch('/get_recent_deliveries?limit=1')
+                .then(response => response.json())
+                .then(data => {
+                    let deliveries = [];
+                    if (Array.isArray(data)) {
+                        deliveries = data;
+                    } else if (data && data.deliveries && Array.isArray(data.deliveries)) {
+                        deliveries = data.deliveries;
+                    }
+                    
+                    if (deliveries.length > 0) {
+                        const delivery = deliveries[0];
+                        createDeliveryPopup(delivery);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching delivery details:', error);
+                });
+        }
+        
+        // Function to create and show delivery details popup
+        function createDeliveryPopup(delivery) {
+            // Remove existing popup if any
+            const existingPopup = document.getElementById('deliveryDetailsPopup');
+            if (existingPopup) {
+                existingPopup.remove();
+            }
+            
+            // Create popup container
+            const popup = document.createElement('div');
+            popup.id = 'deliveryDetailsPopup';
+            popup.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            popup.innerHTML = `
+                <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div class="bg-gradient-to-r from-green-500 to-emerald-600 p-6 rounded-t-xl">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xl font-bold text-white">Delivery Details</h3>
+                            <button onclick="closeDeliveryPopup()" class="text-white hover:text-gray-200 transition-colors">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6 space-y-4">
+                        <!-- Delivery ID -->
+                        <div class="flex justify-between items-center py-3 border-b border-gray-100">
+                            <span class="text-sm font-medium text-gray-600">Delivery ID:</span>
+                            <span class="text-sm font-bold text-gray-900">${delivery.display_id}</span>
+                        </div>
+                        
+                        <!-- Sender Information -->
+                        <div class="space-y-2">
+                            <h4 class="text-sm font-semibold text-gray-800 mb-2">Sender Information</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <span class="text-xs text-gray-500">Name:</span>
+                                    <p class="text-sm font-medium text-gray-900">${delivery.sender_name}</p>
+                                </div>
+                                <div>
+                                    <span class="text-xs text-gray-500">Phone:</span>
+                                    <p class="text-sm font-medium text-gray-900">${delivery.sender_phone}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Recipient Information -->
+                        <div class="space-y-2">
+                            <h4 class="text-sm font-semibold text-gray-800 mb-2">Recipient Information</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <span class="text-xs text-gray-500">Name:</span>
+                                    <p class="text-sm font-medium text-gray-900">${delivery.recipient_name}</p>
+                                </div>
+                                <div>
+                                    <span class="text-xs text-gray-500">Phone:</span>
+                                    <p class="text-sm font-medium text-gray-900">${delivery.recipient_phone}</p>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <span class="text-xs text-gray-500">Address:</span>
+                                    <p class="text-sm font-medium text-gray-900">${delivery.recipient_address || 'N/A'}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Delivery Details -->
+                        <div class="space-y-2">
+                            <h4 class="text-sm font-semibold text-gray-800 mb-2">Delivery Details</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <span class="text-xs text-gray-500">Goods Type:</span>
+                                    <p class="text-sm font-medium text-gray-900">${delivery.goods_type}</p>
+                                </div>
+                                <div>
+                                    <span class="text-xs text-gray-500">Quantity:</span>
+                                    <p class="text-sm font-medium text-gray-900">${delivery.quantity}</p>
+                                </div>
+                                <div>
+                                    <span class="text-xs text-gray-500">Status:</span>
+                                    <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                                        delivery.status === 'Delivered' ? 'bg-green-100 text-green-800' :
+                                        delivery.status === 'In Transit' ? 'bg-blue-100 text-blue-800' :
+                                        'bg-gray-100 text-gray-800'
+                                    }">
+                                        ${delivery.status}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Financial Information -->
+                        <div class="space-y-2">
+                            <h4 class="text-sm font-semibold text-gray-800 mb-2">Financial Information</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <span class="text-xs text-gray-500">Amount:</span>
+                                    <p class="text-sm font-medium text-gray-900">KSh ${parseFloat(delivery.amount || 0).toFixed(2)}</p>
+                                </div>
+                                <div>
+                                    <span class="text-xs text-gray-500">Service Fee:</span>
+                                    <p class="text-sm font-medium text-gray-900">KSh 50.00</p>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <span class="text-xs text-gray-500">Total Pay Amount:</span>
+                                    <p class="text-lg font-bold text-green-700">KSh ${(parseFloat(delivery.amount || 0) + 50).toFixed(2)}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Time Information -->
+                        <div class="space-y-2">
+                            <h4 class="text-sm font-semibold text-gray-800 mb-2">Time Information</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <span class="text-xs text-gray-500">Created:</span>
+                                    <p class="text-sm font-medium text-gray-900">${delivery.created_at ? new Date(delivery.created_at).toLocaleString() : 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <span class="text-xs text-gray-500">Time Ago:</span>
+                                    <p class="text-sm font-medium text-gray-900">${delivery.time_ago || 'N/A'}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                            <button onclick="closeDeliveryPopup()" class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add popup to page
+            document.body.appendChild(popup);
+            
+            // Auto-close after 10 seconds
+            setTimeout(() => {
+                closeDeliveryPopup();
+            }, 10000);
+        }
+        
+        // Function to close delivery popup
+        function closeDeliveryPopup() {
+            const popup = document.getElementById('deliveryDetailsPopup');
+            if (popup) {
+                popup.remove();
+            }
+        }
     }
     
     // Recent Deliveries Toggle
