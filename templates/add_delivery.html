@@ -558,117 +558,118 @@ document.addEventListener('DOMContentLoaded', function() {
             // Create popup container
             const popup = document.createElement('div');
             popup.id = 'deliveryDetailsPopup';
-            popup.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            popup.className = 'fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4';
             popup.innerHTML = `
-                <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-y-auto">
-                    <div class="bg-gradient-to-r from-green-500 to-emerald-600 p-6 rounded-t-xl sticky top-0 z-10">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-y-auto border border-gray-100">
+                    <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-4 rounded-t-2xl sticky top-0 z-10">
                         <div class="flex items-center justify-between">
-                            <h3 class="text-xl font-bold text-white">Delivery Details</h3>
-                            <button onclick="closeDeliveryPopup()" class="text-white hover:text-gray-200 transition-colors">
-                                <i class="fas fa-times text-xl"></i>
+                            <h3 class="text-lg font-bold text-white">Delivery Details</h3>
+                            <button onclick="closeDeliveryPopup()" class="text-white hover:text-gray-200 transition-colors p-1 rounded-lg hover:bg-white/20">
+                                <i class="fas fa-times text-lg"></i>
                             </button>
                         </div>
                     </div>
                     
-                    <div class="p-6 space-y-4">
+                    <div class="p-5 space-y-3">
                         <!-- Delivery ID -->
-                        <div class="flex justify-between items-center py-3 border-b border-gray-100">
-                            <span class="text-sm font-medium text-gray-600">Delivery ID:</span>
-                            <span class="text-sm font-bold text-gray-900">${delivery.display_id}</span>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                            <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">ID</span>
+                            <span class="text-sm font-bold text-gray-900 bg-gray-50 px-2 py-1 rounded">${delivery.display_id}</span>
                         </div>
                         
                         <!-- Sender Information -->
                         <div class="space-y-2">
-                            <h4 class="text-sm font-semibold text-gray-800 mb-2">Sender Information</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
+                            <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Sender</h4>
+                            <div class="bg-gray-50 rounded-lg p-3 space-y-1">
+                                <div class="flex justify-between">
                                     <span class="text-xs text-gray-500">Name:</span>
-                                    <p class="text-sm font-medium text-gray-900">${delivery.sender_name}</p>
+                                    <p class="text-xs font-medium text-gray-900">${delivery.sender_name}</p>
                                 </div>
-                                <div>
+                                <div class="flex justify-between">
                                     <span class="text-xs text-gray-500">Phone:</span>
-                                    <p class="text-sm font-medium text-gray-900">${delivery.sender_phone}</p>
+                                    <p class="text-xs font-medium text-gray-900">${delivery.sender_phone}</p>
                                 </div>
                             </div>
                         </div>
                         
                         <!-- Recipient Information -->
                         <div class="space-y-2">
-                            <h4 class="text-sm font-semibold text-gray-800 mb-2">Recipient Information</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
+                            <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Recipient</h4>
+                            <div class="bg-gray-50 rounded-lg p-3 space-y-1">
+                                <div class="flex justify-between">
                                     <span class="text-xs text-gray-500">Name:</span>
-                                    <p class="text-sm font-medium text-gray-900">${delivery.recipient_name}</p>
+                                    <p class="text-xs font-medium text-gray-900">${delivery.recipient_name}</p>
                                 </div>
-                                <div>
+                                <div class="flex justify-between">
                                     <span class="text-xs text-gray-500">Phone:</span>
-                                    <p class="text-sm font-medium text-gray-900">${delivery.recipient_phone}</p>
+                                    <p class="text-xs font-medium text-gray-900">${delivery.recipient_phone}</p>
                                 </div>
-                                <div class="md:col-span-2">
+                                <div class="flex justify-between">
                                     <span class="text-xs text-gray-500">Address:</span>
-                                    <p class="text-sm font-medium text-gray-900">${delivery.recipient_address || 'N/A'}</p>
+                                    <p class="text-xs font-medium text-gray-900 max-w-xs truncate">${delivery.recipient_address || 'N/A'}</p>
                                 </div>
                             </div>
                         </div>
                         
                         <!-- Delivery Details -->
                         <div class="space-y-2">
-                            <h4 class="text-sm font-semibold text-gray-800 mb-2">Delivery Details</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <span class="text-xs text-gray-500">Goods Type:</span>
-                                    <p class="text-sm font-medium text-gray-900">${delivery.goods_type}</p>
+                            <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Delivery</h4>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="bg-blue-50 rounded-lg p-2 text-center">
+                                    <p class="text-xs text-gray-500">Type</p>
+                                    <p class="text-xs font-medium text-blue-900">${delivery.goods_type}</p>
                                 </div>
-                                <div>
-                                    <span class="text-xs text-gray-500">Quantity:</span>
-                                    <p class="text-sm font-medium text-gray-900">${delivery.quantity}</p>
+                                <div class="bg-purple-50 rounded-lg p-2 text-center">
+                                    <p class="text-xs text-gray-500">Qty</p>
+                                    <p class="text-xs font-medium text-purple-900">${delivery.quantity}</p>
                                 </div>
-                                <div>
-                                    <span class="text-xs text-gray-500">Status:</span>
-                                    <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
-                                        delivery.status === 'Delivered' ? 'bg-green-100 text-green-800' :
-                                        delivery.status === 'In Transit' ? 'bg-blue-100 text-blue-800' :
-                                        'bg-gray-100 text-gray-800'
-                                    }">
-                                        ${delivery.status}
-                                    </span>
+                                <div class="bg-${
+                                    delivery.status === 'Delivered' ? 'green' :
+                                    delivery.status === 'In Transit' ? 'blue' :
+                                    'gray'
+                                }-50 rounded-lg p-2 text-center">
+                                    <p class="text-xs text-gray-500">Status</p>
+                                    <p class="text-xs font-medium text-${
+                                        delivery.status === 'Delivered' ? 'green' :
+                                        delivery.status === 'In Transit' ? 'blue' :
+                                        'gray'
+                                    }-900">${delivery.status}</p>
                                 </div>
                             </div>
                         </div>
                         
                         <!-- Financial Information -->
                         <div class="space-y-2">
-                            <h4 class="text-sm font-semibold text-gray-800 mb-2">Financial Information</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
+                            <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Payment</h4>
+                            <div class="bg-green-50 rounded-lg p-3 space-y-2">
+                                <div class="flex justify-between">
                                     <span class="text-xs text-gray-500">Amount:</span>
                                     <p class="text-sm font-medium text-gray-900">KSh ${parseFloat(delivery.amount || 0).toFixed(2)}</p>
                                 </div>
-                                <div>
+                                <div class="flex justify-between">
                                     <span class="text-xs text-gray-500">Service Fee:</span>
                                     <p class="text-sm font-medium text-gray-900">KSh 50.00</p>
                                 </div>
-                                <div class="md:col-span-2">
-                                    <span class="text-xs text-gray-500">Total Pay Amount:</span>
-                                    <p class="text-lg font-bold text-green-700">KSh ${(parseFloat(delivery.amount || 0) + 50).toFixed(2)}</p>
+                                <div class="border-t border-green-200 pt-2">
+                                    <div class="flex justify-between">
+                                        <span class="text-xs font-bold text-green-700">Total:</span>
+                                        <p class="text-sm font-bold text-green-700">KSh ${(parseFloat(delivery.amount || 0) + 50).toFixed(2)}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         
                         <!-- Time Information -->
                         <div class="space-y-2">
-                            <h4 class="text-sm font-semibold text-gray-800 mb-2">Time Information</h4>
-                            <div class="grid grid-cols-1 gap-4">
-                                <div>
-                                    <span class="text-xs text-gray-500">Created:</span>
-                                    <p class="text-sm font-medium text-gray-900">${delivery.created_at ? new Date(delivery.created_at).toLocaleString() : 'N/A'}</p>
-                                </div>
+                            <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Time</h4>
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <p class="text-xs font-medium text-gray-900">${delivery.created_at ? new Date(delivery.created_at).toLocaleString() : 'N/A'}</p>
                             </div>
                         </div>
                         
                         <!-- Action Buttons -->
-                        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100">
-                            <button onclick="closeDeliveryPopup()" class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors">
+                        <div class="flex justify-end pt-3 border-t border-gray-100">
+                            <button onclick="closeDeliveryPopup()" class="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-colors">
                                 Close
                             </button>
                         </div>
