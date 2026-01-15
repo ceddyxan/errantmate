@@ -365,7 +365,7 @@ def dashboard():
         today_deliveries = [d for d in deliveries if d.created_at.date() == today]
         
         # Financial statistics
-        total_revenue = sum(float(d.amount) for d in deliveries if d.amount)
+        total_revenue = len(deliveries) * 50  # Service Fee: KSh 50 per delivery
         total_expenses = sum(float(d.expenses) for d in deliveries if d.expenses)
         net_profit = total_revenue - total_expenses
         
@@ -920,7 +920,7 @@ def get_delivery_persons():
             
             # Update totals
             persons_data[person]['delivery_count'] += 1
-            persons_data[person]['total_amount'] += float(delivery.amount) if delivery.amount else 0.0
+            persons_data[person]['total_amount'] += 50  # Service Fee: KSh 50 per delivery
             persons_data[person]['total_expenses'] += float(delivery.expenses) if delivery.expenses else 0.0
             persons_data[person]['delivery_ids'].append(delivery.display_id)
             
@@ -988,7 +988,7 @@ def get_summary():
         def get_summary_data(query):
             """Helper function to get summary data for a query."""
             deliveries = query.all()
-            total_amount = sum(d.amount for d in deliveries)
+            total_amount = len(deliveries) * 50  # Service Fee: KSh 50 per delivery
             total_expenses = sum(d.expenses for d in deliveries)
             return {
                 'total_deliveries': len(deliveries),
@@ -1003,9 +1003,9 @@ def get_summary():
         return jsonify({
             'deliveries': deliveries_data,  # Add individual delivery records
             'summary': {
-                'total_revenue': sum(d.amount for d in all_deliveries),
+                'total_revenue': len(all_deliveries) * 50,  # Service Fee: KSh 50 per delivery
                 'total_expenses': sum(d.expenses for d in all_deliveries),
-                'total_profit': sum(d.amount for d in all_deliveries) - sum(d.expenses for d in all_deliveries),
+                'total_profit': (len(all_deliveries) * 50) - sum(d.expenses for d in all_deliveries),
                 'total_deliveries': len(all_deliveries),
                 'pending': len([d for d in all_deliveries if d.status == 'Pending']),
                 'in_transit': len([d for d in all_deliveries if d.status == 'In Transit']),
@@ -2051,11 +2051,10 @@ def get_revenue_analytics():
         daily_data = {}
         for delivery in deliveries:
             date_key = delivery.created_at.strftime('%Y-%m-%d')
-            amount = float(delivery.amount) if delivery.amount else 0.0
             
             if date_key not in daily_data:
                 daily_data[date_key] = {'revenue': 0.0, 'count': 0}
-            daily_data[date_key]['revenue'] += amount
+            daily_data[date_key]['revenue'] += 50  # Service Fee: KSh 50 per delivery
             daily_data[date_key]['count'] += 1
         
         # Process data based on period
