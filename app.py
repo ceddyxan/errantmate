@@ -185,6 +185,7 @@ class Delivery(db.Model):
     quantity = db.Column(db.Integer, nullable=False)
     amount = db.Column(db.Float, nullable=False)
     expenses = db.Column(db.Float, default=0.0)
+    revenue = db.Column(db.Float, default=50.0)  # Service Fee captured as revenue
     payment_by = db.Column(db.String(50), nullable=False, default='M-Pesa')
     status = db.Column(db.String(20), default='Pending')
     created_at = db.Column(db.DateTime, default=get_current_time)
@@ -736,6 +737,7 @@ def add_delivery():
                 quantity=int(request.form['quantity']),
                 amount=float(request.form['amount']),
                 expenses=0.0,  # Will be set later via Quick Actions
+                revenue=50.0,  # Service Fee captured as revenue
                 payment_by='M-Pesa',  # Always M-Pesa
                 status=request.form.get('status', 'Pending'),
                 created_at=current_time,  # Use browser local time
@@ -1129,6 +1131,7 @@ def get_delivery_details(delivery_id):
             'status': delivery.status,
             'amount': delivery.amount,
             'expenses': delivery.expenses,
+            'revenue': delivery.revenue,
             'delivery_person': delivery.delivery_person,
             'notes': '',  # Field doesn't exist in model
             'goods_type': delivery.goods_type,
@@ -1168,6 +1171,7 @@ def update_delivery_details(delivery_id):
         delivery.goods_type = data.get('goods_type', delivery.goods_type)
         delivery.quantity = data.get('quantity', delivery.quantity)
         delivery.amount = data.get('amount', delivery.amount)
+        delivery.revenue = 50.0  # Always maintain service fee as revenue
         delivery.payment_by = 'M-Pesa'  # Always M-Pesa
         delivery.status = data.get('status', delivery.status)
         
