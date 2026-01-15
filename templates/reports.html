@@ -2935,27 +2935,17 @@ window.quickReassign = function(personName) {
         return;
     }
     
-    // Check if delivery is pending before allowing reassignment
-    fetch('/get_recent_deliveries')
+    // Get delivery details to check status
+    fetch(`/get_delivery_details/${deliveryId}`)
         .then(response => response.json())
         .then(data => {
-            let deliveries = [];
-            if (Array.isArray(data)) {
-                deliveries = data;
-            } else if (data && data.deliveries && Array.isArray(data.deliveries)) {
-                deliveries = data.deliveries;
-            }
-            
-            // Find the selected delivery
-            const selectedDelivery = deliveries.find(d => d.display_id === deliveryId);
-            
-            if (!selectedDelivery) {
-                showNotification('Delivery not found', 'error');
+            if (data.error) {
+                showNotification('Error loading delivery details', 'error');
                 return;
             }
             
             // Check if delivery is pending
-            if (selectedDelivery.status !== 'Pending' && selectedDelivery.status !== 'pending') {
+            if (data.status !== 'Pending' && data.status !== 'pending') {
                 showNotification('Only pending deliveries can be reassigned', 'error');
                 return;
             }
@@ -2969,7 +2959,7 @@ window.quickReassign = function(personName) {
             
             showNotification(`Reassigning to ${personName}...`, 'info');
             
-            fetch('/update_delivery', {
+            fetch('/update_delivery_expenses_and_person', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
