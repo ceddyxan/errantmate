@@ -336,29 +336,66 @@ def init_database():
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
 @app.route('/reset-db')
+@admin_required_api
 def reset_database():
-    """Reset database completely - use only if needed."""
+    """Reset database completely - admin only with confirmation."""
+    # Require confirmation parameter
+    confirm = request.args.get('confirm')
+    if confirm != 'RESET_CONFIRMED':
+        return jsonify({
+            'status': 'error', 
+            'error': 'Confirmation required. Add ?confirm=RESET_CONFIRMED to proceed'
+        }), 400
+    
+    # Log the reset attempt
+    user_id = session.get('user_id')
+    username = session.get('username', 'Unknown')
+    app.logger.warning(f"Database reset initiated by admin user {username} (ID: {user_id})")
+    
     try:
         with app.app_context():
             # Drop all tables
             db.drop_all()
             # Create all tables fresh
-            return jsonify({'status': 'success', 'message': 'Database reset successfully'}), 200
+            app.logger.info("Database tables dropped and recreated successfully")
+            return jsonify({
+                'status': 'success', 
+                'message': 'Database reset successfully',
+                'performed_by': username,
+                'timestamp': get_current_time().isoformat()
+            }), 200
     except Exception as e:
+        app.logger.error(f"Database reset failed: {str(e)}")
         return jsonify({'status': 'error', 'error': str(e)}), 500
 
 @app.route('/force-init-db')
+@admin_required_api
 def force_init_database():
-    """Force database initialization with simple approach."""
+    """Force database initialization with admin protection and confirmation."""
+    # Require confirmation parameter
+    confirm = request.args.get('confirm')
+    if confirm != 'FORCE_INIT_CONFIRMED':
+        return jsonify({
+            'status': 'error', 
+            'error': 'Confirmation required. Add ?confirm=FORCE_INIT_CONFIRMED to proceed'
+        }), 400
+    
+    # Log the force init attempt
+    user_id = session.get('user_id')
+    username = session.get('username', 'Unknown')
+    app.logger.warning(f"Database force initialization initiated by admin user {username} (ID: {user_id})")
+    
     try:
         with app.app_context():
             
             # Drop all tables
             print("Dropping existing tables...")
+            app.logger.info("Dropping existing database tables")
             db.drop_all()
             
             # Create all tables
             print("Creating tables...")
+            app.logger.info("Creating fresh database tables")
             db.create_all()
             
             # Verify tables were created
@@ -380,15 +417,19 @@ def force_init_database():
                     db.session.add(admin_user)
                     db.session.commit()
                     print("Default admin user created")
+                    app.logger.info("Default admin user created successfully")
                 else:
                     print("Admin user already exists")
+                    app.logger.info("Admin user already exists")
                 
                 return jsonify({
                     'status': 'success', 
                     'message': 'Database force initialized successfully',
                     'tables': tables,
                     'database_url': str(app.config['SQLALCHEMY_DATABASE_URI']),
-                    'admin_created': True
+                    'admin_created': True,
+                    'performed_by': username,
+                    'timestamp': get_current_time().isoformat()
                 }), 200
             else:
                 missing = [table for table in required_tables if table not in tables]
@@ -397,6 +438,7 @@ def force_init_database():
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
+        app.logger.error(f"Database force initialization failed: {str(e)}\n{error_details}")
         
         return jsonify({
             'status': 'error', 
