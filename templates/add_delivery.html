@@ -560,8 +560,8 @@ document.addEventListener('DOMContentLoaded', function() {
             popup.id = 'deliveryDetailsPopup';
             popup.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
             popup.innerHTML = `
-                <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                    <div class="bg-gradient-to-r from-green-500 to-emerald-600 p-6 rounded-t-xl">
+                <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-y-auto">
+                    <div class="bg-gradient-to-r from-green-500 to-emerald-600 p-6 rounded-t-xl sticky top-0 z-10">
                         <div class="flex items-center justify-between">
                             <h3 class="text-xl font-bold text-white">Delivery Details</h3>
                             <button onclick="closeDeliveryPopup()" class="text-white hover:text-gray-200 transition-colors">
@@ -682,11 +682,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Add popup to page
             document.body.appendChild(popup);
-            
-            // Auto-close after 10 seconds
-            setTimeout(() => {
-                closeDeliveryPopup();
-            }, 10000);
         }
         
         // Function to close delivery popup
