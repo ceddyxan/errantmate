@@ -695,12 +695,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Function to handle Pay Package action
         function payPackage() {
-            // Get the current delivery details from the popup
+            console.log('Pay Package button clicked!');
+            // Get current delivery details from the popup
             const popup = document.getElementById('deliveryDetailsPopup');
             if (popup) {
+                console.log('Delivery popup found:', popup);
                 // Extract delivery ID from popup content
                 const deliveryIdElement = popup.querySelector('.bg-gray-50.px-2.py-1.rounded');
                 const deliveryId = deliveryIdElement ? deliveryIdElement.textContent : '';
+                console.log('Delivery ID extracted:', deliveryId);
                 
                 // Close current popup
                 closeDeliveryPopup();
