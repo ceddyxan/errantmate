@@ -151,16 +151,34 @@ errantmate/
 
 ## Database Migrations
 
-When updating to newer versions that include database schema changes, run the migration script:
+When updating to newer versions that include database schema changes, run the appropriate migration script:
 
+### For Development (SQLite):
 ```bash
 python add_revenue_column.py
 ```
 
-This script will:
+### For Production (PostgreSQL):
+**Option 1: Python Script**
+```bash
+python migrate_production_db.py
+```
+
+**Option 2: Direct SQL**
+```bash
+psql -d your_database_name -f add_revenue_column.sql
+```
+
+### Migration Scripts:
+- `add_revenue_column.py` - For local development (SQLite)
+- `migrate_production_db.py` - For production environment (PostgreSQL)
+- `add_revenue_column.sql` - Direct PostgreSQL SQL script
+
+All scripts will:
 - Add new database columns automatically
 - Update existing records with default values
 - Support both PostgreSQL and SQLite databases
+- Verify successful migration completion
 
 ## Support
 
