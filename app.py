@@ -367,7 +367,6 @@ def dashboard():
         # Financial statistics
         total_revenue = len(deliveries) * 50  # Service Fee: KSh 50 per delivery
         total_expenses = sum(float(d.amount) for d in deliveries if d.amount)  # Use amount as delivery costs
-        net_profit = total_revenue - total_expenses
         
         recent_activities = []
         for delivery in deliveries[:10]:
@@ -408,8 +407,7 @@ def dashboard():
                              today_deliveries=today_deliveries,
                              recent_activities=recent_activities,
                              total_revenue=total_revenue,
-                             total_expenses=total_expenses,
-                             net_profit=net_profit)
+                             total_expenses=total_expenses)
     except Exception as e:
         app.logger.error(f"Error loading dashboard: {str(e)}")
         flash('An error occurred while loading the dashboard.', 'danger')
@@ -425,8 +423,7 @@ def dashboard():
                              today_deliveries=[],
                              recent_activities=[],
                              total_revenue=0.0,
-                             total_expenses=0.0,
-                             net_profit=0.0)
+                             total_expenses=0.0)
 
 def get_time_ago(created_at):
     """Calculate time ago string for a datetime."""
@@ -911,7 +908,6 @@ def get_delivery_persons():
                     'delivery_count': 0,  # Total assigned
                     'total_amount': 0.0,
                     'total_expenses': 0.0,
-                    'net_profit': 0.0,
                     'delivery_ids': [],
                     'daily_deliveries': {},
                     'pending_count': 0,  # Pending deliveries
@@ -943,10 +939,6 @@ def get_delivery_persons():
                 'expenses': float(delivery.expenses) if delivery.expenses else 0.0,
                 'status': delivery.status
             })
-        
-        # Calculate net profit for each person
-        for person_data in persons_data.values():
-            person_data['net_profit'] = person_data['total_amount'] - person_data['total_expenses']
         
         # Convert to list and sort by delivery count (descending)
         result = list(persons_data.values())
@@ -994,7 +986,6 @@ def get_summary():
                 'total_deliveries': len(deliveries),
                 'total_amount': total_amount,
                 'total_expenses': total_expenses,
-                'net_profit': total_amount - total_expenses,
                 'pending': len([d for d in deliveries if d.status == 'Pending']),
                 'in_transit': len([d for d in deliveries if d.status == 'In Transit']),
                 'delivered': len([d for d in deliveries if d.status == 'Delivered'])
@@ -1005,7 +996,6 @@ def get_summary():
             'summary': {
                 'total_revenue': len(all_deliveries) * 50,  # Service Fee: KSh 50 per delivery
                 'total_expenses': sum(d.amount for d in all_deliveries),  # Use amount as delivery costs
-                'total_profit': (len(all_deliveries) * 50) - sum(d.amount for d in all_deliveries),
                 'total_deliveries': len(all_deliveries),
                 'pending': len([d for d in all_deliveries if d.status == 'Pending']),
                 'in_transit': len([d for d in all_deliveries if d.status == 'In Transit']),
@@ -1935,7 +1925,6 @@ def get_revenue_charts():
         # Group by date
         daily_revenue = {}
         daily_expenses = {}
-        daily_profit = {}
         
         for delivery in deliveries:
             date_key = delivery.created_at.strftime('%Y-%m-%d')
@@ -1945,18 +1934,15 @@ def get_revenue_charts():
             
             daily_revenue[date_key] = daily_revenue.get(date_key, 0) + amount
             daily_expenses[date_key] = daily_expenses.get(date_key, 0) + expenses
-            daily_profit[date_key] = daily_profit.get(date_key, 0) + (amount - expenses)
         
         # Prepare data for Chart.js
         dates = sorted(daily_revenue.keys())
         revenue_data = [daily_revenue[date] for date in dates]
         expenses_data = [daily_expenses[date] for date in dates]
-        profit_data = [daily_profit[date] for date in dates]
         
         # Calculate totals
         total_revenue = sum(revenue_data)
         total_expenses = sum(expenses_data)
-        total_profit = sum(profit_data)
         
         return jsonify({
             'line_chart': {
@@ -1981,24 +1967,12 @@ def get_revenue_charts():
                         'borderWidth': 2,
                         'pointRadius': 3,
                         'pointHoverRadius': 5
-                    },
-                    {
-                        'label': 'Net Profit',
-                        'data': profit_data,
-                        'borderColor': '#3b82f6',
-                        'backgroundColor': 'rgba(59, 130, 246, 0.1)',
-                        'tension': 0.3,
-                        'borderWidth': 2,
-                        'pointRadius': 3,
-                        'pointHoverRadius': 5
                     }
                 ]
             },
             'summary': {
                 'total_revenue': round(total_revenue, 2),
-                'total_expenses': round(total_expenses, 2),
-                'total_profit': round(total_profit, 2),
-                'profit_margin': round((total_profit / total_revenue * 100) if total_revenue > 0 else 0, 1)
+                'total_expenses': round(total_expenses, 2)
             }
         })
         
