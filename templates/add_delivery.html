@@ -671,11 +671,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="flex justify-between pt-3 border-t border-gray-100">
                             <button onclick="payPackage()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center">
                                 <i class="fas fa-credit-card mr-2"></i>
-                                Pay 1 Package
-                            </button>
-                            <button onclick="addAnotherPackage()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center">
-                                <i class="fas fa-plus mr-2"></i>
-                                Add Another Package
+                                Pay Package
                             </button>
                             <button onclick="closeDeliveryPopup()" class="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-colors">
                                 Close
@@ -728,44 +724,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }, 3000);
                     
                     console.log('Payment processed for 1 package:', deliveryId);
-                }
-            }
-        }
-        
-        // Function to handle Add Another Package action
-        function addAnotherPackage() {
-            // Get the current delivery details from the popup
-            const popup = document.getElementById('deliveryDetailsPopup');
-            if (popup) {
-                // Extract delivery ID from the popup content
-                const deliveryIdElement = popup.querySelector('.bg-gray-50.px-2.py-1.rounded');
-                const deliveryId = deliveryIdElement ? deliveryIdElement.textContent : '';
-                
-                // Close the current popup
-                closeDeliveryPopup();
-                
-                // Show confirmation for adding multiple packages
-                if (confirm(`Add another package to delivery ${deliveryId}? This will allow you to send multiple packages.`)) {
-                    // Show info message
-                    const infoDiv = document.createElement('div');
-                    infoDiv.className = 'fixed top-4 right-4 bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-lg z-50 shadow-lg';
-                    infoDiv.innerHTML = `
-                        <div class="flex items-center">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            <span>Multiple packages feature activated! You can now add additional packages.</span>
-                        </div>
-                    `;
-                    document.body.appendChild(infoDiv);
-                    
-                    // Remove info message after 3 seconds
-                    setTimeout(() => {
-                        infoDiv.remove();
-                    }, 3000);
-                    
-                    console.log('Multiple packages activated for delivery:', deliveryId);
-                    
-                    // Scroll to top of the form for easy access to add another package
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
             }
         }
