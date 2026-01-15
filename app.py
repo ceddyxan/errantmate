@@ -185,7 +185,7 @@ class Delivery(db.Model):
     quantity = db.Column(db.Integer, nullable=False)
     amount = db.Column(db.Float, nullable=False)
     expenses = db.Column(db.Float, default=0.0)
-    payment_by = db.Column(db.String(50), nullable=False)
+    payment_by = db.Column(db.String(50), nullable=False, default='M-Pesa')
     status = db.Column(db.String(20), default='Pending')
     created_at = db.Column(db.DateTime, default=get_current_time)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -736,7 +736,7 @@ def add_delivery():
                 quantity=int(request.form['quantity']),
                 amount=float(request.form['amount']),
                 expenses=0.0,  # Will be set later via Quick Actions
-                payment_by=request.form['payment_by'],
+                payment_by='M-Pesa',  # Always M-Pesa
                 status=request.form.get('status', 'Pending'),
                 created_at=current_time,  # Use browser local time
                 created_by=session.get('user_id')  # Set the creator
@@ -1168,7 +1168,7 @@ def update_delivery_details(delivery_id):
         delivery.goods_type = data.get('goods_type', delivery.goods_type)
         delivery.quantity = data.get('quantity', delivery.quantity)
         delivery.amount = data.get('amount', delivery.amount)
-        delivery.payment_by = data.get('payment_by', delivery.payment_by)
+        delivery.payment_by = 'M-Pesa'  # Always M-Pesa
         delivery.status = data.get('status', delivery.status)
         
         db.session.commit()
