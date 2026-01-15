@@ -243,10 +243,10 @@
             <div class="p-4 relative">
                 <div class="flex items-center justify-between">
                     <div class="flex-1">
-                        <p class="text-red-700 text-sm font-black uppercase tracking-wider drop-shadow-sm">Expenses</p>
+                        <p class="text-red-700 text-sm font-black uppercase tracking-wider drop-shadow-sm">Delivery Costs</p>
                         <p class="text-3xl font-black text-red-800 mt-2 drop-shadow-md" id="expenses">KSh 860.00</p>
                         <div class="flex items-center mt-3">
-                            <span class="text-sm text-red-600 font-bold">Total costs</span>
+                            <span class="text-sm text-red-600 font-bold">Total delivery costs</span>
                             <div class="ml-2 w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-lg"></div>
                         </div>
                     </div>
@@ -1489,7 +1489,7 @@ function displayDeliveryPersons(persons, period = 'month') {
                                 <span class="font-medium">KSh ${(person.total_amount || 0).toFixed(2)}</span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-gray-600">Expenses:</span>
+                                <span class="text-gray-600">Delivery Costs:</span>
                                 <span class="font-medium text-red-600">KSh ${(person.total_expenses || 0).toFixed(2)}</span>
                             </div>
                             <div class="flex justify-between">
@@ -2225,7 +2225,7 @@ window.viewDeliveryDetails = function(deliveryId) {
                                 <p class="mt-1 text-sm text-gray-900">KSh ${delivery.amount.toFixed(2)}</p>
                             </div>
                             <div>
-                                <label class="block text-sm font-bold text-gray-700">Expenses</label>
+                                <label class="block text-sm font-bold text-gray-700">Delivery Costs</label>
                                 <p class="mt-1 text-sm text-gray-900">KSh ${delivery.expenses.toFixed(2)}</p>
                             </div>
                         </div>
