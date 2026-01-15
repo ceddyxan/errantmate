@@ -510,12 +510,18 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Check for success message and show delivery details popup
         window.addEventListener('load', function() {
-            // Look for success flash messages
-            const successAlert = document.querySelector('.alert-success');
-            if (successAlert) {
-                // Get the delivery ID from the success message or recent deliveries
-                showDeliveryDetailsPopup();
-            }
+            // Wait a moment for flash messages to be rendered
+            setTimeout(function() {
+                // Look for success flash messages (they use bg-green-50 class)
+                const successAlert = document.querySelector('.bg-green-50');
+                if (successAlert) {
+                    // Get the delivery ID from the success message or recent deliveries
+                    console.log('Success message detected, showing delivery details popup');
+                    showDeliveryDetailsPopup();
+                } else {
+                    console.log('No success message found');
+                }
+            }, 100); // 100ms delay
         });
         
         // Function to show delivery details popup
