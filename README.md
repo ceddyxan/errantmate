@@ -149,6 +149,19 @@ errantmate/
 - Regularly backup your database
 - Monitor audit logs for suspicious activity
 
+## Database Migrations
+
+When updating to newer versions that include database schema changes, run the migration script:
+
+```bash
+python add_revenue_column.py
+```
+
+This script will:
+- Add new database columns automatically
+- Update existing records with default values
+- Support both PostgreSQL and SQLite databases
+
 ## Support
 
 For issues and questions, please create an issue in the repository.
