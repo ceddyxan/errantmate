@@ -2534,8 +2534,7 @@ def update_delivery_expenses_and_person():
         if not delivery:
             return jsonify({'error': 'Delivery not found'}), 404
         
-        # Update expenses and delivery person
-        delivery.expenses = float(expenses) if expenses else 0.0
+        # Update delivery person only (expenses are now handled via amount field in delivery details)
         delivery.delivery_person = delivery_person or ''
         
         db.session.commit()
