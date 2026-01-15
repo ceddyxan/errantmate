@@ -228,7 +228,24 @@ def generate_display_id():
     today_count = len(today_deliveries)
     next_sequence = today_count + 1
     
-    return f"{date_str}{str(next_sequence).zfill(4)}"
+    # Generate display ID
+    display_id = f"{date_str}{str(next_sequence).zfill(4)}"
+    
+    # Check if this display_id already exists (race condition protection)
+    max_attempts = 10
+    for attempt in range(max_attempts):
+        existing = Delivery.query.filter_by(display_id=display_id).first()
+        if not existing:
+            return display_id
+        
+        # If it exists, increment and try again
+        next_sequence += 1
+        display_id = f"{date_str}{str(next_sequence).zfill(4)}"
+    
+    # If we still have a conflict after max attempts, use a timestamp-based fallback
+    import time
+    timestamp_suffix = str(int(time.time()))[-4:]
+    return f"{date_str}{timestamp_suffix}"
 
 def get_date_ranges():
     """Get common date ranges used throughout the application."""
@@ -750,7 +767,52 @@ def add_delivery():
         except Exception as e:
             db.session.rollback()
             app.logger.error(f"Error adding delivery: {str(e)}")
-            flash('Error adding delivery. Please check the form and try again.', 'danger')
+            
+            # Check for specific database errors
+            error_str = str(e).lower()
+            if 'duplicate key' in error_str or 'unique constraint' in error_str:
+                # Try again with a new display ID
+                try:
+                    # Generate a new display ID with timestamp fallback
+                    import time
+                    now = get_local_time()
+                    date_str = now.strftime('%y%m%d')
+                    timestamp_suffix = str(int(time.time()))[-4:]
+                    new_display_id = f"{date_str}{timestamp_suffix}"
+                    
+                    delivery = Delivery(
+                        display_id=new_display_id,
+                        sender_name=request.form['sender_name'],
+                        sender_phone=request.form['sender_phone'],
+                        recipient_name=request.form['recipient_name'],
+                        recipient_phone=request.form['recipient_phone'],
+                        recipient_address=request.form['recipient_address'],
+                        delivery_person='',  # Will be set later via Quick Actions
+                        goods_type=request.form['goods_type'],
+                        quantity=int(request.form['quantity']),
+                        amount=float(request.form['amount']),
+                        expenses=0.0,  # Will be set later via Quick Actions
+                        payment_by='M-Pesa',  # Always M-Pesa
+                        status=request.form.get('status', 'Pending'),
+                        created_at=current_time,  # Use browser local time
+                        created_by=session.get('user_id')  # Set the creator
+                    )
+                    db.session.add(delivery)
+                    db.session.commit()
+                    
+                    # Log delivery creation
+                    details = f"Created delivery {delivery.display_id}: {delivery.sender_name} -> {delivery.recipient_name} ({delivery.goods_type}, KSh{delivery.amount})"
+                    log_delivery_action("CREATE", delivery.id, details)
+                    
+                    flash('Delivery added successfully!', 'success')
+                    return redirect(url_for('add_delivery'))
+                    
+                except Exception as retry_error:
+                    db.session.rollback()
+                    app.logger.error(f"Retry failed for delivery creation: {str(retry_error)}")
+                    flash('System is experiencing high traffic. Please try again in a moment.', 'warning')
+            else:
+                flash('Error adding delivery. Please check the form and try again.', 'danger')
     return render_template('add_delivery.html')
 
 @app.route('/update_status/<int:delivery_id>/<status>', methods=['GET', 'POST'])
