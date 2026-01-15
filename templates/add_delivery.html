@@ -462,6 +462,123 @@ function getTimeAgo(dateString) {
     }
 }
 
+// Global popup functions - must be outside DOMContentLoaded for onclick handlers to work
+function showDeliveryDetailsPopup() {
+    // Get the most recent delivery details
+    fetch('/get_recent_deliveries?limit=1')
+        .then(response => response.json())
+        .then(data => {
+            let deliveries = [];
+            if (Array.isArray(data)) {
+                deliveries = data;
+            } else if (data && data.deliveries && Array.isArray(data.deliveries)) {
+                deliveries = data.deliveries;
+            }
+            
+            if (deliveries.length > 0) {
+                const delivery = deliveries[0];
+                createDeliveryPopup(delivery);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching delivery details:', error);
+        });
+}
+
+function createDeliveryPopup(delivery) {
+    // Remove existing popup if any
+    const existingPopup = document.getElementById('deliveryDetailsPopup');
+    if (existingPopup) {
+        existingPopup.remove();
+    }
+    
+    // Create popup container
+    const popup = document.createElement('div');
+    popup.id = 'deliveryDetailsPopup';
+    popup.className = 'fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4';
+    popup.innerHTML = `
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-y-auto border border-gray-100">
+            <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-4 rounded-t-2xl sticky top-0 z-10">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-white">Delivery Details</h3>
+                    <button onclick="closeDeliveryPopup()" class="text-white hover:text-gray-200 transition-colors p-1 rounded-lg hover:bg-white/20">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-5 space-y-3">
+                <!-- Delivery ID -->
+                <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">ID</span>
+                    <span class="text-sm font-bold text-gray-900 bg-gray-50 px-2 py-1 rounded">${delivery.display_id}</span>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="flex justify-between pt-3 border-t border-gray-100">
+                    <button onclick="payPackage()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center">
+                        <i class="fas fa-credit-card mr-2"></i>
+                        Pay Package
+                    </button>
+                    <button onclick="closeDeliveryPopup()" class="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-colors">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add popup to page
+    document.body.appendChild(popup);
+}
+
+function closeDeliveryPopup() {
+    const popup = document.getElementById('deliveryDetailsPopup');
+    if (popup) {
+        popup.remove();
+    }
+}
+
+function payPackage() {
+    console.log('Pay Package button clicked!');
+    // Get current delivery details from the popup
+    const popup = document.getElementById('deliveryDetailsPopup');
+    if (popup) {
+        console.log('Delivery popup found:', popup);
+        // Extract delivery ID from popup content
+        const deliveryIdElement = popup.querySelector('.bg-gray-50.px-2.py-1.rounded');
+        const deliveryId = deliveryIdElement ? deliveryIdElement.textContent : '';
+        console.log('Delivery ID extracted:', deliveryId);
+        
+        // Close current popup
+        closeDeliveryPopup();
+        
+        alert('Pay Package button is working! Payment options would appear here.');
+    }
+}
+
+function closePaymentOptionsPopup() {
+    const popup = document.getElementById('paymentOptionsPopup');
+    if (popup) {
+        popup.remove();
+    }
+}
+
+function initiatePayment(deliveryId) {
+    console.log('Initiate payment for:', deliveryId);
+    alert('Payment initiation would work here!');
+}
+
+function processPayment(deliveryId) {
+    console.log('Process payment for:', deliveryId);
+    alert('Payment processing would work here!');
+}
+
+function completePayment(deliveryId, phoneNumber) {
+    console.log('Complete payment for:', deliveryId, 'Phone:', phoneNumber);
+    alert('Payment completion would work here!');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Add Delivery page loaded - DOMContentLoaded fired');
     
