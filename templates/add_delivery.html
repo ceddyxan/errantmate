@@ -698,34 +698,278 @@ document.addEventListener('DOMContentLoaded', function() {
             // Get the current delivery details from the popup
             const popup = document.getElementById('deliveryDetailsPopup');
             if (popup) {
-                // Extract delivery ID from the popup content
+                // Extract delivery ID from popup content
                 const deliveryIdElement = popup.querySelector('.bg-gray-50.px-2.py-1.rounded');
                 const deliveryId = deliveryIdElement ? deliveryIdElement.textContent : '';
                 
-                // Show payment confirmation
-                if (confirm(`Process payment for 1 package (${deliveryId})?`)) {
-                    // Close the popup
-                    closeDeliveryPopup();
-                    
-                    // Show success message
-                    const successDiv = document.createElement('div');
-                    successDiv.className = 'fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg z-50 shadow-lg';
-                    successDiv.innerHTML = `
-                        <div class="flex items-center">
-                            <i class="fas fa-check-circle mr-2"></i>
-                            <span>Payment processed successfully for 1 package!</span>
+                // Close current popup
+                closeDeliveryPopup();
+                
+                // Create payment options popup
+                const paymentPopup = document.createElement('div');
+                paymentPopup.id = 'paymentOptionsPopup';
+                paymentPopup.className = 'fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4';
+                paymentPopup.innerHTML = `
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-y-auto border border-gray-100">
+                        <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-4 rounded-t-2xl sticky top-0 z-10">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-bold text-white">Payment Options</h3>
+                                <button onclick="closePaymentOptionsPopup()" class="text-white hover:text-gray-200 transition-colors p-1 rounded-lg hover:bg-white/20">
+                                    <i class="fas fa-times text-lg"></i>
+                                </button>
+                            </div>
                         </div>
-                    `;
-                    document.body.appendChild(successDiv);
-                    
-                    // Remove success message after 3 seconds
-                    setTimeout(() => {
-                        successDiv.remove();
-                    }, 3000);
-                    
-                    console.log('Payment processed for 1 package:', deliveryId);
-                }
+                        
+                        <div class="p-5 space-y-4">
+                            <p class="text-sm text-gray-600 text-center mb-4">Choose how you'd like to pay for delivery ${deliveryId}</p>
+                            
+                            <!-- Option 1: Show Paybill Details -->
+                            <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                                <h4 class="text-sm font-semibold text-blue-800 mb-3">Option 1: Manual Payment</h4>
+                                <div class="space-y-2 text-xs">
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-600">PayBill Number:</span>
+                                        <span class="font-bold text-blue-900">222111</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-600">Account Number:</span>
+                                        <span class="font-bold text-blue-900">106896</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-600">Business Name:</span>
+                                        <span class="font-bold text-blue-900">Errantmate</span>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-3">Use these details to pay manually via M-Pesa Paybill</p>
+                            </div>
+                            
+                            <!-- Option 2: Auto-fill Payment -->
+                            <div class="bg-green-50 rounded-lg p-4 border border-green-200">
+                                <h4 class="text-sm font-semibold text-green-800 mb-3">Option 2: Quick Payment</h4>
+                                <p class="text-xs text-gray-600 mb-3">Click below to auto-fill payment details and enter your PIN</p>
+                                <button onclick="initiatePayment('${deliveryId}')" class="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center">
+                                    <i class="fas fa-mobile-alt mr-2"></i>
+                                    Pay via M-Pesa
+                                </button>
+                            </div>
+                            
+                            <!-- Delivery Info -->
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <p class="text-xs text-gray-500 text-center">Paying for delivery: <span class="font-bold text-gray-900">${deliveryId}</span></p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add payment popup to page
+                document.body.appendChild(paymentPopup);
             }
+        }
+        
+        // Function to close payment options popup
+        function closePaymentOptionsPopup() {
+            const popup = document.getElementById('paymentOptionsPopup');
+            if (popup) {
+                popup.remove();
+            }
+        }
+        
+        // Function to initiate payment with auto-fill
+        function initiatePayment(deliveryId) {
+            // Close payment options popup
+            closePaymentOptionsPopup();
+            
+            // Show payment prompt
+            const paymentPrompt = document.createElement('div');
+            paymentPrompt.id = 'paymentPrompt';
+            paymentPrompt.className = 'fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4';
+            paymentPrompt.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm border border-gray-100">
+                    <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-4 rounded-t-2xl">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-white">M-Pesa Payment</h3>
+                            <button onclick="closePaymentPrompt()" class="text-white hover:text-gray-200 transition-colors p-1 rounded-lg hover:bg-white/20">
+                                <i class="fas fa-times text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-5 space-y-4">
+                        <div class="bg-green-50 rounded-lg p-3 border border-green-200">
+                            <p class="text-xs text-green-800 font-medium mb-2">Payment Details:</p>
+                            <div class="space-y-1 text-xs">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">PayBill:</span>
+                                    <span class="font-bold text-green-900">222111</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Account:</span>
+                                    <span class="font-bold text-green-900">106896</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Business:</span>
+                                    <span class="font-bold text-green-900">Errantmate</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <p class="text-sm text-gray-700 mb-2">Enter your M-Pesa number to continue</p>
+                            <input type="tel" id="phoneNumberInput" placeholder="07XX XXX XXX" maxlength="12" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                        </div>
+                        
+                        <button onclick="processPayment('${deliveryId}')" class="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center">
+                            <i class="fas fa-lock mr-2"></i>
+                            Continue to PIN Entry
+                        </button>
+                        
+                        <p class="text-xs text-gray-500 text-center">You will be prompted to enter your M-Pesa PIN next</p>
+                    </div>
+                </div>
+            `;
+            
+            // Add payment prompt to page
+            document.body.appendChild(paymentPrompt);
+            
+            // Focus on phone input
+            setTimeout(() => {
+                const phoneInput = document.getElementById('phoneNumberInput');
+                if (phoneInput) {
+                    phoneInput.focus();
+                }
+            }, 100);
+        }
+        
+        // Function to close payment prompt
+        function closePaymentPrompt() {
+            const prompt = document.getElementById('paymentPrompt');
+            if (prompt) {
+                prompt.remove();
+            }
+        }
+        
+        // Function to process payment
+        function processPayment(deliveryId) {
+            const phoneInput = document.getElementById('phoneNumberInput');
+            const phoneNumber = phoneInput ? phoneInput.value.trim() : '';
+            
+            if (!phoneNumber) {
+                alert('Please enter your M-Pesa phone number');
+                return;
+            }
+            
+            // Close payment prompt
+            closePaymentPrompt();
+            
+            // Show PIN entry simulation
+            const pinPrompt = document.createElement('div');
+            pinPrompt.id = 'pinPrompt';
+            pinPrompt.className = 'fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4';
+            pinPrompt.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm border border-gray-100">
+                    <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-4 rounded-t-2xl">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-white">Enter PIN</h3>
+                            <button onclick="closePinPrompt()" class="text-white hover:text-gray-200 transition-colors p-1 rounded-lg hover:bg-white/20">
+                                <i class="fas fa-times text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-5 space-y-4">
+                        <div class="bg-green-50 rounded-lg p-3 border border-green-200">
+                            <p class="text-xs text-green-800 font-medium mb-2">Payment Summary:</p>
+                            <div class="space-y-1 text-xs">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">PayBill:</span>
+                                    <span class="font-bold text-green-900">222111</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Account:</span>
+                                    <span class="font-bold text-green-900">106896</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Business:</span>
+                                    <span class="font-bold text-green-900">Errantmate</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Phone:</span>
+                                    <span class="font-bold text-green-900">${phoneNumber}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Delivery:</span>
+                                    <span class="font-bold text-green-900">${deliveryId}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <p class="text-sm text-gray-700 mb-3">Enter your M-Pesa PIN to complete payment</p>
+                            <input type="password" id="pinInput" placeholder="****" maxlength="4" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-center text-lg">
+                        </div>
+                        
+                        <button onclick="completePayment('${deliveryId}', '${phoneNumber}')" class="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            Complete Payment
+                        </button>
+                        
+                        <p class="text-xs text-gray-500 text-center">Your payment details are pre-filled above</p>
+                    </div>
+                </div>
+            `;
+            
+            // Add PIN prompt to page
+            document.body.appendChild(pinPrompt);
+            
+            // Focus on PIN input
+            setTimeout(() => {
+                const pinInput = document.getElementById('pinInput');
+                if (pinInput) {
+                    pinInput.focus();
+                }
+            }, 100);
+        }
+        
+        // Function to close PIN prompt
+        function closePinPrompt() {
+            const prompt = document.getElementById('pinPrompt');
+            if (prompt) {
+                prompt.remove();
+            }
+        }
+        
+        // Function to complete payment
+        function completePayment(deliveryId, phoneNumber) {
+            const pinInput = document.getElementById('pinInput');
+            const pin = pinInput ? pinInput.value.trim() : '';
+            
+            if (!pin || pin.length !== 4) {
+                alert('Please enter a valid 4-digit M-Pesa PIN');
+                return;
+            }
+            
+            // Close PIN prompt
+            closePinPrompt();
+            
+            // Show success message
+            const successDiv = document.createElement('div');
+            successDiv.className = 'fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg z-50 shadow-lg';
+            successDiv.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span>Payment initiated successfully! You will receive an M-Pesa confirmation shortly.</span>
+                </div>
+            `;
+            document.body.appendChild(successDiv);
+            
+            // Remove success message after 5 seconds
+            setTimeout(() => {
+                successDiv.remove();
+            }, 5000);
+            
+            console.log('Payment completed for delivery:', deliveryId, 'Phone:', phoneNumber);
         }
         
         const recentDeliveries = document.getElementById('recentDeliveries');
