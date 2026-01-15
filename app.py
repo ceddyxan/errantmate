@@ -1135,6 +1135,45 @@ def get_delivery_details(delivery_id):
         app.logger.error(f"Error getting delivery details for ID {delivery_id}: {str(e)}")
         return jsonify({'error': 'Failed to load delivery details'}), 500
 
+@app.route('/get_delivery_by_display_id/<display_id>')
+@login_required
+@database_required
+def get_delivery_by_display_id(display_id):
+    """Get delivery details by display ID (for Quick Reassign functionality)."""
+    try:
+        delivery = Delivery.query.filter_by(display_id=display_id).first()
+        if not delivery:
+            return jsonify({'error': 'Delivery not found'}), 404
+        
+        # Convert delivery to dictionary for JSON response
+        delivery_data = {
+            'id': delivery.id,
+            'display_id': delivery.display_id,
+            'sender_name': delivery.sender_name,
+            'sender_phone': delivery.sender_phone,
+            'sender_address': '',  # Field doesn't exist in model
+            'recipient_name': delivery.recipient_name,
+            'recipient_phone': delivery.recipient_phone,
+            'recipient_address': delivery.recipient_address,
+            'status': delivery.status,
+            'amount': delivery.amount,
+            'expenses': delivery.expenses,
+            'delivery_person': delivery.delivery_person,
+            'notes': '',  # Field doesn't exist in model
+            'goods_type': delivery.goods_type,
+            'quantity': delivery.quantity,
+            'payment_by': delivery.payment_by,
+            'created_at': delivery.created_at.isoformat() if delivery.created_at else None,
+            'time_ago': get_time_ago(delivery.created_at) if delivery.created_at else "Unknown",
+            'updated_at': delivery.created_at.isoformat() if delivery.created_at else None  # Use created_at since updated_at doesn't exist
+        }
+        
+        return jsonify(delivery_data)
+        
+    except Exception as e:
+        app.logger.error(f"Error getting delivery details for display ID {display_id}: {str(e)}")
+        return jsonify({'error': 'Failed to load delivery details'}), 500
+
 @app.route('/update_delivery/<int:delivery_id>', methods=['PUT'])
 @login_required
 @database_required

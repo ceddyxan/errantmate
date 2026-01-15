@@ -2936,7 +2936,7 @@ window.quickReassign = function(personName) {
     }
     
     // Get delivery details to check status
-    fetch(`/get_delivery_details/${deliveryId}`)
+    fetch(`/get_delivery_by_display_id/${deliveryId}`)
         .then(response => response.json())
         .then(data => {
             if (data.error) {
