@@ -831,14 +831,22 @@ document.addEventListener('DOMContentLoaded', function() {
         window.addEventListener('load', function() {
             // Wait a moment for flash messages to be rendered
             setTimeout(function() {
-                // Look for success flash messages (they use bg-green-50 class)
-                const successAlert = document.querySelector('.bg-green-50');
-                if (successAlert) {
+                // Look for specific success flash messages that contain "Delivery saved successfully"
+                const successAlerts = document.querySelectorAll('.bg-green-50');
+                let deliverySaved = false;
+                
+                successAlerts.forEach(function(alert) {
+                    if (alert.textContent && alert.textContent.includes('Delivery saved successfully')) {
+                        deliverySaved = true;
+                    }
+                });
+                
+                if (deliverySaved) {
                     // Get the delivery ID from the success message or recent deliveries
-                    console.log('Success message detected, showing delivery details popup');
+                    console.log('Delivery saved successfully, showing delivery details popup');
                     showDeliveryDetailsPopup();
                 } else {
-                    console.log('No success message found');
+                    console.log('No delivery saved message found');
                 }
             }, 100); // 100ms delay
         });
