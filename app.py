@@ -1237,7 +1237,6 @@ def get_delivery_by_display_id(display_id):
         return jsonify({'error': 'Failed to load delivery details'}), 500
 
 @app.route('/search_delivery_by_display_id', methods=['GET'])
-@login_required
 @database_required
 def search_delivery_by_display_id():
     """Search delivery by Display ID for dashboard search functionality."""

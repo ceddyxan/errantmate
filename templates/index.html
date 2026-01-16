@@ -283,9 +283,14 @@ function searchDelivery() {
     searchNoResults.classList.add('hidden');
     searchLoading.classList.remove('hidden');
     
-    // Search for delivery by Display ID
+    // Search for delivery by Display ID (works for both logged-in and non-logged-in users)
     fetch(`/search_delivery_by_display_id?display_id=${encodeURIComponent(displayId)}`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Search failed');
+            }
+            return response.json();
+        })
         .then(data => {
             searchLoading.classList.add('hidden');
             
@@ -340,13 +345,14 @@ function searchDelivery() {
                 `;
                 searchResults.classList.remove('hidden');
             } else {
-                // No results found
+                // No results found or delivery doesn't exist
                 searchNoResults.classList.remove('hidden');
             }
         })
         .catch(error => {
             searchLoading.classList.add('hidden');
             console.error('Error searching delivery:', error);
+            // Show no results state for any error (including authentication issues)
             searchNoResults.classList.remove('hidden');
         });
 }
