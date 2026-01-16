@@ -831,12 +831,12 @@ document.addEventListener('DOMContentLoaded', function() {
         window.addEventListener('load', function() {
             // Wait a moment for flash messages to be rendered
             setTimeout(function() {
-                // Look for specific success flash messages that contain "Delivery saved successfully"
+                // Look for specific success flash messages that contain "Delivery saved successfully" or "Delivery added successfully"
                 const successAlerts = document.querySelectorAll('.bg-green-50');
                 let deliverySaved = false;
                 
                 successAlerts.forEach(function(alert) {
-                    if (alert.textContent && alert.textContent.includes('Delivery saved successfully')) {
+                    if (alert.textContent && (alert.textContent.includes('Delivery saved successfully') || alert.textContent.includes('Delivery added successfully'))) {
                         deliverySaved = true;
                     }
                 });
