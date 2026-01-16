@@ -1236,6 +1236,37 @@ def get_delivery_by_display_id(display_id):
         app.logger.error(f"Error getting delivery details for display ID {display_id}: {str(e)}")
         return jsonify({'error': 'Failed to load delivery details'}), 500
 
+@app.route('/search_delivery_by_display_id', methods=['GET'])
+@login_required
+@database_required
+def search_delivery_by_display_id():
+    """Search delivery by Display ID for dashboard search functionality."""
+    try:
+        display_id = request.args.get('display_id', '').strip()
+        
+        if not display_id:
+            return jsonify({'success': False, 'error': 'Display ID is required'}), 400
+        
+        # Search for delivery by display ID
+        delivery = Delivery.query.filter_by(display_id=display_id).first()
+        
+        if not delivery:
+            return jsonify({'success': False, 'error': 'Delivery not found'}), 404
+        
+        # Return only the required fields: Display ID, Recipient Name, Recipient Number, Status
+        delivery_data = {
+            'display_id': delivery.display_id,
+            'recipient_name': delivery.recipient_name,
+            'recipient_phone': delivery.recipient_phone,
+            'status': delivery.status
+        }
+        
+        return jsonify({'success': True, 'delivery': delivery_data})
+        
+    except Exception as e:
+        app.logger.error(f"Error searching delivery by display ID {display_id}: {str(e)}")
+        return jsonify({'success': False, 'error': 'Search failed'}), 500
+
 @app.route('/update_delivery/<int:delivery_id>', methods=['PUT'])
 @login_required
 @database_required
