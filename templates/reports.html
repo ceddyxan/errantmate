@@ -289,34 +289,7 @@
             </div>
         </div>
 
-        <!-- Financial Overview Chart -->
-        <div class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200">
-            <div class="p-3">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-bold text-gray-900">Financial Overview</h3>
-                    <select id="revenuePeriod" onchange="updateRevenueCharts()" 
-                            class="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-green-500">
-                        <option value="7">7 days</option>
-                        <option value="30" selected>30 days</option>
-                        <option value="90">90 days</option>
-                    </select>
-                </div>
-                <div class="grid grid-cols-2 gap-2 mb-2">
-                    <div class="text-center p-2 bg-emerald-50 rounded border border-emerald-200">
-                        <div class="text-sm font-bold text-emerald-700" id="totalRevenue">Kshs 2,830</div>
-                        <div class="text-xs text-emerald-600">Revenue</div>
-                    </div>
-                    <div class="text-center p-2 bg-blue-50 rounded border border-blue-200">
-                        <div class="text-sm font-bold text-blue-700" id="profitMargin">69.6%</div>
-                        <div class="text-xs text-blue-600">Margin</div>
-                    </div>
-                </div>
-                <div class="relative h-20">
-                    <canvas id="revenueChart"></canvas>
-                </div>
-            </div>
-        </div>
-
+        
             </div>
 
     <!-- Quick Actions, User Management, and Reassignment Cards -->
@@ -3469,7 +3442,6 @@ let revenuePieChart = null;
 // Initialize all charts
 window.initializeCharts = function() {
     updateDeliveryTrends();
-    updateRevenueCharts();
 };
 
 // Update delivery trends chart
@@ -3558,137 +3530,6 @@ window.updateDeliveryTrends = function() {
         });
 };
 
-// Update revenue charts
-window.updateRevenueCharts = function() {
-    const period = document.getElementById('revenuePeriod').value;
-    
-    fetch(`/get_revenue_charts?days=${period}`)
-        .then(response => {
-            // Check if response is ok (status 200-299)
-            if (!response.ok) {
-                if (response.status === 401) {
-                    console.error('Authentication required for revenue charts');
-                    throw new Error('Authentication required');
-                } else if (response.status === 500) {
-                    console.error('Server error loading revenue charts');
-                    throw new Error('Server error');
-                } else {
-                    console.error('Unexpected response status:', response.status);
-                    throw new Error('Network error');
-                }
-            }
-            return response.json();
-        })
-        .then(data => {
-            // Defensive programming - ensure data has expected structure
-            if (!data) {
-                data = {
-                    summary: {
-                        total_revenue: 0,
-                        total_expenses: 0,
-                        total_profit: 0,
-                        profit_margin: 0
-                    },
-                    line_chart: {
-                        labels: [],
-                        datasets: []
-                    }
-                };
-            }
-            
-            if (data.error) {
-                console.error('Error loading revenue charts:', data.error);
-                // Don't return early - still try to update with default data
-            }
-            
-            // Ensure summary exists
-            if (!data.summary) {
-                data.summary = {
-                    total_revenue: 0,
-                    total_expenses: 0,
-                    total_profit: 0,
-                    profit_margin: 0
-                };
-            }
-            
-            // Update summary cards
-            document.getElementById('totalRevenue').textContent = `Kshs ${data.summary.total_revenue.toLocaleString()}`;
-            document.getElementById('profitMargin').textContent = `${data.summary.profit_margin}%`;
-            
-            // Update line chart
-            const lineCtx = document.getElementById('revenueChart').getContext('2d');
-            
-            if (revenueChart) {
-                revenueChart.destroy();
-            }
-            
-            revenueChart = new Chart(lineCtx, {
-                type: 'line',
-                data: data.line_chart,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleColor: '#fff',
-                            bodyColor: '#fff',
-                            borderColor: '#333',
-                            borderWidth: 1,
-                            padding: 8,
-                            displayColors: true,
-                            callbacks: {
-                                label: function(context) {
-                                    return context.dataset.label + ': Kshs ' + context.parsed.y.toLocaleString();
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                font: {
-                                    size: 10
-                                },
-                                color: '#6b7280'
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
-                            },
-                            ticks: {
-                                font: {
-                                    size: 10
-                                },
-                                color: '#6b7280',
-                                callback: function(value) {
-                                    return 'Kshs ' + (value / 1000).toFixed(0) + 'k';
-                                }
-                            }
-                        }
-                    },
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    }
-                }
-            });
-            
-                    })
-        .catch(error => {
-            console.error('Error fetching revenue charts:', error);
-        });
-};
 
 
 // Revenue Analytics Functions
