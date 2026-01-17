@@ -1236,18 +1236,66 @@ def get_delivery_by_display_id(display_id):
         app.logger.error(f"Error getting delivery details for display ID {display_id}: {str(e)}")
         return jsonify({'error': 'Failed to load delivery details'}), 500
 
+def normalize_phone_number(phone):
+    """Normalize phone number to a standard format for comparison."""
+    if not phone:
+        return phone
+    
+    # Remove all non-digit characters
+    digits_only = ''.join(c for c in phone if c.isdigit())
+    
+    # If starts with '254' (Kenya country code), keep as is
+    if digits_only.startswith('254') and len(digits_only) >= 12:
+        return digits_only
+    
+    # If starts with '0' and has 10 digits (Kenyan local format), convert to international
+    if digits_only.startswith('0') and len(digits_only) == 10:
+        return '254' + digits_only[1:]
+    
+    # If starts with '7' or '1' and has 9 digits (Kenyan mobile without prefix), add 254
+    if len(digits_only) == 9 and (digits_only.startswith('7') or digits_only.startswith('1')):
+        return '254' + digits_only
+    
+    # Otherwise return as is
+    return digits_only
+
 @app.route('/search_delivery_by_display_id', methods=['GET'])
 @database_required
 def search_delivery_by_display_id():
-    """Search delivery by Display ID for dashboard search functionality."""
+    """Search delivery by Display ID or Phone Number for dashboard search functionality."""
     try:
-        display_id = request.args.get('display_id', '').strip()
+        search_query = request.args.get('display_id', '').strip()
         
-        if not display_id:
-            return jsonify({'success': False, 'error': 'Display ID is required'}), 400
+        if not search_query:
+            return jsonify({'success': False, 'error': 'Search value is required'}), 400
         
-        # Search for delivery by display ID
-        delivery = Delivery.query.filter_by(display_id=display_id).first()
+        delivery = None
+        
+        # First try to search by Display ID
+        delivery = Delivery.query.filter_by(display_id=search_query).first()
+        
+        # If not found by Display ID, try searching by Phone Number
+        if not delivery:
+            # Clean phone number - remove spaces, dashes, plus signs, etc.
+            cleaned_phone = ''.join(c for c in search_query if c.isdigit())
+            if len(cleaned_phone) >= 9:  # Only search if we have at least 9 digits
+                # Normalize the search phone number
+                normalized_search = normalize_phone_number(cleaned_phone)
+                
+                # Get all deliveries and check phone numbers manually for better matching
+                all_deliveries = Delivery.query.all()
+                for d in all_deliveries:
+                    # Clean and normalize the stored phone number
+                    stored_phone_clean = ''.join(c for c in d.recipient_phone if c.isdigit())
+                    normalized_stored = normalize_phone_number(stored_phone_clean)
+                    
+                    # Check if normalized numbers match or if one contains the other
+                    if (normalized_search == normalized_stored or 
+                        normalized_search in stored_phone_clean or 
+                        stored_phone_clean.endswith(normalized_search[-9:]) or
+                        normalized_search.endswith(stored_phone_clean[-9:])):
+                        delivery = d
+                        break
         
         if not delivery:
             return jsonify({'success': False, 'error': 'Delivery not found'}), 404
@@ -1263,7 +1311,7 @@ def search_delivery_by_display_id():
         return jsonify({'success': True, 'delivery': delivery_data})
         
     except Exception as e:
-        app.logger.error(f"Error searching delivery by display ID {display_id}: {str(e)}")
+        app.logger.error(f"Error searching delivery by query '{search_query}': {str(e)}")
         return jsonify({'success': False, 'error': 'Search failed'}), 500
 
 @app.route('/update_delivery/<int:delivery_id>', methods=['PUT'])
