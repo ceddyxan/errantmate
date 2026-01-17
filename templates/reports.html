@@ -317,41 +317,19 @@
             </div>
         </div>
 
-        <!-- Revenue Breakdown -->
+        <!-- Total Revenue Card -->
         <div class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200">
             <div class="p-3">
                 <div class="flex flex-col gap-2 mb-2">
-                    <h3 class="text-sm font-bold text-gray-900 text-center">Revenue Breakdown</h3>
-                    <div class="flex justify-center gap-3 text-xs">
-                        <div class="flex items-center gap-1">
-                            <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                            <span class="text-gray-600">Rev</span>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <div class="w-2 h-2 bg-red-500 rounded-full"></div>
-                            <span class="text-gray-600">Exp</span>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <span class="text-gray-600">Prof</span>
-                        </div>
-                    </div>
+                    <h3 class="text-sm font-bold text-gray-900 text-center">Total Revenue</h3>
                 </div>
-                <div class="relative h-24 mb-2">
-                    <canvas id="revenuePieChart"></canvas>
+                <div class="text-center p-4 bg-emerald-50 rounded border border-emerald-200">
+                    <div class="text-2xl font-bold text-emerald-700" id="totalRevenueCard">Kshs 2,830</div>
+                    <div class="text-sm text-emerald-600 mt-1">Total Delivery Revenue</div>
                 </div>
-                <div class="space-y-1 text-xs">
-                    <div class="flex justify-between items-center px-1">
-                        <span class="text-gray-600">Rev</span>
-                        <span class="font-bold text-emerald-700 text-xs" id="pieRevenue">2.8K</span>
-                    </div>
-                    <div class="flex justify-between items-center px-1">
-                        <span class="text-gray-600">Exp</span>
-                        <span class="font-bold text-red-700 text-xs" id="pieExpenses">860</span>
-                    </div>
-                    <div class="flex justify-between items-center px-1">
-                        <span class="text-gray-600">Profit</span>
-                        <span class="font-bold text-blue-700 text-xs" id="pieProfit">2.0K</span>
+                <div class="text-center mt-3">
+                    <div class="text-xs text-gray-500">
+                        Based on <span id="totalDeliveriesCount">56</span> deliveries
                     </div>
                 </div>
             </div>
@@ -3723,76 +3701,7 @@ window.updateRevenueCharts = function() {
                 }
             });
             
-            // Update pie chart
-            const pieCtx = document.getElementById('revenuePieChart').getContext('2d');
-            
-            if (revenuePieChart) {
-                revenuePieChart.destroy();
-            }
-            
-            revenuePieChart = new Chart(pieCtx, {
-                type: 'doughnut',
-                data: data.pie_chart,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '60%',
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleColor: '#fff',
-                            bodyColor: '#fff',
-                            borderColor: '#333',
-                            borderWidth: 1,
-                            padding: 8,
-                            displayColors: true,
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.label || '';
-                                    const value = 'Kshs ' + context.raw.toLocaleString();
-                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                    const percentage = ((context.raw / total) * 100).toFixed(1);
-                                    return `${label}: ${value} (${percentage}%)`;
-                                }
-                            }
-                        },
-                        datalabels: {
-                            display: true,
-                            color: '#fff',
-                            font: {
-                                weight: 'bold',
-                                size: 11
-                            },
-                            formatter: (value, ctx) => {
-                                const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = ((value / total) * 100).toFixed(1);
-                                const label = ctx.chart.data.labels[ctx.dataIndex];
-                                
-                                if (percentage > 5) { // Only show labels if segment is larger than 5%
-                                    if (percentage > 15) {
-                                        // Show both value and percentage for larger segments
-                                        const formattedValue = value >= 1000 ? 
-                                            'Kshs ' + (value / 1000).toFixed(1) + 'k' : 
-                                            'Kshs ' + value.toLocaleString();
-                                        return `${formattedValue}\n${percentage}%`;
-                                    } else {
-                                        // Show only percentage for medium segments
-                                        return percentage + '%';
-                                    }
-                                }
-                                return '';
-                            },
-                            textAlign: 'center'
-                        }
-                    }
-                },
-                plugins: [ChartDataLabels]
-            });
-            
-            // Update pie chart summary
+            // Update revenue summary
             updateRevenueSummary(data.summary);
         })
         .catch(error => {
@@ -3806,27 +3715,20 @@ window.updateRevenueSummary = function(summary) {
     if (!summary) {
         summary = {
             total_revenue: 0,
-            total_expenses: 0,
-            total_profit: 0
+            total_deliveries: 0
         };
     }
     
-    // Update text values
-    document.getElementById('pieRevenue').textContent = `Kshs ${summary.total_revenue.toLocaleString()}`;
-    document.getElementById('pieExpenses').textContent = `Kshs ${summary.total_expenses.toLocaleString()}`;
-    document.getElementById('pieProfit').textContent = `Kshs ${summary.total_profit.toLocaleString()}`;
+    // Update simplified revenue card
+    const revenueCard = document.getElementById('totalRevenueCard');
+    if (revenueCard) {
+        revenueCard.textContent = `Kshs ${summary.total_revenue.toLocaleString()}`;
+    }
     
-    // Calculate percentages for progress bars
-    const total = Math.abs(summary.total_revenue) + Math.abs(summary.total_expenses) + Math.abs(summary.total_profit);
-    
-    if (total > 0) {
-        const revenuePercent = (Math.abs(summary.total_revenue) / total) * 100;
-        const expensesPercent = (Math.abs(summary.total_expenses) / total) * 100;
-        const profitPercent = (Math.abs(summary.total_profit) / total) * 100;
-        
-        document.getElementById('revenueBar').style.width = `${revenuePercent}%`;
-        document.getElementById('expensesBar').style.width = `${expensesPercent}%`;
-        document.getElementById('profitBar').style.width = `${profitPercent}%`;
+    // Update delivery count
+    const deliveryCount = document.getElementById('totalDeliveriesCount');
+    if (deliveryCount) {
+        deliveryCount.textContent = summary.total_deliveries || 0;
     }
 };
 
