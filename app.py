@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from collections import defaultdict
 from logging.handlers import RotatingFileHandler
+
 import csv
 import io
 import os
@@ -70,7 +71,6 @@ else:
     logging.basicConfig(level=logging.DEBUG)
 
 # Use simple datetime (browser local time will be set from frontend)
-from datetime import datetime
 
 def get_current_time():
     """Get current datetime."""
@@ -729,10 +729,7 @@ def add_delivery():
             # Use browser local time if provided, otherwise use current time
             browser_local_time = request.form.get('browser_local_time')
             if browser_local_time:
-                # Parse browser local time directly as naive datetime
-                from datetime import datetime
-                
-                # Parse browser local time as naive datetime (no timezone conversion)
+                # Parse browser local time directly as naive datetime (no timezone conversion)
                 current_time = datetime.fromisoformat(browser_local_time)
             else:
                 # Fallback to current time if browser time not available
