@@ -2882,38 +2882,6 @@ def main():
     except Exception as e:
         print(f"Failed to start server: {e}")
 
-@app.route('/api/senders')
-@login_required
-@database_required
-def api_senders():
-    """API endpoint for sender autocomplete."""
-    try:
-        query = request.args.get('q', '').strip()
-        
-        if not query:
-            return jsonify({'success': False, 'error': 'Query parameter required'})
-        
-        # Search for unique sender names and phone numbers
-        senders = db.session.query(
-            Delivery.sender_name, 
-            Delivery.sender_phone
-        ).filter(
-            Delivery.sender_name.ilike(f'%{query}%')
-        ).distinct().limit(10).all()
-        
-        # Format results
-        sender_list = []
-        for sender_name, sender_phone in senders:
-            sender_list.append({
-                'name': sender_name,
-                'phone': sender_phone
-            })
-        
-        return jsonify({'success': True, 'senders': sender_list})
-        
-    except Exception as e:
-        app.logger.error(f"Error fetching senders: {str(e)}")
-        return jsonify({'success': False, 'error': 'Failed to fetch senders'})
 
 if __name__ == '__main__':
     main()
