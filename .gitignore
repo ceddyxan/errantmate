@@ -48,3 +48,20 @@ package-lock.json
 # Local development
 .DS_Store
 Thumbs.db
+
+# Logs directory
+logs/
+
+# Auto-generated files
+auto_git_daemon.py
+auto_git_push.bat
+auto_git_push.py
+setup_auto_git.py
+check_production_users.py
+delete_user_tool.html
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
