@@ -3823,7 +3823,7 @@ window.saveNewUser = function() {
     }
     
     const isEdit = !!userId;
-    const url = isEdit ? `/api/users/${userId}` : '/api/users/public'; // Use public endpoint for testing
+    const url = isEdit ? `/api/users/${userId}` : '/api/users'; // Use admin endpoint
     const method = isEdit ? 'PUT' : 'POST';
     
     const payload = { username, role };
