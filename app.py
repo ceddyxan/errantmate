@@ -1055,7 +1055,10 @@ def reports():
         log_page_view("Reports")
         # Get recent deliveries (last 10)
         recent_deliveries = Delivery.query.order_by(Delivery.created_at.desc()).limit(10).all()
-        return render_template('reports.html', recent_deliveries=recent_deliveries)
+        # Check if there are more deliveries to show Load More button
+        total_deliveries = Delivery.query.count()
+        has_more = total_deliveries > 10
+        return render_template('reports.html', recent_deliveries=recent_deliveries, has_more_deliveries=has_more)
     except Exception as e:
         app.logger.error(f"Error loading reports page: {str(e)}", exc_info=True)
         return render_template('reports.html', recent_deliveries=[])

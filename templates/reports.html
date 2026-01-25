@@ -1602,6 +1602,10 @@ window.fetchRecentDeliveries = function(append = false) {
             if (data.deliveries && data.pagination) {
                 displayRecentDeliveries(data.deliveries, append);
                 updatePagination(data.pagination);
+                // Update load more button visibility
+                hasMoreData = data.pagination.has_next;
+                currentPage = data.pagination.page;
+                updateLoadMoreButton();
             } else {
                 console.error('Unexpected data format:', data);
                 displayRecentDeliveriesError();
@@ -1911,6 +1915,10 @@ window.fetchRecentDeliveriesWithFilter = function() {
                 const filteredDeliveries = filterDeliveriesByPeriod(data.deliveries, currentPeriod);
                 displayRecentDeliveries(filteredDeliveries, false);
                 updatePagination(data.pagination);
+                // Update load more button visibility
+                hasMoreData = data.pagination.has_next;
+                currentPage = data.pagination.page;
+                updateLoadMoreButton();
             } else {
                 displayRecentDeliveriesError();
             }
@@ -2250,6 +2258,12 @@ window.closeDeliveryDetailsModal = function() {
 
 // Toggle sections
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Load More button visibility
+    {% if has_more_deliveries %}
+    hasMoreData = true;
+    updateLoadMoreButton();
+    {% endif %}
+    
     // Initial data fetch for charts
     fetchSummaryData();
     
