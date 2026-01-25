@@ -850,11 +850,20 @@ def add_delivery():
     return render_template('add_delivery.html')
 
 @app.route('/api/update_delivery_status', methods=['POST'])
-@staff_required
+@login_required_api
 @database_required
 def api_update_delivery_status():
-    """Update delivery status and assign delivery person for staff users"""
+    """Update delivery status and assign delivery person for staff and admin users"""
     try:
+        # Check if user is staff or admin
+        user_id = session.get('user_id')
+        if not user_id:
+            return jsonify({'success': False, 'error': 'Authentication required'}), 401
+        
+        user = User.query.get(user_id)
+        if not user or not user.is_staff():
+            return jsonify({'success': False, 'error': 'Staff or admin access required'}), 403
+        
         data = request.get_json()
         delivery_id = data.get('delivery_id')
         new_status = data.get('status')
@@ -868,12 +877,20 @@ def api_update_delivery_status():
         
         delivery = Delivery.query.get_or_404(delivery_id)
         delivery.status = new_status
-        delivery.delivery_person = delivery_person
+        
+        # Only assign delivery person if it's provided (for staff users)
+        if delivery_person:
+            delivery.delivery_person = delivery_person
+        
         db.session.commit()
+        
+        message = f'Status updated to {new_status}'
+        if delivery_person:
+            message += f' and assigned to {delivery_person}'
         
         return jsonify({
             'success': True,
-            'message': f'Status updated to {new_status} and assigned to {delivery_person}'
+            'message': message
         })
         
     except Exception as e:
@@ -882,11 +899,25 @@ def api_update_delivery_status():
         return jsonify({'success': False, 'error': 'Error updating delivery status'}), 500
 
 @app.route('/update_status/<int:delivery_id>/<status>', methods=['GET', 'POST'])
-@staff_required
+@login_required
 @database_required
 def update_status(delivery_id, status):
     """Update the status of a delivery."""
     try:
+        # Check if user is staff or admin
+        user_id = session.get('user_id')
+        if not user_id:
+            if request.is_json:
+                return jsonify({'success': False, 'error': 'Authentication required'}), 401
+            return redirect(url_for('login'))
+        
+        user = User.query.get(user_id)
+        if not user or not user.is_staff():
+            if request.is_json:
+                return jsonify({'success': False, 'error': 'Staff or admin access required'}), 403
+            flash('Staff or admin access required', 'error')
+            return redirect(url_for('dashboard'))
+        
         delivery = Delivery.query.get_or_404(delivery_id)
         delivery.status = status
         db.session.commit()
@@ -1467,7 +1498,8 @@ def get_unassigned_deliveries():
 def get_users():
     """Get all users for admin management."""
     try:
-        users = User.query.filter_by(is_active=True).all()
+        # Get all users (both active and inactive)
+        users = User.query.order_by(User.is_active.desc(), User.username).all()
         users_data = []
         for user in users:
             users_data.append({
@@ -1475,6 +1507,7 @@ def get_users():
                 'username': user.username,
                 'role': user.role,
                 'created_at': user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else None,
+                'is_active': user.is_active,
                 'is_admin': user.is_admin()
             })
         return jsonify(users_data)
@@ -1610,6 +1643,15 @@ def debug_create_peter():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+@app.route('/debug/delete_user_tool')
+def debug_delete_user_tool():
+    """Serve the delete user tool HTML page"""
+    try:
+        with open('delete_user_tool.html', 'r') as f:
+            return f.read()
+    except FileNotFoundError:
+        return "Delete user tool not found", 404
 
 @app.route('/debug/delete_user', methods=['POST'])
 @admin_required

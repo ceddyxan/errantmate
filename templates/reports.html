@@ -1720,8 +1720,8 @@ function displayRecentDeliveries(deliveries) {
                                 title="View Details">
                             <i class="fas fa-eye"></i>
                         </button>
-                        {% if session.user_role == 'staff' %}
-                        <!-- Staff: Show Status Dropdown -->
+                        {% if session.user_role == 'staff' or session.user_role == 'admin' %}
+                        <!-- Staff & Admin: Show Status Dropdown -->
                         <div class="relative inline-block">
                             <button onclick="toggleStatusDropdown('${delivery.id}')" 
                                     class="text-green-600 hover:text-green-800 transition-colors duration-200"
@@ -1745,7 +1745,7 @@ function displayRecentDeliveries(deliveries) {
                             </div>
                         </div>
                         {% else %}
-                        <!-- Admin: Show Edit Button -->
+                        <!-- Other Roles: Show Edit Button -->
                         <button onclick="editDelivery('${delivery.id}')" 
                                 class="text-blue-600 hover:text-blue-800 transition-colors duration-200"
                                 title="Edit">
