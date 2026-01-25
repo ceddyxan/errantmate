@@ -1720,28 +1720,38 @@ function displayRecentDeliveries(deliveries) {
                                 title="View Details">
                             <i class="fas fa-eye"></i>
                         </button>
+                        {% if session.user_role == 'staff' %}
+                        <!-- Staff: Show Status Dropdown -->
                         <div class="relative inline-block">
                             <button onclick="toggleStatusDropdown('${delivery.id}')" 
-                                    class="text-amber-600 hover:text-amber-800 transition-colors duration-200"
+                                    class="text-green-600 hover:text-green-800 transition-colors duration-200"
                                     title="Update Status">
-                                <i class="fas fa-edit"></i>
+                                <i class="fas fa-sync-alt"></i>
                             </button>
                             <div id="status-dropdown-${delivery.id}" 
                                  class="hidden absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                                 <button onclick="updateDeliveryStatus('${delivery.id}', 'Pending')" 
                                         class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    Pending
+                                    <i class="fas fa-clock text-yellow-500 mr-2"></i>Pending
                                 </button>
                                 <button onclick="updateDeliveryStatus('${delivery.id}', 'In Transit')" 
                                         class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    In Transit
+                                    <i class="fas fa-truck text-blue-500 mr-2"></i>In Transit
                                 </button>
                                 <button onclick="updateDeliveryStatus('${delivery.id}', 'Delivered')" 
                                         class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    Delivered
+                                    <i class="fas fa-check text-green-500 mr-2"></i>Delivered
                                 </button>
                             </div>
                         </div>
+                        {% else %}
+                        <!-- Admin: Show Edit Button -->
+                        <button onclick="editDelivery('${delivery.id}')" 
+                                class="text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                                title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        {% endif %}
                         <button onclick="deleteDelivery('${delivery.id}')" 
                                 class="text-red-600 hover:text-red-800 transition-colors duration-200"
                                 title="Delete">
@@ -1804,33 +1814,43 @@ window.appendRecentDeliveries = function(newDeliveries) {
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getTimeAgo(delivery.created_at)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div class="flex items-center space-x-2">
-                        <button onclick="editDelivery('${delivery.id}')" 
+                        <button onclick="viewDeliveryDetails('${delivery.id}')" 
                                 class="text-blue-600 hover:text-blue-800 transition-colors duration-200"
-                                title="Edit">
-                            <i class="fas fa-edit"></i>
+                                title="View Details">
+                            <i class="fas fa-eye"></i>
                         </button>
+                        {% if session.user_role == 'staff' %}
+                        <!-- Staff: Show Status Dropdown -->
                         <div class="relative">
                             <button onclick="toggleStatusDropdown('${delivery.id}')" 
-                                    class="text-gray-600 hover:text-gray-800 transition-colors duration-200"
-                                    title="Change Status">
-                                <i class="fas fa-chevron-down"></i>
+                                    class="text-green-600 hover:text-green-800 transition-colors duration-200"
+                                    title="Update Status">
+                                <i class="fas fa-sync-alt"></i>
                             </button>
                             <div id="status-dropdown-${delivery.id}" 
                                  class="absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-10 hidden">
                                 <button onclick="updateDeliveryStatus('${delivery.id}', 'Pending')" 
                                         class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    Pending
+                                    <i class="fas fa-clock text-yellow-500 mr-2"></i>Pending
                                 </button>
                                 <button onclick="updateDeliveryStatus('${delivery.id}', 'In Transit')" 
                                         class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    In Transit
+                                    <i class="fas fa-truck text-blue-500 mr-2"></i>In Transit
                                 </button>
                                 <button onclick="updateDeliveryStatus('${delivery.id}', 'Delivered')" 
                                         class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    Delivered
+                                    <i class="fas fa-check text-green-500 mr-2"></i>Delivered
                                 </button>
                             </div>
                         </div>
+                        {% else %}
+                        <!-- Admin: Show Edit Button -->
+                        <button onclick="editDelivery('${delivery.id}')" 
+                                class="text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                                title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        {% endif %}
                         <button onclick="deleteDelivery('${delivery.id}')" 
                                 class="text-red-600 hover:text-red-800 transition-colors duration-200"
                                 title="Delete">
