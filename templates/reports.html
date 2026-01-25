@@ -1668,9 +1668,19 @@ window.getStatusUpdateButton = function(delivery) {
     const isAdmin = '{{ session.user_role }}' === 'admin';
     const currentUsername = '{{ session.username }}';
     
+    // Debug logging
+    console.log('getStatusUpdateButton called:', {
+        isStaff: isStaff,
+        isAdmin: isAdmin,
+        currentUsername: currentUsername,
+        deliveryPerson: delivery.delivery_person,
+        deliveryId: delivery.id
+    });
+    
     if (isAdmin || (isStaff && delivery.delivery_person === currentUsername)) {
         // Admin: Show Status Dropdown for all deliveries
         // Staff: Show Status Dropdown only for their own deliveries
+        console.log('Showing status dropdown for delivery:', delivery.id);
         return `
             <div class="relative inline-block">
                 <button onclick="toggleStatusDropdown('${delivery.id}')" 
@@ -1697,6 +1707,7 @@ window.getStatusUpdateButton = function(delivery) {
         `;
     } else if (isStaff && delivery.delivery_person !== currentUsername) {
         // Staff: Show locked icon for other users' deliveries
+        console.log('Showing locked icon for delivery:', delivery.id);
         return `
             <button disabled 
                     class="text-gray-400 cursor-not-allowed transition-colors duration-200"
@@ -1706,6 +1717,12 @@ window.getStatusUpdateButton = function(delivery) {
         `;
     } else {
         // Other roles: No status update button
+        console.log('No status button for delivery:', delivery.id, '- Reason:', {
+            isStaff: isStaff,
+            isAdmin: isAdmin,
+            deliveryPerson: delivery.delivery_person,
+            currentUsername: currentUsername
+        });
         return '';
     }
 };
