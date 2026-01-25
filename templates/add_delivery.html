@@ -1406,22 +1406,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Toggle status dropdown - Simple version like reports page
     window.toggleStatusDropdown = function(deliveryId) {
-        console.log('toggleStatusDropdown called with deliveryId:', deliveryId);
-        const dropdown = document.getElementById(`status-dropdown-${deliveryId}`);
-        
-        // Close all other dropdowns
-        document.querySelectorAll('[id^="status-dropdown-"]').forEach(d => {
-            if (d.id !== `status-dropdown-${deliveryId}`) {
-                d.classList.add('hidden');
+        try {
+            console.log('toggleStatusDropdown called with deliveryId:', deliveryId);
+            const dropdown = document.getElementById(`status-dropdown-${deliveryId}`);
+            console.log('Dropdown element found:', dropdown);
+            
+            // Close all other dropdowns
+            document.querySelectorAll('[id^="status-dropdown-"]').forEach(d => {
+                if (d.id !== `status-dropdown-${deliveryId}`) {
+                    d.classList.add('hidden');
+                }
+            });
+            
+            // Toggle current dropdown
+            if (dropdown) {
+                dropdown.classList.toggle('hidden');
+                console.log('Dropdown toggled, visible:', !dropdown.classList.contains('hidden'));
+            } else {
+                console.error('Dropdown not found:', `status-dropdown-${deliveryId}`);
             }
-        });
-        
-        // Toggle current dropdown
-        if (dropdown) {
-            dropdown.classList.toggle('hidden');
-            console.log('Dropdown toggled, visible:', !dropdown.classList.contains('hidden'));
-        } else {
-            console.error('Dropdown not found:', `status-dropdown-${deliveryId}`);
+        } catch (error) {
+            console.error('Error in toggleStatusDropdown:', error);
         }
     };
 
