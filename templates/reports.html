@@ -3817,6 +3817,7 @@ window.saveNewUser = function() {
     }
     
     if (role !== 'admin' && role !== 'user' && role !== 'staff') {
+        console.log('Invalid role detected:', role);
         showNotification('Invalid role selected', 'error');
         return;
     }
@@ -3829,6 +3830,8 @@ window.saveNewUser = function() {
     if (password) {
         payload.password = password;
     }
+    
+    console.log('Sending payload:', payload);
     
     fetch(url, {
         method: method,
