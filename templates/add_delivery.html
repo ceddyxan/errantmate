@@ -1375,22 +1375,22 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Showing status dropdown for delivery:', delivery.id);
             return `
                 <div class="relative inline-block">
-                    <button onclick="window.toggleStatusDropdown && window.toggleStatusDropdown('${delivery.id}')" 
-                            class="text-green-600 hover:text-green-800 transition-colors duration-200"
+                    <button class="status-update-btn text-green-600 hover:text-green-800 transition-colors duration-200" 
+                            data-delivery-id="${delivery.id}"
                             title="Update Status">
                         <i class="fas fa-sync-alt"></i>
                     </button>
                     <div id="status-dropdown-${delivery.id}" 
                          class="hidden absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
-                        <button onclick="updateDeliveryStatus('${delivery.id}', 'Pending')" 
+                        <button class="status-option" data-delivery-id="${delivery.id}" data-status="Pending"
                                 class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 whitespace-nowrap">
                             <i class="fas fa-clock text-yellow-500 mr-2"></i>Pending
                         </button>
-                        <button onclick="updateDeliveryStatus('${delivery.id}', 'In Transit')" 
+                        <button class="status-option" data-delivery-id="${delivery.id}" data-status="In Transit"
                                 class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 whitespace-nowrap">
                             <i class="fas fa-truck text-blue-500 mr-2"></i>In Transit
                         </button>
-                        <button onclick="updateDeliveryStatus('${delivery.id}', 'Delivered')" 
+                        <button class="status-option" data-delivery-id="${delivery.id}" data-status="Delivered"
                                 class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 whitespace-nowrap">
                             <i class="fas fa-check text-green-500 mr-2"></i>Delivered
                         </button>
@@ -1589,6 +1589,30 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         tbody.innerHTML = html;
+        
+        // Add event listeners for status update buttons and dropdown options
+        setTimeout(() => {
+            // Add click listeners to status update buttons
+            document.querySelectorAll('.status-update-btn').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const deliveryId = this.getAttribute('data-delivery-id');
+                    console.log('Status update button clicked for delivery:', deliveryId);
+                    window.toggleStatusDropdown(deliveryId);
+                });
+            });
+            
+            // Add click listeners to status option buttons
+            document.querySelectorAll('.status-option').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const deliveryId = this.getAttribute('data-delivery-id');
+                    const status = this.getAttribute('data-status');
+                    console.log('Status option clicked:', deliveryId, status);
+                    window.updateDeliveryStatus(deliveryId, status);
+                });
+            });
+        }, 100);
     }
 
     function displayRecentDeliveriesError() {
