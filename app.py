@@ -155,7 +155,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(20), default='user')  # 'admin' or 'user'
+    role = db.Column(db.String(20), default='user')  # 'admin', 'user', or 'staff'
     created_at = db.Column(db.DateTime, default=get_current_time)
     is_active = db.Column(db.Boolean, default=True)
     
@@ -166,6 +166,12 @@ class User(db.Model):
         return check_password_hash(self.password_hash, password)
     
     def is_admin(self):
+        return self.role == 'admin'
+    
+    def is_staff(self):
+        return self.role in ['admin', 'staff']
+    
+    def can_view_reports(self):
         return self.role == 'admin'
     
     def __repr__(self):
@@ -605,6 +611,37 @@ def admin_required_api(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# Staff required decorator for delivery person privileges
+def staff_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            if request.is_json:
+                return jsonify({'error': 'Authentication required'}), 401
+            return redirect(url_for('login'))
+        
+        user = User.query.get(session['user_id'])
+        if not user or not user.is_staff():
+            if request.is_json:
+                return jsonify({'error': 'Staff access required'}), 403
+            flash('Staff access required for this operation', 'error')
+            return redirect(url_for('dashboard'))
+    
+    return decorated_function
+
+# Staff required decorator for API endpoints
+def staff_required_api(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'error': 'Authentication required'}), 401
+        
+        user = User.query.get(session['user_id'])
+        if not user or not user.is_staff():
+            return jsonify({'error': 'Staff access required'}), 403
+    
+    return decorated_function
+
 @app.route('/reset-db')
 @admin_required_api
 def reset_database():
@@ -813,6 +850,7 @@ def add_delivery():
     return render_template('add_delivery.html')
 
 @app.route('/update_status/<int:delivery_id>/<status>', methods=['GET', 'POST'])
+@staff_required
 @database_required
 def update_status(delivery_id, status):
     """Update the status of a delivery."""
@@ -899,6 +937,8 @@ def login():
             # Role-based redirect
             if user.role == 'admin':
                 return redirect(url_for('reports'))
+            elif user.role == 'staff':
+                return redirect(url_for('add_delivery'))
             else:
                 return redirect(url_for('add_delivery'))
         else:
@@ -925,8 +965,9 @@ def logout():
 
 @app.route('/reports')
 @admin_required
+@database_required
 def reports():
-    """Render the reports page."""
+    """Render the reports page - Admin only."""
     try:
         # Log page view
         log_page_view("Reports")
@@ -938,17 +979,27 @@ def reports():
         return render_template('reports.html', recent_deliveries=[])
 
 @app.route('/get_delivery_persons')
-@login_required
+@staff_required
 @database_required
 def get_delivery_persons():
     """Get delivery persons and their delivery counts for a specific period."""
     try:
         # Get period parameter from query string
-        period = request.args.get('period', 'month')
+        period = request.args.get('period', 'all')
         
-        # Get date ranges for filtering
-        date_ranges = get_date_ranges()
-        start_date, end_date = date_ranges.get(period, (date_ranges['month'][0], date_ranges['month'][1]))
+        # Calculate date range based on period
+        end_date = get_current_time()
+        if period == 'today':
+            start_date = end_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif period == 'week':
+            start_date = end_date - timedelta(days=7)
+        elif period == 'month':
+            start_date = end_date - timedelta(days=30)
+        else:  # all
+            start_date = end_date - timedelta(days=365)  # Limit to 1 year for performance
+        
+        # Get all staff users (admin and staff roles)
+        staff_users = User.query.filter(User.role.in_(['admin', 'staff']), User.is_active == True).all()
         
         # Get all deliveries with non-empty delivery person within the date range
         deliveries = Delivery.query.filter(
@@ -957,30 +1008,31 @@ def get_delivery_persons():
             Delivery.created_at.between(start_date, end_date)
         ).all()
         
-        # Group by delivery person and calculate totals
         persons_data = {}
         for delivery in deliveries:
             person = delivery.delivery_person or 'Unknown'
             if person not in persons_data:
                 persons_data[person] = {
                     'name': person,
-                    'delivery_count': 0,  # Total assigned
-                    'total_amount': 0.0,
-                    'total_expenses': 0.0,
-                    'delivery_ids': [],
-                    'daily_deliveries': {},
-                    'pending_count': 0,  # Pending deliveries
-                    'delivered_count': 0  # Delivered deliveries
+                    'deliveries': 0,
+                    'revenue': 0.0,
+                    'completed': 0
                 }
             
-            # Update totals
-            persons_data[person]['delivery_count'] += 1
-            persons_data[person]['total_amount'] += 50  # Service Fee: KSh 50 per delivery
-            persons_data[person]['total_expenses'] += float(delivery.amount) if delivery.amount else 0.0  # Use amount as delivery costs
-            persons_data[person]['delivery_ids'].append(delivery.display_id)
-            
-            # Count pending deliveries
-            if delivery.status == 'Pending' or delivery.status == 'pending':
+            persons_data[person]['deliveries'] += 1
+            persons_data[person]['revenue'] += float(delivery.amount or 0)
+            if delivery.status == 'Delivered':
+                persons_data[person]['completed'] += 1
+        
+        # Add staff users who haven't been assigned deliveries yet
+        for staff_user in staff_users:
+            if staff_user.username not in persons_data:
+                persons_data[staff_user.username] = {
+                    'name': staff_user.username,
+                    'deliveries': 0,
+                    'revenue': 0.0,
+                    'completed': 0
+                }
                 persons_data[person]['pending_count'] += 1
             
             # Count delivered deliveries
@@ -1587,13 +1639,17 @@ def api_create_user_public():
         password = data.get('password', '')
         role = data.get('role', 'user')
         
+        app.logger.info(f"Creating user - Username: {username}, Role: '{role}', Password length: {len(password)}")
+        
         if not username or len(username) < 3:
             return jsonify({'success': False, 'error': 'Username must be at least 3 characters'}), 400
         
         if not password or len(password) < 6:
             return jsonify({'success': False, 'error': 'Password must be at least 6 characters'}), 400
         
-        if role not in ['admin', 'user']:
+        app.logger.info(f"Role validation - Checking if '{role}' is in ['admin', 'user', 'staff']")
+        if role not in ['admin', 'user', 'staff']:
+            app.logger.error(f"Invalid role detected: '{role}' (type: {type(role)})")
             return jsonify({'success': False, 'error': 'Invalid role'}), 400
         
         # Check if user exists
@@ -1641,7 +1697,7 @@ def api_create_user():
         if not password or len(password) < 6:
             return jsonify({'success': False, 'error': 'Password must be at least 6 characters'}), 400
         
-        if role not in ['admin', 'user']:
+        if role not in ['admin', 'user', 'staff']:
             return jsonify({'success': False, 'error': 'Invalid role'}), 400
         
         # Check if user exists
@@ -1690,7 +1746,7 @@ def api_update_user(user_id):
         if not username or len(username) < 3:
             return jsonify({'success': False, 'error': 'Username must be at least 3 characters'}), 400
         
-        if role not in ['admin', 'user']:
+        if role not in ['admin', 'user', 'staff']:
             return jsonify({'success': False, 'error': 'Invalid role'}), 400
         
         # Check username conflict
@@ -1876,9 +1932,9 @@ def create_user():
             app.logger.error(f"Password too short: {len(password)} characters")
             return jsonify({'error': 'Password must be at least 6 characters long'}), 400
         
-        if role not in ['admin', 'user']:
+        if role not in ['admin', 'user', 'staff']:
             app.logger.error(f"Invalid role: {role}")
-            return jsonify({'error': 'Role must be either admin or user'}), 400
+            return jsonify({'error': 'Role must be admin, user, or staff'}), 400
         
         # Check if user already exists
         try:
@@ -1940,8 +1996,8 @@ def update_user(user_id):
         if not username:
             return jsonify({'error': 'Username is required'}), 400
         
-        if role not in ['admin', 'user']:
-            return jsonify({'error': 'Role must be either admin or user'}), 400
+        if role not in ['admin', 'user', 'staff']:
+            return jsonify({'error': 'Role must be admin, user, or staff'}), 400
         
         # Check if username is taken by another user
         existing_user = User.query.filter(User.username == username, User.id != user_id).first()
