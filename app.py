@@ -876,6 +876,14 @@ def api_update_delivery_status():
             return jsonify({'success': False, 'error': 'Invalid status'}), 400
         
         delivery = Delivery.query.get_or_404(delivery_id)
+        
+        # Additional validation: Staff users can only update their own assigned deliveries
+        if user.role == 'staff' and delivery.delivery_person and delivery.delivery_person != user.username:
+            return jsonify({
+                'success': False, 
+                'error': 'You can only update status for deliveries assigned to you'
+            }), 403
+        
         delivery.status = new_status
         
         # Only assign delivery person if it's provided (for staff users)
@@ -919,6 +927,17 @@ def update_status(delivery_id, status):
             return redirect(url_for('dashboard'))
         
         delivery = Delivery.query.get_or_404(delivery_id)
+        
+        # Additional validation: Staff users can only update their own assigned deliveries
+        if user.role == 'staff' and delivery.delivery_person and delivery.delivery_person != user.username:
+            if request.is_json:
+                return jsonify({
+                    'success': False, 
+                    'error': 'You can only update status for deliveries assigned to you'
+                }), 403
+            flash('You can only update status for deliveries assigned to you', 'error')
+            return redirect(url_for('dashboard'))
+        
         delivery.status = status
         db.session.commit()
         

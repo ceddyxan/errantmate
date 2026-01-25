@@ -1720,8 +1720,9 @@ function displayRecentDeliveries(deliveries) {
                                 title="View Details">
                             <i class="fas fa-eye"></i>
                         </button>
-                        {% if session.user_role == 'staff' or session.user_role == 'admin' %}
-                        <!-- Staff & Admin: Show Status Dropdown -->
+                        {% if session.user_role == 'admin' or (session.user_role == 'staff' and delivery.delivery_person == session.username) %}
+                        <!-- Admin: Show Status Dropdown for all deliveries -->
+                        <!-- Staff: Show Status Dropdown only for their own deliveries -->
                         <div class="relative inline-block">
                             <button onclick="toggleStatusDropdown('${delivery.id}')" 
                                     class="text-green-600 hover:text-green-800 transition-colors duration-200"
@@ -1744,6 +1745,13 @@ function displayRecentDeliveries(deliveries) {
                                 </button>
                             </div>
                         </div>
+                        {% elif session.user_role == 'staff' and delivery.delivery_person != session.username %}
+                        <!-- Staff: Show locked icon for other users' deliveries -->
+                        <button disabled 
+                                class="text-gray-400 cursor-not-allowed transition-colors duration-200"
+                                title="Status updates only allowed for your assigned deliveries">
+                            <i class="fas fa-lock"></i>
+                        </button>
                         {% else %}
                         <!-- Other Roles: Show Edit Button -->
                         <button onclick="editDelivery('${delivery.id}')" 
