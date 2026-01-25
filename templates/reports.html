@@ -469,7 +469,7 @@
             </div>
             <div class="p-4">
                 <div class="h-64">
-                    <canvas id="statusChart"></canvas>
+                    <canvas id="statusDistributionChart"></canvas>
                 </div>
             </div>
         </div>
@@ -1933,59 +1933,47 @@ window.toggleStatusDropdown = function(deliveryId) {
 window.updateDeliveryStatus = function(deliveryId, newStatus) {
     document.getElementById(`status-dropdown-${deliveryId}`).classList.add('hidden');
     
-    // For staff users, also update delivery person to current logged-in user
+    // Check user role and set up API call
     const isStaff = '{{ session.user_role }}' === 'staff';
+    const isAdmin = '{{ session.user_role }}' === 'admin';
     const currentUsername = '{{ session.username }}';
     
-    let url = `/update_status/${deliveryId}/${encodeURIComponent(newStatus)}`;
-    let payload = {};
+    // Use the API endpoint for both staff and admin users
+    const url = '/api/update_delivery_status';
     
+    let payload = {
+        delivery_id: deliveryId,
+        status: newStatus
+    };
+    
+    // Add delivery person assignment for staff users only
     if (isStaff) {
-        // Add delivery person assignment for staff users
         payload.delivery_person = currentUsername;
-        url = '/api/update_delivery_status'; // Use API endpoint for JSON data
     }
     
     // Update status via API
-    if (isStaff) {
-        fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                delivery_id: deliveryId,
-                status: newStatus,
-                delivery_person: currentUsername
-            })
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                showNotification(`Status updated to ${newStatus} and assigned to ${currentUsername}`, 'success');
-                refreshCurrentView();
-            } else {
-                showNotification(result.error || 'Error updating status', 'error');
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            let message = `Status updated to ${newStatus}`;
+            if (isStaff && currentUsername) {
+                message += ` and assigned to ${currentUsername}`;
             }
-        })
-        .catch(error => {
-            console.error('Error updating status:', error);
-            showNotification('Error updating status', 'error');
-        });
-    } else {
-        // Use existing endpoint for admin users
-        fetch(url)
-            .then(response => {
-                if (response.ok) {
-                    // Refresh the page data
-                    refreshCurrentView();
-                } else {
-                    showNotification('Error updating status', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error updating status:', error);
-                showNotification('Error updating status', 'error');
-            });
-    }
+            showNotification(message, 'success');
+            refreshCurrentView();
+        } else {
+            showNotification(result.error || 'Error updating status', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating status:', error);
+        showNotification('Error updating status', 'error');
+    });
 };
 
 window.toggleQuickStatusDropdown = function() {
@@ -2045,6 +2033,9 @@ window.refreshCurrentView = function() {
     // Also refresh other sections if needed
     loadUnassignedDeliveries();
     loadPendingDeliveries();
+    
+    // Refresh the Status Distribution chart
+    updateStatusDistributionForPeriod('month'); // Default to current period
 };
 
 window.deleteDelivery = function(deliveryId) {
@@ -2187,6 +2178,9 @@ window.closeDeliveryDetailsModal = function() {
 document.addEventListener('DOMContentLoaded', function() {
     // Initial data fetch for charts
     fetchSummaryData();
+    
+    // Initialize Status Distribution chart
+    updateStatusDistributionForPeriod('month');
     
     // Load both types of deliveries
     loadUnassignedDeliveries();
@@ -2407,7 +2401,7 @@ window.updateStatusDistributionForPeriod = function(period) {
     else if (period === 'month') days = 30;
     else if (period === 'year') days = 365;
     
-    fetch(`/get_delivery_trends?days=${days}`)
+    fetch(`/get_status_distribution?days=${days}`)
         .then(response => response.json())
         .then(data => {
             if (data.error) {
@@ -2417,27 +2411,61 @@ window.updateStatusDistributionForPeriod = function(period) {
             
             // Update status distribution chart
             const statusCanvas = document.getElementById('statusDistributionChart');
-            if (statusCanvas && data.daily_data) {
-                // Aggregate status counts for the period
-                const statusCounts = { 'Pending': 0, 'In Transit': 0, 'Delivered': 0 };
-                Object.values(data.daily_data).forEach(dayData => {
-                    Object.keys(statusCounts).forEach(status => {
-                        statusCounts[status] += dayData[status] || 0;
-                    });
-                });
+            if (statusCanvas && data.labels && data.data) {
+                const ctx = statusCanvas.getContext('2d');
                 
-                // Update chart using the existing chart system
-                if (typeof updateChartsData === 'function') {
-                    // Get current deliveries data and update with new period
-                    fetch('/api/deliveries')
-                        .then(response => response.json())
-                        .then(deliveriesData => {
-                            if (deliveriesData.success && deliveriesData.deliveries) {
-                                updateChartsData(deliveriesData.deliveries, period);
-                            }
-                        })
-                        .catch(error => console.error('Error fetching deliveries for chart update:', error));
+                // Destroy existing chart if it exists
+                if (window.statusDistributionChartInstance) {
+                    window.statusDistributionChartInstance.destroy();
                 }
+                
+                // Create new chart
+                window.statusDistributionChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            data: data.data,
+                            backgroundColor: [
+                                'rgba(255, 206, 86, 0.8)',  // Yellow for Pending
+                                'rgba(54, 162, 235, 0.8)', // Blue for In Transit
+                                'rgba(75, 192, 192, 0.8)'  // Green for Delivered
+                            ],
+                            borderColor: [
+                                'rgba(255, 206, 86, 1)',
+                                'rgba(54, 162, 235, 1)',
+                                'rgba(75, 192, 192, 1)'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 15,
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return `${label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
             }
         })
         .catch(error => console.error('Error fetching status distribution:', error));
