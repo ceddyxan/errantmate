@@ -1,0 +1,19 @@
+DIRECT PRODUCTION USER DELETION REPORT
+Generated: 2026-01-26 02:27:15
+Environment: https://errantmate.onrender.com
+Target users: ben, peter, tom
+Success rate: 0/3
+
+DETAILED LOG:
+[2026-01-26 02:26:54] DEBUG_DELETE - ben - ERROR - Expecting value: line 1 column 1 (char 0)
+[2026-01-26 02:26:57] LOGIN - admin - SUCCESS - Session obtained
+[2026-01-26 02:26:58] API_DELETE - ben - SUCCESS - User deleted successfully
+[2026-01-26 02:27:00] VERIFY_DELETE - ben - FAILED - Status: 400
+[2026-01-26 02:27:01] DEBUG_DELETE - peter - ERROR - Expecting value: line 1 column 1 (char 0)
+[2026-01-26 02:27:04] LOGIN - admin - SUCCESS - Session obtained
+[2026-01-26 02:27:05] API_DELETE - peter - SUCCESS - User deleted successfully
+[2026-01-26 02:27:06] VERIFY_DELETE - peter - FAILED - Status: 400
+[2026-01-26 02:27:09] DEBUG_DELETE - tom - ERROR - Expecting value: line 1 column 1 (char 0)
+[2026-01-26 02:27:12] LOGIN - admin - SUCCESS - Session obtained
+[2026-01-26 02:27:13] API_DELETE - tom - SUCCESS - User deleted successfully
+[2026-01-26 02:27:15] VERIFY_DELETE - tom - FAILED - Status: 400

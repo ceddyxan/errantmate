@@ -2039,6 +2039,45 @@ def api_delete_user(user_id):
         app.logger.error(f"Error deleting user: {str(e)}")
         return jsonify({'success': False, 'error': 'Failed to delete user'}), 500
 
+@app.route('/auto_hard_delete_user', methods=['POST'])
+@admin_required
+@database_required
+def auto_hard_delete_user():
+    """Automatic hard delete user from database"""
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        
+        if not username:
+            return jsonify({'success': False, 'error': 'Username required'})
+        
+        # Find user
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            return jsonify({'success': False, 'error': 'User not found'})
+        
+        # Delete all deliveries created by this user
+        deliveries_to_delete = Delivery.query.filter_by(created_by=user.id).all()
+        delivery_count = len(deliveries_to_delete)
+        
+        for delivery in deliveries_to_delete:
+            db.session.delete(delivery)
+        
+        # Delete the user
+        db.session.delete(user)
+        db.session.commit()
+        
+        app.logger.info(f"Auto hard deleted user: {username} and {delivery_count} deliveries")
+        
+        return jsonify({
+            'success': True, 
+            'message': f'User {username} and {delivery_count} deliveries hard deleted'
+        })
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error in auto hard delete: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # ==================== LEGACY USER MANAGEMENT (KEEP FOR COMPATIBILITY) ====================
 
 @app.route('/debug/create_user_simple', methods=['POST'])
