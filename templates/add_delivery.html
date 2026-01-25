@@ -1375,7 +1375,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Showing status dropdown for delivery:', delivery.id);
             return `
                 <div class="relative inline-block">
-                    <button onclick="toggleStatusDropdown('${delivery.id}')" 
+                    <button onclick="console.log('Status button clicked for delivery: ${delivery.id}'); toggleStatusDropdown('${delivery.id}');" 
                             class="text-green-600 hover:text-green-800 transition-colors duration-200"
                             title="Update Status">
                         <i class="fas fa-sync-alt"></i>
