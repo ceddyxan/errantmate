@@ -1357,6 +1357,138 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Helper function to get status update button for staff users
+    window.getStatusUpdateButtonForStaff = function(delivery) {
+        const isStaff = '{{ session.user_role }}' === 'staff';
+        const currentUsername = '{{ session.username }}';
+        
+        // Debug logging
+        console.log('getStatusUpdateButtonForStaff called:', {
+            isStaff: isStaff,
+            currentUsername: currentUsername,
+            deliveryPerson: delivery.delivery_person,
+            deliveryId: delivery.id
+        });
+        
+        if (isStaff && delivery.delivery_person === currentUsername) {
+            // Staff: Show Status Dropdown only for their own deliveries
+            console.log('Showing status dropdown for delivery:', delivery.id);
+            return `
+                <div class="relative inline-block">
+                    <button onclick="toggleStatusDropdown('${delivery.id}')" 
+                            class="text-green-600 hover:text-green-800 transition-colors duration-200"
+                            title="Update Status">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <div id="status-dropdown-${delivery.id}" 
+                         class="hidden absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                        <button onclick="updateDeliveryStatus('${delivery.id}', 'Pending')" 
+                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-clock text-yellow-500 mr-2"></i>Pending
+                        </button>
+                        <button onclick="updateDeliveryStatus('${delivery.id}', 'In Transit')" 
+                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-truck text-blue-500 mr-2"></i>In Transit
+                        </button>
+                        <button onclick="updateDeliveryStatus('${delivery.id}', 'Delivered')" 
+                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-check text-green-500 mr-2"></i>Delivered
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            // No status button for other users' deliveries or non-staff users
+            console.log('No status button for delivery:', delivery.id);
+            return '';
+        }
+    };
+
+    // Toggle status dropdown
+    window.toggleStatusDropdown = function(deliveryId) {
+        const dropdown = document.getElementById(`status-dropdown-${deliveryId}`);
+        if (dropdown) {
+            dropdown.classList.toggle('hidden');
+            
+            // Close other dropdowns
+            document.querySelectorAll('[id^="status-dropdown-"]').forEach(otherDropdown => {
+                if (otherDropdown.id !== `status-dropdown-${deliveryId}`) {
+                    otherDropdown.classList.add('hidden');
+                }
+            });
+        }
+    };
+
+    // Update delivery status
+    window.updateDeliveryStatus = function(deliveryId, newStatus) {
+        const isStaff = '{{ session.user_role }}' === 'staff';
+        const currentUsername = '{{ session.username }}';
+        
+        // Hide the dropdown
+        document.getElementById(`status-dropdown-${deliveryId}`).classList.add('hidden');
+        
+        // Prepare API call
+        const url = '/api/update_delivery_status';
+        let payload = {
+            delivery_id: deliveryId,
+            status: newStatus
+        };
+        
+        // Add delivery person assignment for staff users
+        if (isStaff) {
+            payload.delivery_person = currentUsername;
+        }
+        
+        // Make API call
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                let message = `Status updated to ${newStatus}`;
+                if (isStaff && currentUsername) {
+                    message += ` and assigned to ${currentUsername}`;
+                }
+                showNotification(message, 'success');
+                
+                // Refresh the recent deliveries list
+                fetchRecentDeliveries();
+            } else {
+                showNotification(result.error || 'Error updating status', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error updating status:', error);
+            showNotification('Error updating status', 'error');
+        });
+    };
+
+    // Show notification function
+    window.showNotification = function(message, type = 'info') {
+        const notification = document.createElement('div');
+        const bgColor = type === 'success' ? 'bg-green-100 border-green-400 text-green-700' :
+                        type === 'error' ? 'bg-red-100 border-red-400 text-red-700' :
+                        'bg-blue-100 border-blue-400 text-blue-700';
+        
+        notification.className = `fixed top-4 right-4 ${bgColor} px-4 py-3 rounded-lg z-50 shadow-lg`;
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} mr-2"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    };
+
     // Fetch recent deliveries
     function fetchRecentDeliveries() {
         fetch('/get_user_recent_deliveries')
@@ -1428,6 +1560,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                     title="View Details">
                                 <i class="fas fa-eye"></i>
                             </button>
+                            
+                            ${getStatusUpdateButtonForStaff(delivery)}
                             
                             <button onclick="openUpdateDeliveryModal('${delivery.id}')" 
                                     class="text-green-600 hover:text-green-800 transition-colors duration-200"
