@@ -1590,7 +1590,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     e.preventDefault();
                     const deliveryId = this.getAttribute('data-delivery-id');
                     console.log('Status update button clicked for delivery:', deliveryId);
-                    window.toggleStatusDropdown(deliveryId);
+                    console.log('window.toggleStatusDropdown exists:', typeof window.toggleStatusDropdown);
+                    console.log('window.toggleStatusDropdown is function:', typeof window.toggleStatusDropdown === 'function');
+                    
+                    if (typeof window.toggleStatusDropdown === 'function') {
+                        console.log('Calling toggleStatusDropdown...');
+                        window.toggleStatusDropdown(deliveryId);
+                    } else {
+                        console.error('toggleStatusDropdown is not a function!');
+                    }
                 });
             });
             
