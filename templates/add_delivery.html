@@ -1381,17 +1381,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         <i class="fas fa-sync-alt"></i>
                     </button>
                     <div id="status-dropdown-${delivery.id}" 
-                         class="hidden absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                         class="hidden absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
                         <button onclick="updateDeliveryStatus('${delivery.id}', 'Pending')" 
-                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 whitespace-nowrap">
                             <i class="fas fa-clock text-yellow-500 mr-2"></i>Pending
                         </button>
                         <button onclick="updateDeliveryStatus('${delivery.id}', 'In Transit')" 
-                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 whitespace-nowrap">
                             <i class="fas fa-truck text-blue-500 mr-2"></i>In Transit
                         </button>
                         <button onclick="updateDeliveryStatus('${delivery.id}', 'Delivered')" 
-                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 whitespace-nowrap">
                             <i class="fas fa-check text-green-500 mr-2"></i>Delivered
                         </button>
                     </div>
@@ -1406,6 +1406,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Toggle status dropdown
     window.toggleStatusDropdown = function(deliveryId) {
+        console.log('toggleStatusDropdown called with deliveryId:', deliveryId);
         const dropdown = document.getElementById(`status-dropdown-${deliveryId}`);
         if (dropdown) {
             dropdown.classList.toggle('hidden');
