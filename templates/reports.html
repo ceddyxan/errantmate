@@ -2219,6 +2219,26 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load existing delivery persons for dropdown
     loadDeliveryPersonsDropdown();
     
+    // Check for delivery creation events from sessionStorage
+    checkForDeliveryCreation();
+    
+    // Listen for storage changes (cross-tab communication)
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'deliveryCreated' && e.newValue === 'true') {
+            console.log('Delivery creation detected via storage event');
+            refreshDeliveryPersonsData();
+        }
+    });
+    
+    // Listen for custom delivery creation events
+    window.addEventListener('deliveryCreated', function(e) {
+        console.log('Delivery creation detected via custom event');
+        refreshDeliveryPersonsData();
+    });
+    
+    // Periodic check for delivery creation (fallback)
+    setInterval(checkForDeliveryCreation, 5000); // Check every 5 seconds
+    
     // Add event listener for pending delivery selection
     document.getElementById('pendingDeliveryInput').addEventListener('change', updateReassignButtons);
     
@@ -3739,6 +3759,51 @@ window.stopRevenueAnalyticsAutoRefresh = function() {
     if (revenueAnalyticsRefreshInterval) {
         clearInterval(revenueAnalyticsRefreshInterval);
         revenueAnalyticsRefreshInterval = null;
+    }
+};
+
+// Check for delivery creation events
+window.checkForDeliveryCreation = function() {
+    const deliveryCreated = sessionStorage.getItem('deliveryCreated');
+    const deliveryCreatedTime = sessionStorage.getItem('deliveryCreatedTime');
+    
+    if (deliveryCreated === 'true' && deliveryCreatedTime) {
+        const createdTime = new Date(deliveryCreatedTime);
+        const now = new Date();
+        const timeDiff = now - createdTime;
+        
+        // Only refresh if the delivery was created within the last 10 seconds
+        if (timeDiff < 10000) {
+            console.log('Recent delivery creation detected, refreshing delivery persons');
+            refreshDeliveryPersonsData();
+            
+            // Clear the sessionStorage after processing
+            sessionStorage.removeItem('deliveryCreated');
+            sessionStorage.removeItem('deliveryCreatedTime');
+        }
+    }
+};
+
+// Refresh all delivery persons related data
+window.refreshDeliveryPersonsData = function() {
+    // Refresh delivery persons dropdown
+    if (typeof loadDeliveryPersonsDropdown === 'function') {
+        loadDeliveryPersonsDropdown();
+    }
+    
+    // Refresh delivery persons section
+    if (typeof fetchDeliveryPersons === 'function') {
+        fetchDeliveryPersons(currentPeriod || 'month');
+    }
+    
+    // Refresh available delivery persons for reassign buttons
+    if (typeof loadAvailableDeliveryPersons === 'function') {
+        loadAvailableDeliveryPersons();
+    }
+    
+    // Show notification to user
+    if (typeof showNotification === 'function') {
+        showNotification('Delivery persons list updated automatically', 'success');
     }
 };
 

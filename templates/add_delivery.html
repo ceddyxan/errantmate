@@ -845,6 +845,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Get the delivery ID from the success message or recent deliveries
                     console.log('Delivery saved successfully, showing delivery details popup');
                     showDeliveryDetailsPopup();
+                    
+                    // Store delivery creation event in sessionStorage for cross-page communication
+                    sessionStorage.setItem('deliveryCreated', 'true');
+                    sessionStorage.setItem('deliveryCreatedTime', new Date().toISOString());
+                    
+                    // Dispatch custom event for same-page listeners
+                    window.dispatchEvent(new CustomEvent('deliveryCreated', {
+                        detail: { timestamp: new Date().toISOString() }
+                    }));
+                    
+                    // Refresh delivery persons in parent window if this is a staff user
+                    if (window.opener && window.opener.loadDeliveryPersonsDropdown) {
+                        console.log('Refreshing delivery persons in parent window');
+                        window.opener.loadDeliveryPersonsDropdown();
+                    }
+                    
+                    // Also refresh delivery persons section if available
+                    if (window.opener && window.opener.fetchDeliveryPersons) {
+                        console.log('Refreshing delivery persons section in parent window');
+                        window.opener.fetchDeliveryPersons('month');
+                    }
                 } else {
                     console.log('No delivery saved message found');
                 }
