@@ -1550,6 +1550,67 @@ def debug_session():
     
     return jsonify(session_info)
 
+@app.route('/debug/check_users', methods=['GET'])
+@admin_required
+@database_required
+def debug_check_users():
+    """Debug endpoint to check all users in production"""
+    try:
+        users = User.query.order_by(User.username).all()
+        user_list = []
+        
+        for user in users:
+            user_list.append({
+                'username': user.username,
+                'role': user.role,
+                'is_active': user.is_active,
+                'created_at': user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else None
+            })
+        
+        # Check for Peter specifically
+        peter_users = [u for u in user_list if 'peter' in u['username'].lower()]
+        
+        return jsonify({
+            'all_users': user_list,
+            'peter_users': peter_users,
+            'total_users': len(user_list)
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/debug/create_peter', methods=['POST'])
+@admin_required
+@database_required
+def debug_create_peter():
+    """Debug endpoint to create Peter user"""
+    try:
+        data = request.get_json()
+        role = data.get('role', 'staff')
+        password = data.get('password', 'peter123')
+        
+        # Check if Peter already exists
+        existing = User.query.filter_by(username='peter').first()
+        if existing:
+            return jsonify({'error': 'Peter already exists'}), 400
+        
+        # Create Peter user
+        peter = User(username='peter', role=role, is_active=True)
+        peter.set_password(password)
+        db.session.add(peter)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Peter created with role: {role}',
+            'username': 'peter',
+            'password': password
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/debug/create_admin', methods=['POST'])
 def debug_create_admin():
     """Debug endpoint to create admin user."""
