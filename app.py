@@ -787,7 +787,8 @@ def add_delivery():
                 payment_by='M-Pesa',  # Always M-Pesa
                 status=request.form.get('status', 'Pending'),
                 created_at=current_time,  # Use browser local time
-                created_by=session.get('user_id')  # Set the creator
+                created_by=session.get('user_id'),  # Set the creator
+                delivery_person=session.get('username') if session.get('user_role') == 'staff' else None  # Auto-assign to staff users
             )
             db.session.add(delivery)
             db.session.commit()
@@ -829,7 +830,8 @@ def add_delivery():
                         payment_by='M-Pesa',  # Always M-Pesa
                         status=request.form.get('status', 'Pending'),
                         created_at=current_time,  # Use browser local time
-                        created_by=session.get('user_id')  # Set the creator
+                        created_by=session.get('user_id'),  # Set the creator
+                        delivery_person=session.get('username') if session.get('user_role') == 'staff' else None  # Auto-assign to staff users
                     )
                     db.session.add(delivery)
                     db.session.commit()
