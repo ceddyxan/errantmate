@@ -1578,6 +1578,7 @@ let isLoadingMore = false;
 let hasMoreData = true;
 
 window.fetchRecentDeliveries = function(append = false) {
+    console.log('fetchRecentDeliveries called - append:', append, 'currentPage:', currentPage);
     if (isLoadingMore) return;
     
     isLoadingMore = true;
@@ -1586,6 +1587,7 @@ window.fetchRecentDeliveries = function(append = false) {
     
     const page = append ? currentPage : 1;
     const url = `/get_recent_deliveries?page=${page}&per_page=${deliveriesPerPage}`;
+    console.log('Fetching URL:', url);
     
     fetch(url)
         .then(response => {
@@ -1968,10 +1970,12 @@ window.filterDeliveriesByPeriod = function(deliveries, period) {
 
 // Load more deliveries
 window.loadMoreDeliveries = function() {
+    console.log('Load More clicked - isLoadingMore:', isLoadingMore, 'hasMoreData:', hasMoreData, 'currentPage:', currentPage);
     if (isLoadingMore || !hasMoreData) return;
     
     currentPage++;
-    fetchRecentDeliveriesWithFilter(true); // append = true
+    console.log('Loading page:', currentPage);
+    fetchRecentDeliveries(true); // append = true
 };
 
 // Helper function to get status color
