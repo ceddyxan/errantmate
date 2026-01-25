@@ -1752,7 +1752,16 @@ function displayRecentDeliveries(deliveries) {
                                 title="Status updates only allowed for your assigned deliveries">
                             <i class="fas fa-lock"></i>
                         </button>
-                        {% else %}
+                        {% endif %}
+                        
+                        {% if session.user_role == 'staff' %}
+                        <!-- Staff: Always show Edit button for delivery details -->
+                        <button onclick="editDelivery('${delivery.id}')" 
+                                class="text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                                title="Update Delivery">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        {% elif session.user_role != 'admin' %}
                         <!-- Other Roles: Show Edit Button -->
                         <button onclick="editDelivery('${delivery.id}')" 
                                 class="text-blue-600 hover:text-blue-800 transition-colors duration-200"
