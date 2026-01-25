@@ -1662,6 +1662,83 @@ function renumberVisibleRows() {
     });
 }
 
+// Helper function to get status update button based on user role and delivery assignment
+window.getStatusUpdateButton = function(delivery) {
+    const isStaff = '{{ session.user_role }}' === 'staff';
+    const isAdmin = '{{ session.user_role }}' === 'admin';
+    const currentUsername = '{{ session.username }}';
+    
+    if (isAdmin || (isStaff && delivery.delivery_person === currentUsername)) {
+        // Admin: Show Status Dropdown for all deliveries
+        // Staff: Show Status Dropdown only for their own deliveries
+        return `
+            <div class="relative inline-block">
+                <button onclick="toggleStatusDropdown('${delivery.id}')" 
+                        class="text-green-600 hover:text-green-800 transition-colors duration-200"
+                        title="Update Status">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <div id="status-dropdown-${delivery.id}" 
+                     class="hidden absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                    <button onclick="updateDeliveryStatus('${delivery.id}', 'Pending')" 
+                            class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <i class="fas fa-clock text-yellow-500 mr-2"></i>Pending
+                    </button>
+                    <button onclick="updateDeliveryStatus('${delivery.id}', 'In Transit')" 
+                            class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <i class="fas fa-truck text-blue-500 mr-2"></i>In Transit
+                    </button>
+                    <button onclick="updateDeliveryStatus('${delivery.id}', 'Delivered')" 
+                            class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <i class="fas fa-check text-green-500 mr-2"></i>Delivered
+                    </button>
+                </div>
+            </div>
+        `;
+    } else if (isStaff && delivery.delivery_person !== currentUsername) {
+        // Staff: Show locked icon for other users' deliveries
+        return `
+            <button disabled 
+                    class="text-gray-400 cursor-not-allowed transition-colors duration-200"
+                    title="Status updates only allowed for your assigned deliveries">
+                <i class="fas fa-lock"></i>
+            </button>
+        `;
+    } else {
+        // Other roles: No status update button
+        return '';
+    }
+};
+
+// Helper function to get edit button based on user role
+window.getEditButton = function(delivery) {
+    const isStaff = '{{ session.user_role }}' === 'staff';
+    const isAdmin = '{{ session.user_role }}' === 'admin';
+    
+    if (isStaff) {
+        // Staff: Always show Edit button for delivery details
+        return `
+            <button onclick="editDelivery('${delivery.id}')" 
+                    class="text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                    title="Update Delivery">
+                <i class="fas fa-edit"></i>
+            </button>
+        `;
+    } else if (!isAdmin) {
+        // Other Roles: Show Edit Button
+        return `
+            <button onclick="editDelivery('${delivery.id}')" 
+                    class="text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                    title="Edit">
+                <i class="fas fa-edit"></i>
+            </button>
+        `;
+    } else {
+        // Admin: No separate edit button (they have full access)
+        return '';
+    }
+};
+
 function displayRecentDeliveries(deliveries) {
     const tbody = document.getElementById('recentDeliveriesBody');
     
@@ -1720,55 +1797,8 @@ function displayRecentDeliveries(deliveries) {
                                 title="View Details">
                             <i class="fas fa-eye"></i>
                         </button>
-                        {% if session.user_role == 'admin' or (session.user_role == 'staff' and delivery.delivery_person == session.username) %}
-                        <!-- Admin: Show Status Dropdown for all deliveries -->
-                        <!-- Staff: Show Status Dropdown only for their own deliveries -->
-                        <div class="relative inline-block">
-                            <button onclick="toggleStatusDropdown('${delivery.id}')" 
-                                    class="text-green-600 hover:text-green-800 transition-colors duration-200"
-                                    title="Update Status">
-                                <i class="fas fa-sync-alt"></i>
-                            </button>
-                            <div id="status-dropdown-${delivery.id}" 
-                                 class="hidden absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                                <button onclick="updateDeliveryStatus('${delivery.id}', 'Pending')" 
-                                        class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    <i class="fas fa-clock text-yellow-500 mr-2"></i>Pending
-                                </button>
-                                <button onclick="updateDeliveryStatus('${delivery.id}', 'In Transit')" 
-                                        class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    <i class="fas fa-truck text-blue-500 mr-2"></i>In Transit
-                                </button>
-                                <button onclick="updateDeliveryStatus('${delivery.id}', 'Delivered')" 
-                                        class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    <i class="fas fa-check text-green-500 mr-2"></i>Delivered
-                                </button>
-                            </div>
-                        </div>
-                        {% elif session.user_role == 'staff' and delivery.delivery_person != session.username %}
-                        <!-- Staff: Show locked icon for other users' deliveries -->
-                        <button disabled 
-                                class="text-gray-400 cursor-not-allowed transition-colors duration-200"
-                                title="Status updates only allowed for your assigned deliveries">
-                            <i class="fas fa-lock"></i>
-                        </button>
-                        {% endif %}
-                        
-                        {% if session.user_role == 'staff' %}
-                        <!-- Staff: Always show Edit button for delivery details -->
-                        <button onclick="editDelivery('${delivery.id}')" 
-                                class="text-blue-600 hover:text-blue-800 transition-colors duration-200"
-                                title="Update Delivery">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        {% elif session.user_role != 'admin' %}
-                        <!-- Other Roles: Show Edit Button -->
-                        <button onclick="editDelivery('${delivery.id}')" 
-                                class="text-blue-600 hover:text-blue-800 transition-colors duration-200"
-                                title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        {% endif %}
+                        ${getStatusUpdateButton(delivery)}
+                        ${getEditButton(delivery)}
                         <button onclick="deleteDelivery('${delivery.id}')" 
                                 class="text-red-600 hover:text-red-800 transition-colors duration-200"
                                 title="Delete">
