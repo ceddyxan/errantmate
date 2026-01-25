@@ -374,10 +374,38 @@
                             
                             <!-- Buttons -->
                             <div class="flex gap-2 mb-3">
+                                {% if session.user_role == 'staff' %}
+                                <!-- Staff: Show Status Actions -->
+                                <div class="flex-1 relative">
+                                    <button onclick="toggleQuickStatusDropdown()" 
+                                            class="w-full bg-blue-600 text-white px-3 py-2 text-sm font-medium rounded hover:bg-blue-700 flex items-center justify-center gap-2">
+                                        <i class="fas fa-edit"></i>
+                                        Update Status
+                                        <i class="fas fa-chevron-down text-xs"></i>
+                                    </button>
+                                    <div id="quickStatusDropdown" 
+                                         class="hidden absolute top-full left-0 right-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                                        <button onclick="quickUpdateStatus('Pending')" 
+                                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 border-b">
+                                            <i class="fas fa-clock text-yellow-500 mr-2"></i>Pending
+                                        </button>
+                                        <button onclick="quickUpdateStatus('In Transit')" 
+                                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 border-b">
+                                            <i class="fas fa-truck text-blue-500 mr-2"></i>In Transit
+                                        </button>
+                                        <button onclick="quickUpdateStatus('Delivered')" 
+                                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                            <i class="fas fa-check text-green-500 mr-2"></i>Delivered
+                                        </button>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <!-- Admin: Show Update Delivery Button -->
                                 <button onclick="updateDelivery()" 
                                         class="flex-1 bg-blue-600 text-white px-3 py-2 text-sm font-medium rounded hover:bg-blue-700">
                                     Update Delivery
                                 </button>
+                                {% endif %}
                                 <button onclick="clearDeliveryForm()" 
                                         class="flex-1 bg-gray-100 text-gray-700 px-3 py-2 text-sm font-medium rounded hover:bg-gray-200">
                                     Clear Form
@@ -2028,6 +2056,53 @@ window.updateDeliveryStatus = function(deliveryId, newStatus) {
                 showNotification('Error updating status', 'error');
             });
     }
+};
+
+window.toggleQuickStatusDropdown = function() {
+    const dropdown = document.getElementById('quickStatusDropdown');
+    dropdown.classList.toggle('hidden');
+    
+    // Close dropdown when clicking outside
+    if (!dropdown.classList.contains('hidden')) {
+        setTimeout(() => {
+            document.addEventListener('click', closeQuickStatusDropdown);
+        }, 100);
+    }
+};
+
+window.closeQuickStatusDropdown = function(e) {
+    const dropdown = document.getElementById('quickStatusDropdown');
+    const button = dropdown.previousElementSibling;
+    
+    if (!dropdown.contains(e.target) && !button.contains(e.target)) {
+        dropdown.classList.add('hidden');
+        document.removeEventListener('click', closeQuickStatusDropdown);
+    }
+};
+
+window.quickUpdateStatus = function(newStatus) {
+    const dropdown = document.getElementById('quickStatusDropdown');
+    dropdown.classList.add('hidden');
+    document.removeEventListener('click', closeQuickStatusDropdown);
+    
+    // Get selected delivery (either unassigned or pending)
+    const unassignedDelivery = document.getElementById('unassignedDeliveryInput').value;
+    const pendingDelivery = document.getElementById('pendingDeliveryInput').value;
+    
+    let deliveryId = null;
+    if (unassignedDelivery && unassignedDelivery !== '') {
+        deliveryId = unassignedDelivery;
+    } else if (pendingDelivery && pendingDelivery !== '') {
+        deliveryId = pendingDelivery;
+    }
+    
+    if (!deliveryId) {
+        showNotification('Please select a delivery first', 'error');
+        return;
+    }
+    
+    // Use the existing updateDeliveryStatus function
+    updateDeliveryStatus(deliveryId, newStatus);
 };
 
 window.refreshCurrentView = function() {
