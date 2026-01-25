@@ -1404,10 +1404,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    // Simple test function to verify function calling works
+    window.testFunction = function() {
+        console.log('=== TEST FUNCTION CALLED ===');
+    };
+
     // Toggle status dropdown - Simple version like reports page
     window.toggleStatusDropdown = function(deliveryId) {
+        console.log('=== TOGGLE STATUS DROPDOWN START ===');
+        console.log('toggleStatusDropdown called with deliveryId:', deliveryId);
+        
         try {
-            console.log('toggleStatusDropdown called with deliveryId:', deliveryId);
             const dropdown = document.getElementById(`status-dropdown-${deliveryId}`);
             console.log('Dropdown element found:', dropdown);
             
@@ -1425,10 +1432,16 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 console.error('Dropdown not found:', `status-dropdown-${deliveryId}`);
             }
+            console.log('=== TOGGLE STATUS DROPDOWN END ===');
         } catch (error) {
             console.error('Error in toggleStatusDropdown:', error);
+            console.log('=== TOGGLE STATUS DROPDOWN ERROR ===');
         }
     };
+
+    // Debug: Check if function is properly defined
+    console.log('FUNCTION DEBUG - toggleStatusDropdown type:', typeof window.toggleStatusDropdown);
+    console.log('FUNCTION DEBUG - toggleStatusDropdown string:', window.toggleStatusDropdown.toString());
 
     // Update delivery status
     window.updateDeliveryStatus = function(deliveryId, newStatus) {
@@ -1600,7 +1613,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     if (typeof window.toggleStatusDropdown === 'function') {
                         console.log('Calling toggleStatusDropdown...');
-                        window.toggleStatusDropdown(deliveryId);
+                        // Test if simple function call works
+                        console.log('Testing simple function call...');
+                        window.testFunction();
+                        console.log('Simple function call completed.');
+                        
+                        console.log('About to call toggleStatusDropdown directly...');
+                        try {
+                            window.toggleStatusDropdown(deliveryId);
+                            console.log('Direct call completed successfully.');
+                        } catch (error) {
+                            console.error('Error during direct call:', error);
+                        }
+                        
+                        // Also try with a simple alert test
+                        console.log('Testing with simple alert...');
+                        alert('Test alert - button click working!');
+                        
+                        console.log('All tests completed.');
                     } else {
                         console.error('toggleStatusDropdown is not a function!');
                     }

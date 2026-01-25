@@ -1098,23 +1098,19 @@ def get_delivery_persons():
                     'name': person,
                     'deliveries': 0,
                     'revenue': 0.0,
-                    'completed': 0
+                    'completed': 0,
+                    'pending_count': 0,
+                    'delivered_count': 0,
+                    'daily_deliveries': {}
                 }
             
             persons_data[person]['deliveries'] += 1
             persons_data[person]['revenue'] += float(delivery.amount or 0)
             if delivery.status == 'Delivered':
                 persons_data[person]['completed'] += 1
-        
-        # Add staff users who haven't been assigned deliveries yet
-        for staff_user in staff_users:
-            if staff_user.username not in persons_data:
-                persons_data[staff_user.username] = {
-                    'name': staff_user.username,
-                    'deliveries': 0,
-                    'revenue': 0.0,
-                    'completed': 0
-                }
+            
+            # Count pending deliveries
+            if delivery.status == 'Pending':
                 persons_data[person]['pending_count'] += 1
             
             # Count delivered deliveries
@@ -1133,9 +1129,22 @@ def get_delivery_persons():
                 'status': delivery.status
             })
         
+        # Add staff users who haven't been assigned deliveries yet
+        for staff_user in staff_users:
+            if staff_user.username not in persons_data:
+                persons_data[staff_user.username] = {
+                    'name': staff_user.username,
+                    'deliveries': 0,
+                    'revenue': 0.0,
+                    'completed': 0,
+                    'pending_count': 0,
+                    'delivered_count': 0,
+                    'daily_deliveries': {}
+                }
+        
         # Convert to list and sort by delivery count (descending)
         result = list(persons_data.values())
-        result.sort(key=lambda x: x['delivery_count'], reverse=True)
+        result.sort(key=lambda x: x['deliveries'], reverse=True)
         
         return jsonify(result)
     except Exception as e:
