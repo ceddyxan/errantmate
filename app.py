@@ -779,7 +779,6 @@ def add_delivery():
                 recipient_name=request.form['recipient_name'],
                 recipient_phone=request.form['recipient_phone'],
                 recipient_address=request.form['recipient_address'],
-                delivery_person='',  # Will be set later via Quick Actions
                 goods_type=request.form['goods_type'],
                 quantity=int(request.form['quantity']),
                 amount=float(request.form['amount']),
@@ -822,7 +821,6 @@ def add_delivery():
                         recipient_name=request.form['recipient_name'],
                         recipient_phone=request.form['recipient_phone'],
                         recipient_address=request.form['recipient_address'],
-                        delivery_person='',  # Will be set later via Quick Actions
                         goods_type=request.form['goods_type'],
                         quantity=int(request.form['quantity']),
                         amount=float(request.form['amount']),
