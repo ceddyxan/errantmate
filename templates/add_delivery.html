@@ -1404,32 +1404,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Toggle status dropdown
+    // Toggle status dropdown - Simple version like reports page
     window.toggleStatusDropdown = function(deliveryId) {
         console.log('toggleStatusDropdown called with deliveryId:', deliveryId);
-        const dropdownId = `status-dropdown-${deliveryId}`;
-        console.log('Looking for dropdown with ID:', dropdownId);
+        const dropdown = document.getElementById(`status-dropdown-${deliveryId}`);
         
-        const dropdown = document.getElementById(dropdownId);
-        console.log('Dropdown element found:', dropdown);
+        // Close all other dropdowns
+        document.querySelectorAll('[id^="status-dropdown-"]').forEach(d => {
+            if (d.id !== `status-dropdown-${deliveryId}`) {
+                d.classList.add('hidden');
+            }
+        });
         
+        // Toggle current dropdown
         if (dropdown) {
-            console.log('Dropdown classes before:', dropdown.className);
             dropdown.classList.toggle('hidden');
-            console.log('Dropdown classes after:', dropdown.className);
-            console.log('Dropdown visible:', !dropdown.classList.contains('hidden'));
-            
-            // Close other dropdowns
-            document.querySelectorAll('[id^="status-dropdown-"]').forEach(otherDropdown => {
-                if (otherDropdown.id !== dropdownId) {
-                    otherDropdown.classList.add('hidden');
-                }
-            });
+            console.log('Dropdown toggled, visible:', !dropdown.classList.contains('hidden'));
         } else {
-            console.error('Dropdown element not found for ID:', dropdownId);
-            // List all status dropdowns that exist
-            const allDropdowns = document.querySelectorAll('[id^="status-dropdown-"]');
-            console.log('Existing status dropdowns:', Array.from(allDropdowns).map(el => el.id));
+            console.error('Dropdown not found:', `status-dropdown-${deliveryId}`);
         }
     };
 
