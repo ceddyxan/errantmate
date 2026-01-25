@@ -1407,16 +1407,29 @@ document.addEventListener('DOMContentLoaded', function() {
     // Toggle status dropdown
     window.toggleStatusDropdown = function(deliveryId) {
         console.log('toggleStatusDropdown called with deliveryId:', deliveryId);
-        const dropdown = document.getElementById(`status-dropdown-${deliveryId}`);
+        const dropdownId = `status-dropdown-${deliveryId}`;
+        console.log('Looking for dropdown with ID:', dropdownId);
+        
+        const dropdown = document.getElementById(dropdownId);
+        console.log('Dropdown element found:', dropdown);
+        
         if (dropdown) {
+            console.log('Dropdown classes before:', dropdown.className);
             dropdown.classList.toggle('hidden');
+            console.log('Dropdown classes after:', dropdown.className);
+            console.log('Dropdown visible:', !dropdown.classList.contains('hidden'));
             
             // Close other dropdowns
             document.querySelectorAll('[id^="status-dropdown-"]').forEach(otherDropdown => {
-                if (otherDropdown.id !== `status-dropdown-${deliveryId}`) {
+                if (otherDropdown.id !== dropdownId) {
                     otherDropdown.classList.add('hidden');
                 }
             });
+        } else {
+            console.error('Dropdown element not found for ID:', dropdownId);
+            // List all status dropdowns that exist
+            const allDropdowns = document.querySelectorAll('[id^="status-dropdown-"]');
+            console.log('Existing status dropdowns:', Array.from(allDropdowns).map(el => el.id));
         }
     };
 
