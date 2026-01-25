@@ -1611,6 +1611,49 @@ def debug_create_peter():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/debug/delete_user', methods=['POST'])
+@admin_required
+@database_required
+def debug_delete_user():
+    """Debug endpoint to delete a user"""
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        
+        if not username:
+            return jsonify({'error': 'Username is required'}), 400
+        
+        # Find the user
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            return jsonify({'error': f'User "{username}" not found'}), 404
+        
+        # Don't allow deleting the currently logged in admin
+        if username == session.get('username'):
+            return jsonify({'error': 'Cannot delete your own account'}), 400
+        
+        # Store user info for response
+        user_info = {
+            'username': user.username,
+            'role': user.role,
+            'is_active': user.is_active,
+            'created_at': user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else None
+        }
+        
+        # Delete the user
+        db.session.delete(user)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'User "{username}" deleted successfully',
+            'deleted_user': user_info
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/debug/create_admin', methods=['POST'])
 def debug_create_admin():
     """Debug endpoint to create admin user."""
