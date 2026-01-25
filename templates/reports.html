@@ -3224,7 +3224,7 @@ window.loadUsers = function() {
                     </div>
                     ${user.username !== 'Admin' ? `
                         <div class="flex items-center gap-1">
-                            <button onclick="editUser(${user.id}, '${user.username}', '${user.role}')" 
+                            <button onclick="editNewUser(${user.id}, '${user.username}', '${user.role}')" 
                                     class="text-blue-600 hover:bg-blue-100 p-1 rounded transition-colors"
                                     title="Edit">
                                 <i class="fas fa-edit text-xs"></i>
@@ -3247,25 +3247,6 @@ window.loadUsers = function() {
         });
 };
 
-window.showAddUserModal = function() {
-    const modal = document.getElementById('userModal');
-    document.getElementById('modalTitle').textContent = 'Add New User';
-    document.getElementById('usernameInput').value = '';
-    document.getElementById('passwordInput').value = '';
-    document.getElementById('roleSelect').value = 'user';
-    document.getElementById('userIdInput').value = '';
-    modal.classList.remove('hidden');
-};
-
-window.editUser = function(userId, username, role) {
-    const modal = document.getElementById('userModal');
-    document.getElementById('modalTitle').textContent = 'Edit User';
-    document.getElementById('usernameInput').value = username;
-    document.getElementById('passwordInput').value = '';
-    document.getElementById('roleSelect').value = role || 'user';
-    document.getElementById('userIdInput').value = userId;
-    modal.classList.remove('hidden');
-};
 
 window.deleteUser = function(userId, username) {
     if (confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
@@ -3286,102 +3267,7 @@ window.deleteUser = function(userId, username) {
     }
 };
 
-window.saveUser = function() {
-    const username = document.getElementById('usernameInput').value.trim();
-    const password = document.getElementById('passwordInput').value;
-    const role = document.getElementById('roleSelect').value;
-    const userId = document.getElementById('userIdInput').value;
-    
-    console.log('saveUser called with:', { username, password: '***', role, userId });
-    
-    if (!username) {
-        showNotification('Username is required', 'error');
-        return;
-    }
-    
-    if (!userId && !password) {
-        showNotification('Password is required for new users', 'error');
-        return;
-    }
-    
-    const url = userId ? `/update_user/${userId}` : '/debug/create_user_simple';
-    const method = userId ? 'PUT' : 'POST';
-    
-    const payload = { username, password, role };
-    console.log('Sending request to:', url, 'with method:', method);
-    console.log('Payload:', { ...payload, password: '***' });
-    
-    fetch(url, {
-        method: method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    })
-    .then(response => {
-        // Check if response is ok (status 200-299)
-        if (!response.ok) {
-            if (response.status === 401) {
-                console.error('Authentication required for user management');
-                showNotification('Authentication required. Please log in again.', 'error');
-                // Optionally redirect to login
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 2000);
-                throw new Error('Authentication required');
-            } else if (response.status === 403) {
-                console.error('Admin access required for user management');
-                showNotification('Admin access required for user management', 'error');
-                throw new Error('Admin access required');
-            } else if (response.status === 400) {
-                // For 400 errors, try to get the error message from the response
-                return response.json().then(data => {
-                    const errorMessage = data.error || 'Invalid request data';
-                    console.error('Bad Request:', errorMessage);
-                    showNotification(errorMessage, 'error');
-                    throw new Error(errorMessage);
-                }).catch(() => {
-                    // If parsing JSON fails, show generic error
-                    console.error('Bad Request: Invalid data sent to server');
-                    showNotification('Invalid data. Please check all fields.', 'error');
-                    throw new Error('Invalid request data');
-                });
-            } else {
-                console.error('Server error:', response.status);
-                showNotification(`Server error: ${response.status}`, 'error');
-                throw new Error(`Server error: ${response.status}`);
-            }
-        }
-        
-        // Check if response is JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            console.error('Received non-JSON response');
-            showNotification('Server returned unexpected response', 'error');
-            throw new Error('Invalid response format');
-        }
-        
-        return response.json();
-    })
-    .then(result => {
-        if (result.success) {
-            showNotification(result.message, 'success');
-            closeUserModal();
-            loadUsers();
-        } else {
-            showNotification(result.error || 'Error saving user', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error saving user:', error);
-        // Don't show duplicate error messages for authentication errors
-        if (!error.message.includes('Authentication') && !error.message.includes('Admin access')) {
-            showNotification('Error saving user', 'error');
-        }
-    });
-};
 
-window.closeUserModal = function() {
-    document.getElementById('userModal').classList.add('hidden');
-};
 
 window.toggleUsersList = function() {
     const container = document.getElementById('usersListContainer');
@@ -3930,7 +3816,7 @@ window.saveNewUser = function() {
         return;
     }
     
-    if (role !== 'admin' && role !== 'user') {
+    if (role !== 'admin' && role !== 'user' && role !== 'staff') {
         showNotification('Invalid role selected', 'error');
         return;
     }
@@ -3991,6 +3877,7 @@ window.refreshUsers = function() {
 
 </script>
 
+
 <!-- NEW User Management Modal -->
 <div id="newUserModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
     <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
@@ -4018,6 +3905,7 @@ window.refreshUsers = function() {
                 <select id="newRoleSelect" 
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <option value="user">User</option>
+                    <option value="staff">Staff</option>
                     <option value="admin">Admin</option>
                 </select>
             </div>
