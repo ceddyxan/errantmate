@@ -849,6 +849,38 @@ def add_delivery():
                 flash('Error adding delivery. Please check the form and try again.', 'danger')
     return render_template('add_delivery.html')
 
+@app.route('/api/update_delivery_status', methods=['POST'])
+@staff_required
+@database_required
+def api_update_delivery_status():
+    """Update delivery status and assign delivery person for staff users"""
+    try:
+        data = request.get_json()
+        delivery_id = data.get('delivery_id')
+        new_status = data.get('status')
+        delivery_person = data.get('delivery_person')
+        
+        if not delivery_id or not new_status:
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        if new_status not in ['Pending', 'In Transit', 'Delivered']:
+            return jsonify({'success': False, 'error': 'Invalid status'}), 400
+        
+        delivery = Delivery.query.get_or_404(delivery_id)
+        delivery.status = new_status
+        delivery.delivery_person = delivery_person
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Status updated to {new_status} and assigned to {delivery_person}'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error updating delivery status: {str(e)}")
+        return jsonify({'success': False, 'error': 'Error updating delivery status'}), 500
+
 @app.route('/update_status/<int:delivery_id>/<status>', methods=['GET', 'POST'])
 @staff_required
 @database_required

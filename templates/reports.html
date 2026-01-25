@@ -1975,19 +1975,71 @@ window.toggleStatusDropdown = function(deliveryId) {
 window.updateDeliveryStatus = function(deliveryId, newStatus) {
     document.getElementById(`status-dropdown-${deliveryId}`).classList.add('hidden');
     
+    // For staff users, also update delivery person to current logged-in user
+    const isStaff = '{{ session.user_role }}' === 'staff';
+    const currentUsername = '{{ session.username }}';
+    
+    let url = `/update_status/${deliveryId}/${encodeURIComponent(newStatus)}`;
+    let payload = {};
+    
+    if (isStaff) {
+        // Add delivery person assignment for staff users
+        payload.delivery_person = currentUsername;
+        url = '/api/update_delivery_status'; // Use API endpoint for JSON data
+    }
+    
     // Update status via API
-    fetch(`/update_status/${deliveryId}/${encodeURIComponent(newStatus)}`)
-        .then(response => {
-            if (response.ok) {
-                // Refresh the page data
-                location.reload();
+    if (isStaff) {
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                delivery_id: deliveryId,
+                status: newStatus,
+                delivery_person: currentUsername
+            })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                showNotification(`Status updated to ${newStatus} and assigned to ${currentUsername}`, 'success');
+                refreshCurrentView();
             } else {
-                alert('Error updating status. Please try again.');
+                showNotification(result.error || 'Error updating status', 'error');
             }
         })
         .catch(error => {
-            alert('Error updating status. Please try again.');
+            console.error('Error updating status:', error);
+            showNotification('Error updating status', 'error');
         });
+    } else {
+        // Use existing endpoint for admin users
+        fetch(url)
+            .then(response => {
+                if (response.ok) {
+                    // Refresh the page data
+                    refreshCurrentView();
+                } else {
+                    showNotification('Error updating status', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating status:', error);
+                showNotification('Error updating status', 'error');
+            });
+    }
+};
+
+window.refreshCurrentView = function() {
+    // Refresh the current view based on what's visible
+    const recentDeliveries = document.getElementById('recentDeliveries');
+    if (recentDeliveries && !recentDeliveries.classList.contains('hidden')) {
+        fetchRecentDeliveriesWithFilter();
+    }
+    
+    // Also refresh other sections if needed
+    loadUnassignedDeliveries();
+    loadPendingDeliveries();
 };
 
 window.deleteDelivery = function(deliveryId) {
