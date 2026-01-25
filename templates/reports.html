@@ -2259,10 +2259,12 @@ window.closeDeliveryDetailsModal = function() {
 // Toggle sections
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Load More button visibility
-    {% if has_more_deliveries %}
-    hasMoreData = true;
-    updateLoadMoreButton();
-    {% endif %}
+    // Check if we have initial deliveries data and if there might be more
+    const initialDeliveries = parseInt('{{ recent_deliveries|length }}') || 0;
+    if (initialDeliveries >= 10) {
+        hasMoreData = true;
+        updateLoadMoreButton();
+    }
     
     // Initial data fetch for charts
     fetchSummaryData();
