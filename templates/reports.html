@@ -1965,6 +1965,11 @@ window.updateDeliveryStatus = function(deliveryId, newStatus) {
                 message += ` and assigned to ${currentUsername}`;
             }
             showNotification(message, 'success');
+            
+            // Instant update: Refresh Status Distribution chart immediately
+            updateStatusDistributionForPeriod('month');
+            
+            // Also refresh other views
             refreshCurrentView();
         } else {
             showNotification(result.error || 'Error updating status', 'error');
@@ -2034,8 +2039,7 @@ window.refreshCurrentView = function() {
     loadUnassignedDeliveries();
     loadPendingDeliveries();
     
-    // Refresh the Status Distribution chart
-    updateStatusDistributionForPeriod('month'); // Default to current period
+    // Note: Status Distribution chart is updated instantly in updateDeliveryStatus
 };
 
 window.deleteDelivery = function(deliveryId) {
@@ -2045,14 +2049,20 @@ window.deleteDelivery = function(deliveryId) {
         })
         .then(response => {
             if (response.ok) {
-                // Refresh the page data
-                location.reload();
+                showNotification('Delivery deleted successfully', 'success');
+                
+                // Instant update: Refresh Status Distribution chart immediately
+                updateStatusDistributionForPeriod('month');
+                
+                // Refresh other views
+                refreshCurrentView();
             } else {
-                alert('Error deleting delivery. Please try again.');
+                showNotification('Error deleting delivery. Please try again.', 'error');
             }
         })
         .catch(error => {
-            alert('Error deleting delivery. Please try again.');
+            console.error('Error deleting delivery:', error);
+            showNotification('Error deleting delivery. Please try again.', 'error');
         });
     }
 };
@@ -3723,14 +3733,17 @@ window.addEventListener('beforeunload', function() {
 // Also listen for delivery updates to refresh immediately
 window.addEventListener('deliveryUpdated', function() {
     updateRevenueAnalytics();
+    updateStatusDistributionForPeriod('month');
 });
 
 window.addEventListener('deliveryCreated', function() {
     updateRevenueAnalytics();
+    updateStatusDistributionForPeriod('month');
 });
 
 window.addEventListener('deliveryDeleted', function() {
     updateRevenueAnalytics();
+    updateStatusDistributionForPeriod('month');
 });
 
 // Fallback function to ensure metrics are visible
