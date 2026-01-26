@@ -44,13 +44,11 @@ package-lock.json
 
 # Logs
 *.log
+logs/
 
 # Local development
 .DS_Store
 Thumbs.db
-
-# Logs directory
-logs/
 
 # Auto-generated files
 auto_git_daemon.py
@@ -60,8 +58,69 @@ setup_auto_git.py
 check_production_users.py
 delete_user_tool.html
 
-# Temporary files
+# Temporary files and scripts
 *.tmp
 *.temp
 *.bak
 *.backup
+*_delete_*.py
+*_hard_delete*.py
+*_complete_delete*.py
+*_final_*.py
+*_debug_*.py
+*_test_*.py
+*_cleanup*.py
+*_cleanup_*.py
+
+# Reports and documentation
+*_REPORT*.md
+*_REPORT*.txt
+*_INSTRUCTIONS*.md
+*_GUIDE*.md
+*_DEPLOYMENT*.md
+
+# Instance and cache
+instance/
+cache/
+.cache/
+
+# Coverage and testing
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+.nox/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder
+.spyderproject
+.spyproject
+
+# Rope
+.ropeproject
+
+# mkdocs
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
