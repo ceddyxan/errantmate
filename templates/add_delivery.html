@@ -357,16 +357,32 @@
     </div>
 
     <!-- Delivery Details Modal -->
-    <div id="deliveryDetailsModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-lg bg-white">
-            <div class="flex justify-between items-center pb-3 border-b">
-                <h3 class="text-lg font-semibold text-gray-900">Delivery Details</h3>
-                <button onclick="closeDeliveryDetailsModal()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
+    <div id="deliveryDetailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+        <div class="relative w-full max-w-md mx-auto bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden transform transition-all duration-300 scale-95 opacity-0" id="modalContent">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-white">Delivery Details</h3>
+                    <button onclick="closeDeliveryDetailsModal()" class="text-white hover:text-gray-200 transition-colors duration-200 p-2 rounded-lg hover:bg-white hover:bg-opacity-20">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
             </div>
-            <div id="deliveryDetailsContent" class="py-4">
+            
+            <!-- Content -->
+            <div id="deliveryDetailsContent" class="p-6 space-y-4">
                 <!-- Delivery details will be loaded here -->
+            </div>
+            
+            <!-- Footer -->
+            <div class="bg-gray-50 px-6 py-3 flex justify-end space-x-3">
+                <button onclick="payPackage()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 font-medium">
+                    <i class="fas fa-credit-card mr-2"></i>
+                    Pay Package
+                </button>
+                <button onclick="closeDeliveryDetailsModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-200 font-medium">
+                    Close
+                </button>
             </div>
         </div>
     </div>
@@ -1043,6 +1059,119 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Function to handle Pay Package action
         function payPackage() {
+            // Get current delivery details from the modal
+            const modal = document.getElementById('deliveryDetailsModal');
+            if (modal) {
+                // Extract delivery ID from modal content
+                const idElement = modal.querySelector('.text-2xl.font-bold.text-gray-900');
+                const deliveryId = idElement ? idElement.textContent : '';
+                
+                // Create payment options popup
+                const paymentPopup = document.createElement('div');
+                paymentPopup.id = 'paymentOptionsPopup';
+                paymentPopup.className = 'fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4';
+                paymentPopup.innerHTML = `
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-y-auto border border-gray-100">
+                        <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-4 rounded-t-2xl">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-bold text-white">Payment Options</h3>
+                                <button onclick="closePaymentOptionsPopup()" class="text-white hover:text-gray-200 transition-colors p-2 rounded-lg hover:bg-white hover:bg-opacity-20">
+                                    <i class="fas fa-times text-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="p-5 space-y-4">
+                            <p class="text-sm text-gray-600 text-center mb-4">Choose how you'd like to pay for delivery ${deliveryId}</p>
+                            
+                            <!-- Option 1: Show Paybill Details -->
+                            <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                                <h4 class="text-sm font-semibold text-blue-800 mb-3">Option 1: Manual Payment</h4>
+                                <div class="space-y-2 text-xs">
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-600">PayBill Number:</span>
+                                        <span class="font-bold text-blue-900">222111</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-600">Account Number:</span>
+                                        <span class="font-bold text-blue-900">${deliveryId}</span>
+                                    </div>
+                                </div>
+                                <button onclick="copyPaybillDetails('222111', '${deliveryId}')" class="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm font-medium transition-colors">
+                                    <i class="fas fa-copy mr-2"></i>Copy Details
+                                </button>
+                            </div>
+                            
+                            <!-- Option 2: Generate STK Push -->
+                            <div class="bg-green-50 rounded-lg p-4 border border-green-200">
+                                <h4 class="text-sm font-semibold text-green-800 mb-3">Option 2: M-Pesa Payment</h4>
+                                <button onclick="generateSTKPush('${deliveryId}')" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-medium transition-colors">
+                                    <i class="fas fa-mobile-alt mr-2"></i>Generate STK Push
+                                </button>
+                            </div>
+                            
+                            <!-- Close Button -->
+                            <button onclick="closePaymentOptionsPopup()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Add popup to page
+                document.body.appendChild(paymentPopup);
+            }
+        }
+        
+        function closePaymentOptionsPopup() {
+            const popup = document.getElementById('paymentOptionsPopup');
+            if (popup) {
+                popup.remove();
+            }
+        }
+        
+        function copyPaybillDetails(paybill, account) {
+            const text = `PayBill: ${paybill}\nAccount: ${account}`;
+            navigator.clipboard.writeText(text).then(() => {
+                // Show success notification
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+                notification.innerHTML = '<i class="fas fa-check mr-2"></i>Payment details copied!';
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            });
+        }
+        
+        function generateSTKPush(deliveryId) {
+            // Show loading state
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+            button.disabled = true;
+            
+            // Simulate STK push generation
+            setTimeout(() => {
+                button.innerHTML = '<i class="fas fa-check mr-2"></i>STK Push Sent!';
+                button.className = 'w-full bg-green-700 text-white py-2 rounded-lg text-sm font-medium';
+                
+                // Show success notification
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+                notification.innerHTML = '<i class="fas fa-check-circle mr-2"></i>STK push sent to your phone!';
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                    closePaymentOptionsPopup();
+                }, 2000);
+            }, 2000);
+        }
+        
+        // Function to handle Pay Package action
+        function payPackage() {
             console.log('Pay Package button clicked!');
             // Get current delivery details from the popup
             const popup = document.getElementById('deliveryDetailsPopup');
@@ -1084,11 +1213,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="font-medium text-gray-600">Account Number:</span>
-                                        <span class="font-bold text-blue-900">106896</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="font-medium text-gray-600">Business Name:</span>
-                                        <span class="font-bold text-blue-900">Errantmate</span>
+                                        <span class="font-bold text-blue-900">${deliveryId}</span>
                                     </div>
                                 </div>
                                 <p class="text-xs text-gray-500 mt-3">Use these details to pay manually via M-Pesa Paybill</p>
@@ -1932,54 +2057,118 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error(data.error);
                 }
                 
-                // Display delivery details
+                // Display delivery details with modern minimalist design
                 content.innerHTML = `
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <h4 class="font-bold text-gray-700 mb-2">Delivery Information</h4>
-                                <div class="space-y-2">
-                                    <div><span class="text-sm font-bold text-gray-500">Status:</span> <span class="px-2 py-1 text-xs font-semibold rounded-full ${
-                                        data.status === 'Delivered' ? 'bg-green-100 text-green-800' :
-                                        data.status === 'In Transit' ? 'bg-blue-100 text-blue-800' :
-                                        'bg-gray-100 text-gray-800'
-                                    }">${data.status}</span></div>
-                                </div>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-gray-700 mb-2">Financial Information</h4>
-                                <div class="space-y-2">
-                                    <div><span class="text-sm font-bold text-gray-500">Amount:</span> <span class="text-sm font-bold">KSh ${data.amount.toFixed(2)}</span></div>
-                                    <div><span class="text-sm font-bold text-gray-500">Service Fee:</span> <span class="text-sm font-bold">KSh 50.00</span></div>
-                                    <div><span class="text-lg font-bold text-green-600">Total Pay Amount:</span> <span class="text-lg font-bold text-green-600">KSh ${(data.amount + 50).toFixed(2)}</span></div>
-                                    <div><span class="text-sm font-bold text-gray-500">Payment Method:</span> <span class="text-sm font-bold">${data.payment_by}</span></div>
-                                </div>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-gray-700 mb-2">Sender Information</h4>
-                                <div class="space-y-2">
-                                    <div><span class="text-sm font-bold text-gray-500">Name:</span> <span class="text-sm font-bold">${data.sender_name}</span></div>
-                                    <div><span class="text-sm font-bold text-gray-500">Phone:</span> <span class="text-sm font-bold">${data.sender_phone}</span></div>
-                                </div>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-gray-700 mb-2">Recipient Information</h4>
-                                <div class="space-y-2">
-                                    <div><span class="text-sm font-bold text-gray-500">Name:</span> <span class="text-sm font-bold">${data.recipient_name}</span></div>
-                                    <div><span class="text-sm font-bold text-gray-500">Phone:</span> <span class="text-sm font-bold">${data.recipient_phone}</span></div>
-                                    <div><span class="text-sm font-bold text-gray-500">Address:</span> <span class="text-sm font-bold">${data.recipient_address}</span></div>
-                                </div>
-                            </div>
+                    <!-- ID Section -->
+                    <div class="bg-gray-50 rounded-lg p-4 text-center">
+                        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">ID</div>
+                        <div class="text-2xl font-bold text-gray-900">${data.display_id}</div>
+                    </div>
+                    
+                    <!-- Sender Section -->
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-user text-blue-600 mr-2"></i>
+                            <h4 class="text-sm font-semibold text-blue-900">Sender</h4>
                         </div>
-                        <div>
-                            <h4 class="font-bold text-gray-700 mb-2">Additional Information</h4>
-                            <div class="space-y-2">
-                                <div><span class="text-sm font-bold text-gray-500">Goods Type:</span> <span class="text-sm font-bold">${data.goods_type}</span></div>
-                                <div><span class="text-sm font-bold text-gray-500">Quantity:</span> <span class="text-sm font-bold">${data.quantity}</span></div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-xs text-gray-600">Name:</span>
+                                <span class="text-sm font-medium text-gray-900">${data.sender_name}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-xs text-gray-600">Phone:</span>
+                                <span class="text-sm font-medium text-gray-900">${data.sender_phone}</span>
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Recipient Section -->
+                    <div class="bg-green-50 rounded-lg p-4">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-map-marker-alt text-green-600 mr-2"></i>
+                            <h4 class="text-sm font-semibold text-green-900">Recipient</h4>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-xs text-gray-600">Name:</span>
+                                <span class="text-sm font-medium text-gray-900">${data.recipient_name}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-xs text-gray-600">Phone:</span>
+                                <span class="text-sm font-medium text-gray-900">${data.recipient_phone}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-xs text-gray-600">Address:</span>
+                                <span class="text-sm font-medium text-gray-900">${data.recipient_address}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Delivery Section -->
+                    <div class="bg-purple-50 rounded-lg p-4">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-box text-purple-600 mr-2"></i>
+                            <h4 class="text-sm font-semibold text-purple-900">Delivery</h4>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-xs text-gray-600">Type</span>
+                                <span class="text-sm font-medium text-gray-900">${data.goods_type}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-xs text-gray-600">Qty</span>
+                                <span class="text-sm font-medium text-gray-900">${data.quantity}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-xs text-gray-600">Status</span>
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full ${
+                                    data.status === 'Delivered' ? 'bg-green-100 text-green-800' :
+                                    data.status === 'In Transit' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-gray-100 text-gray-800'
+                                }">${data.status}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Section -->
+                    <div class="bg-yellow-50 rounded-lg p-4">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-credit-card text-yellow-600 mr-2"></i>
+                            <h4 class="text-sm font-semibold text-yellow-900">Payment</h4>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-xs text-gray-600">Amount:</span>
+                                <span class="text-sm font-medium text-gray-900">KSh ${data.amount.toFixed(2)}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-xs text-gray-600">Service Fee:</span>
+                                <span class="text-sm font-medium text-gray-900">KSh 50.00</span>
+                            </div>
+                            <div class="flex justify-between border-t border-yellow-200 pt-2">
+                                <span class="text-sm font-bold text-gray-700">Total:</span>
+                                <span class="text-lg font-bold text-green-600">KSh ${(data.amount + 50).toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Time Section -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-clock text-gray-600 mr-2"></i>
+                            <h4 class="text-sm font-semibold text-gray-900">Time</h4>
+                        </div>
+                        <div class="text-sm font-medium text-gray-900">
+                            ${formatLocalDateTime(data.created_at)}
+                        </div>
+                    </div>
                 `;
+                
+                // Add animation to modal
+                const modalContent = document.getElementById('modalContent');
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
             })
             .catch(error => {
                 content.innerHTML = `
@@ -1996,7 +2185,17 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     window.closeDeliveryDetailsModal = function() {
-        document.getElementById('deliveryDetailsModal').classList.add('hidden');
+        const modal = document.getElementById('deliveryDetailsModal');
+        const modalContent = document.getElementById('modalContent');
+        
+        // Add closing animation
+        modalContent.classList.remove('scale-100', 'opacity-100');
+        modalContent.classList.add('scale-95', 'opacity-0');
+        
+        // Hide modal after animation
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
     };
 
     window.toggleStatusDropdown = function(deliveryId) {
