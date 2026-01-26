@@ -124,3 +124,10 @@ celerybeat.pid
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# AUTO-GIT PREVENTION
+.git/hooks/post-commit
+.git/hooks/post-merge
+.git/hooks/post-update
+.git/hooks/pre-push
+.vscode/settings.json
