@@ -48,7 +48,49 @@ if flask_env == 'production' and not database_url.startswith('postgres'):
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Initialize database
 db = SQLAlchemy(app)
+
+# Automatic database migration function
+def ensure_database_schema():
+    """Ensure all required tables exist in the database"""
+    with app.app_context():
+        try:
+            inspector = inspect(db.engine)
+            existing_tables = inspector.get_table_names()
+            
+            # Required tables for the application
+            required_tables = ['users', 'delivery', 'audit_log']
+            
+            missing_tables = [table for table in required_tables if table not in existing_tables]
+            
+            if missing_tables:
+                app.logger.info(f"Creating missing tables: {missing_tables}")
+                db.create_all()
+                
+                # Verify tables were created
+                inspector = inspect(db.engine)
+                new_tables = inspector.get_table_names()
+                created_tables = [table for table in missing_tables if table in new_tables]
+                
+                if created_tables:
+                    app.logger.info(f"Successfully created tables: {created_tables}")
+                else:
+                    app.logger.error(f"Failed to create tables: {missing_tables}")
+            else:
+                app.logger.info("All required tables exist")
+                
+        except Exception as e:
+            app.logger.error(f"Database migration error: {str(e)}")
+            if flask_env == 'production':
+                # In production, we want to fail loudly if database setup fails
+                raise RuntimeError(f"Failed to setup database schema: {str(e)}")
+            else:
+                # In development, log the error but continue
+                app.logger.warning("Continuing despite database setup error")
+
+# Run automatic migration on startup
+ensure_database_schema()
 
 
 # Configure logging
