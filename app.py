@@ -211,7 +211,7 @@ def ensure_database_tables():
             # Verify tables exist
             inspector = db.inspect(db.engine)
             tables = inspector.get_table_names()
-            required_tables = ['user', 'delivery', 'audit_log']
+            required_tables = ['users', 'delivery', 'audit_log']  # Fixed: 'user' -> 'users'
             
             
             if all(table in tables for table in required_tables):
