@@ -567,12 +567,14 @@ def get_time_ago(created_at):
         return "Just now"
 
 # Audit Logging Functions
-def log_audit(action, resource_type=None, resource_id=None, details=None):
+def log_audit(action, resource_type=None, resource_id=None, details=None, user_id=None, username=None):
     """Log an audit event for security monitoring."""
     try:
-        # Get user information from session
-        user_id = session.get('user_id')
-        username = session.get('username', 'Unknown')
+        # Get user information from session or parameters
+        if user_id is None:
+            user_id = session.get('user_id')
+        if username is None:
+            username = session.get('username', 'Unknown')
         
         # Get request information
         ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'Unknown'))
@@ -1128,7 +1130,10 @@ def login():
                 if user:
                     log_login(user, success=False, reason="Invalid password")
                 else:
-                    log_login(User(username=username, id=0), success=False, reason="User not found")
+                    # Log failed attempt for non-existent user without user_id
+                    log_audit("LOGIN_FAILED", resource_type="USER", resource_id=None, 
+                             details=f"Login attempt for non-existent user: {username}",
+                             user_id=None, username=username)
             flash('Invalid username or password', 'danger')
     
     return render_template('login.html')
