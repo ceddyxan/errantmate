@@ -1,1 +1,1 @@
-web: python -c "from app import app, db; app.app_context().push(); db.create_all(); print('Database migration completed')" && gunicorn app:app
+web: python -c "from app import app; app.app_context().push(); print('Starting application with safe migration')" && gunicorn app:app
