@@ -213,6 +213,45 @@
                     </div>
                 </div>
 
+                <!-- Email Field -->
+                <div class="space-y-2">
+                    <label for="signupEmail" class="block text-sm font-semibold text-gray-700">
+                        <i class="fas fa-envelope mr-2 text-purple-600"></i>Email Address
+                    </label>
+                    <div class="relative">
+                        <input 
+                            type="email" 
+                            id="signupEmail" 
+                            name="email" 
+                            required
+                            autocomplete="email"
+                            class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent input-focus bg-white/80"
+                            placeholder="Enter your email address"
+                        >
+                        <i class="fas fa-envelope absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                </div>
+
+                <!-- Phone Number Field -->
+                <div class="space-y-2">
+                    <label for="signupPhone" class="block text-sm font-semibold text-gray-700">
+                        <i class="fas fa-phone mr-2 text-purple-600"></i>Phone Number
+                    </label>
+                    <div class="relative">
+                        <input 
+                            type="tel" 
+                            id="signupPhone" 
+                            name="phone_number" 
+                            required
+                            autocomplete="tel"
+                            pattern="[+]?[0-9]{10,15}"
+                            class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent input-focus bg-white/80"
+                            placeholder="Enter your phone number"
+                        >
+                        <i class="fas fa-phone absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                </div>
+
                 <!-- Password Field -->
                 <div class="space-y-2">
                     <label for="signupPassword" class="block text-sm font-semibold text-gray-700">
@@ -225,8 +264,9 @@
                             name="password" 
                             required
                             minlength="6"
+                            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}"
                             class="w-full px-4 py-3 pl-12 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent input-focus bg-white/80"
-                            placeholder="Create a password (min 6 characters)"
+                            placeholder="Create a password (min 6 chars, uppercase, lowercase, number, symbol)"
                         >
                         <i class="fas fa-lock absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                         <button 
@@ -237,6 +277,9 @@
                             <i id="signupPasswordToggle" class="fas fa-eye"></i>
                         </button>
                     </div>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Must contain: 6+ characters, uppercase, lowercase, number, and symbol
+                    </p>
                 </div>
 
                 <!-- Confirm Password Field -->
@@ -398,6 +441,8 @@
             e.preventDefault();
             
             const username = document.getElementById('signupUsername').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const phone = document.getElementById('signupPhone').value.trim();
             const password = document.getElementById('signupPassword').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
             
@@ -407,8 +452,24 @@
                 return;
             }
             
-            if (password.length < 6) {
-                showNotification('Password must be at least 6 characters long', 'error');
+            // Email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showNotification('Please enter a valid email address', 'error');
+                return;
+            }
+            
+            // Phone validation
+            const phoneRegex = /^[+]?[0-9]{10,15}$/;
+            if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+                showNotification('Please enter a valid phone number (10-15 digits)', 'error');
+                return;
+            }
+            
+            // Password validation
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
+            if (!passwordRegex.test(password)) {
+                showNotification('Password must contain: 6+ characters, uppercase, lowercase, number, and symbol', 'error');
                 return;
             }
             
@@ -425,6 +486,8 @@
                 },
                 body: JSON.stringify({
                     username: username,
+                    email: email,
+                    phone_number: phone,
                     password: password,
                     role: 'user'  // Force role to 'user' for security
                 })

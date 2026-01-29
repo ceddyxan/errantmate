@@ -154,6 +154,8 @@ class User(db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=True)
+    phone_number = db.Column(db.String(20), unique=True, nullable=True)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), default='user')  # 'admin', 'user', or 'staff'
     created_at = db.Column(db.DateTime, default=get_current_time)
@@ -1842,16 +1844,31 @@ def api_create_user_public():
         
         # Basic validation
         username = data.get('username', '').strip()
+        email = data.get('email', '').strip()
+        phone_number = data.get('phone_number', '').strip()
         password = data.get('password', '')
         role = data.get('role', 'user')
         
-        app.logger.info(f"Creating user - Username: {username}, Role: '{role}', Password length: {len(password)}")
+        app.logger.info(f"Creating user - Username: {username}, Email: {email}, Phone: {phone_number}, Role: '{role}', Password length: {len(password)}")
         
         if not username or len(username) < 3:
             return jsonify({'success': False, 'error': 'Username must be at least 3 characters'}), 400
         
-        if not password or len(password) < 6:
-            return jsonify({'success': False, 'error': 'Password must be at least 6 characters'}), 400
+        # Email validation
+        import re
+        email_regex = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+        if email and not re.match(email_regex, email):
+            return jsonify({'success': False, 'error': 'Invalid email format'}), 400
+        
+        # Phone validation
+        phone_regex = r'^[+]?[0-9]{10,15}$'
+        if phone_number and not re.match(phone_regex, phone_number.replace(' ', '')):
+            return jsonify({'success': False, 'error': 'Invalid phone number format'}), 400
+        
+        # Password validation with regex for complexity
+        password_regex = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$'
+        if not password or not re.match(password_regex, password):
+            return jsonify({'success': False, 'error': 'Password must contain: 6+ characters, uppercase, lowercase, number, and symbol'}), 400
         
         app.logger.info(f"Role validation - Checking if '{role}' is in ['admin', 'user', 'staff']")
         if role not in ['admin', 'user', 'staff']:
@@ -1862,8 +1879,16 @@ def api_create_user_public():
         if User.query.filter_by(username=username).first():
             return jsonify({'success': False, 'error': 'Username already exists'}), 400
         
+        # Check if email already exists
+        if email and User.query.filter_by(email=email).first():
+            return jsonify({'success': False, 'error': 'Email already exists'}), 400
+        
+        # Check if phone number already exists
+        if phone_number and User.query.filter_by(phone_number=phone_number).first():
+            return jsonify({'success': False, 'error': 'Phone number already exists'}), 400
+        
         # Create user
-        new_user = User(username=username, role=role)
+        new_user = User(username=username, email=email if email else None, phone_number=phone_number if phone_number else None, role=role)
         new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
@@ -1874,6 +1899,8 @@ def api_create_user_public():
             'user': {
                 'id': new_user.id,
                 'username': new_user.username,
+                'email': new_user.email,
+                'phone_number': new_user.phone_number,
                 'role': new_user.role,
                 'created_at': new_user.created_at.strftime('%Y-%m-%d %H:%M') if new_user.created_at else None
             }
