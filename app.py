@@ -1852,23 +1852,23 @@ def api_create_user_public():
         app.logger.info(f"Creating user - Username: {username}, Email: {email}, Phone: {phone_number}, Role: '{role}', Password length: {len(password)}")
         
         if not username or len(username) < 3:
-            return jsonify({'success': False, 'error': 'Username must be at least 3 characters'}), 400
+            return jsonify({'success': False, 'error': 'Username must be at least 3 characters long', 'field': 'signupUsername'}), 400
         
         # Email validation
         import re
         email_regex = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
         if email and not re.match(email_regex, email):
-            return jsonify({'success': False, 'error': 'Invalid email format'}), 400
+            return jsonify({'success': False, 'error': 'Please enter a valid email address', 'field': 'signupEmail'}), 400
         
         # Phone validation
         phone_regex = r'^[+]?[0-9]{10,15}$'
         if phone_number and not re.match(phone_regex, phone_number.replace(' ', '')):
-            return jsonify({'success': False, 'error': 'Invalid phone number format'}), 400
+            return jsonify({'success': False, 'error': 'Please enter a valid phone number (10-15 digits)', 'field': 'signupPhone'}), 400
         
         # Password validation with regex for complexity
         password_regex = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{6,}$'
         if not password or not re.match(password_regex, password):
-            return jsonify({'success': False, 'error': 'Password must contain: 6+ characters, uppercase, lowercase, number, and symbol'}), 400
+            return jsonify({'success': False, 'error': 'Password must contain: 6+ characters, uppercase, lowercase, number, and symbol', 'field': 'signupPassword'}), 400
         
         app.logger.info(f"Role validation - Checking if '{role}' is in ['admin', 'user', 'staff']")
         if role not in ['admin', 'user', 'staff']:
@@ -1877,15 +1877,15 @@ def api_create_user_public():
         
         # Check if user exists
         if User.query.filter_by(username=username).first():
-            return jsonify({'success': False, 'error': 'Username already exists'}), 400
+            return jsonify({'success': False, 'error': 'Username already exists. Please choose a different username', 'field': 'signupUsername'}), 400
         
         # Check if email already exists
         if email and User.query.filter_by(email=email).first():
-            return jsonify({'success': False, 'error': 'Email already exists'}), 400
+            return jsonify({'success': False, 'error': 'Email address already registered. Please use a different email', 'field': 'signupEmail'}), 400
         
         # Check if phone number already exists
         if phone_number and User.query.filter_by(phone_number=phone_number).first():
-            return jsonify({'success': False, 'error': 'Phone number already exists'}), 400
+            return jsonify({'success': False, 'error': 'Phone number already registered. Please use a different phone number', 'field': 'signupPhone'}), 400
         
         # Create user
         new_user = User(username=username, email=email if email else None, phone_number=phone_number if phone_number else None, role=role)

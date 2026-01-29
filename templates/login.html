@@ -498,17 +498,20 @@
                     showNotification('Account created successfully! You can now sign in.', 'success');
                     // Clear form
                     document.getElementById('signupForm').reset();
+                    // Clear any field errors
+                    clearFieldErrors();
                     // Switch to login form
                     setTimeout(() => {
                         toggleSignup();
                     }, 2000);
                 } else {
-                    showNotification(data.error || 'Failed to create account', 'error');
+                    // Show specific error message and highlight problematic fields
+                    showFieldError(data.error || 'Failed to create account', data.field || null);
                 }
             })
             .catch(error => {
                 console.error('Signup error:', error);
-                showNotification('An error occurred. Please try again.', 'error');
+                showNotification('Network error. Please check your connection and try again.', 'error');
             });
         });
 
@@ -548,6 +551,46 @@
             }, 5000);
         }
 
+        // Show field-specific error with highlighting
+        function showFieldError(message, fieldName) {
+            // Clear previous field errors
+            clearFieldErrors();
+            
+            // Show the error notification
+            showNotification(message, 'error');
+            
+            // Highlight the problematic field
+            if (fieldName) {
+                const field = document.getElementById(fieldName);
+                if (field) {
+                    field.classList.add('border-red-500', 'bg-red-50');
+                    field.focus();
+                    
+                    // Add error message below the field
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'field-error text-red-600 text-sm mt-1 font-medium';
+                    errorDiv.textContent = message;
+                    field.parentNode.appendChild(errorDiv);
+                }
+            }
+        }
+
+        // Clear all field errors
+        function clearFieldErrors() {
+            // Remove error styling from all fields
+            const fields = ['signupUsername', 'signupEmail', 'signupPhone', 'signupPassword', 'confirmPassword'];
+            fields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.classList.remove('border-red-500', 'bg-red-50');
+                }
+            });
+            
+            // Remove error messages
+            const errorMessages = document.querySelectorAll('.field-error');
+            errorMessages.forEach(msg => msg.remove());
+        }
+
         // Update current time
         function updateTime() {
             const now = new Date();
@@ -572,6 +615,23 @@
 
         // Auto-focus username field
         document.getElementById('username').focus();
+
+        // Add input event listeners to clear field errors
+        const fields = ['signupUsername', 'signupEmail', 'signupPhone', 'signupPassword', 'confirmPassword'];
+        fields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('input', function() {
+                    // Clear error styling when user starts typing
+                    this.classList.remove('border-red-500', 'bg-red-50');
+                    // Remove error message for this field
+                    const errorMsg = this.parentNode.querySelector('.field-error');
+                    if (errorMsg) {
+                        errorMsg.remove();
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>
