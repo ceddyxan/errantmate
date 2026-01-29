@@ -1866,7 +1866,7 @@ def api_create_user_public():
             return jsonify({'success': False, 'error': 'Invalid phone number format'}), 400
         
         # Password validation with regex for complexity
-        password_regex = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$'
+        password_regex = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{6,}$'
         if not password or not re.match(password_regex, password):
             return jsonify({'success': False, 'error': 'Password must contain: 6+ characters, uppercase, lowercase, number, and symbol'}), 400
         
