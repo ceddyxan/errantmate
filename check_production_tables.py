@@ -5,7 +5,7 @@ Run this script to check what tables exist in production database
 """
 
 import os
-from app import app, db
+from app import app, db, User
 from sqlalchemy import inspect, text
 
 def check_production_tables():
@@ -69,15 +69,15 @@ def check_production_tables():
             # Recommendation
             print(f"\nRecommendation:")
             if has_users_table and not has_user_table:
-                print("✅ CORRECT: Only 'users' table exists - this matches the User model")
+                print("CORRECT: Only 'users' table exists - this matches the User model")
             elif has_user_table and not has_users_table:
-                print("⚠️  WARNING: Only 'user' table exists - this doesn't match the User model")
+                print("WARNING: Only 'user' table exists - this doesn't match the User model")
                 print("   The User model expects 'users' table. You may need to migrate.")
             elif has_user_table and has_users_table:
-                print("⚠️  WARNING: Both 'user' and 'users' tables exist")
+                print("WARNING: Both 'user' and 'users' tables exist")
                 print("   This could cause confusion. Consider migrating data to 'users' table only.")
             else:
-                print("❌ ERROR: Neither 'user' nor 'users' table exists")
+                print("ERROR: Neither 'user' nor 'users' table exists")
                 print("   Run database migration to create the required tables.")
                 
         except Exception as e:
