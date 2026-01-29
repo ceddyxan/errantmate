@@ -151,7 +151,7 @@ def ensure_database_tables():
 
 # Models
 class User(db.Model):
-    __tablename__ = 'user'
+    __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=True)
@@ -170,14 +170,14 @@ class User(db.Model):
     def is_admin(self):
         return self.role == 'admin'
     
+    def __repr__(self):
+        return f'<User {self.username} ({self.role})>'
+    
     def is_staff(self):
         return self.role in ['admin', 'staff']
     
     def can_view_reports(self):
         return self.role == 'admin'
-    
-    def __repr__(self):
-        return f'<User {self.username} ({self.role})>'
 
 class Delivery(db.Model):
     __tablename__ = 'delivery'
@@ -196,7 +196,7 @@ class Delivery(db.Model):
     payment_by = db.Column(db.String(50), nullable=False, default='M-Pesa')
     status = db.Column(db.String(20), default='Pending')
     created_at = db.Column(db.DateTime, default=get_current_time)
-    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
     # Relationship to User
     creator = db.relationship('User', backref='deliveries')
@@ -207,7 +207,7 @@ class Delivery(db.Model):
 class AuditLog(db.Model):
     __tablename__ = 'audit_log'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     username = db.Column(db.String(80), nullable=False)
     action = db.Column(db.String(100), nullable=False)  # LOGIN, LOGOUT, CREATE, UPDATE, DELETE, VIEW, EXPORT
     resource_type = db.Column(db.String(50), nullable=True)  # USER, DELIVERY, REPORT
@@ -1847,7 +1847,7 @@ def api_create_user_public():
         email = data.get('email', '').strip()
         phone_number = data.get('phone_number', '').strip()
         password = data.get('password', '')
-        role = data.get('role', 'user')
+        role = 'user'  # Force role to 'user' for security - ignore any role from request
         
         app.logger.info(f"Creating user - Username: {username}, Email: {email}, Phone: {phone_number}, Role: '{role}', Password length: {len(password)}")
         
@@ -1870,14 +1870,14 @@ def api_create_user_public():
         if not password or not re.match(password_regex, password):
             return jsonify({'success': False, 'error': 'Password must contain: 6+ characters, uppercase, lowercase, number, and symbol', 'field': 'signupPassword'}), 400
         
-        app.logger.info(f"Role validation - Checking if '{role}' is in ['admin', 'user', 'staff']")
-        if role not in ['admin', 'user', 'staff']:
-            app.logger.error(f"Invalid role detected: '{role}' (type: {type(role)})")
-            return jsonify({'success': False, 'error': 'Invalid role'}), 400
-        
         # Check if user exists
-        if User.query.filter_by(username=username).first():
+        app.logger.info(f"Checking if user exists: {username}")
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            app.logger.info(f"User already exists: {existing_user.username}")
             return jsonify({'success': False, 'error': 'Username already exists. Please choose a different username', 'field': 'signupUsername'}), 400
+        else:
+            app.logger.info(f"User does not exist, proceeding with creation")
         
         # Check if email already exists
         if email and User.query.filter_by(email=email).first():
@@ -1888,28 +1888,38 @@ def api_create_user_public():
             return jsonify({'success': False, 'error': 'Phone number already registered. Please use a different phone number', 'field': 'signupPhone'}), 400
         
         # Create user
-        new_user = User(username=username, email=email if email else None, phone_number=phone_number if phone_number else None, role=role)
-        new_user.set_password(password)
-        db.session.add(new_user)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': 'User created successfully',
-            'user': {
-                'id': new_user.id,
-                'username': new_user.username,
-                'email': new_user.email,
-                'phone_number': new_user.phone_number,
-                'role': new_user.role,
-                'created_at': new_user.created_at.strftime('%Y-%m-%d %H:%M') if new_user.created_at else None
-            }
-        })
+        try:
+            new_user = User(username=username, email=email if email else None, phone_number=phone_number if phone_number else None, role=role)
+            new_user.set_password(password)
+            db.session.add(new_user)
+            db.session.commit()
+            
+            app.logger.info(f"User created successfully: {new_user.username} (ID: {new_user.id})")
+            
+            return jsonify({
+                'success': True,
+                'message': 'User created successfully',
+                'user': {
+                    'id': new_user.id,
+                    'username': new_user.username,
+                    'email': new_user.email,
+                    'phone_number': new_user.phone_number,
+                    'role': new_user.role,
+                    'created_at': new_user.created_at.strftime('%Y-%m-%d %H:%M') if new_user.created_at else None
+                }
+            })
+        except Exception as create_error:
+            db.session.rollback()
+            app.logger.error(f"Error creating user: {str(create_error)}")
+            return jsonify({'success': False, 'error': f'Database error: {str(create_error)}'}), 500
         
     except Exception as e:
         db.session.rollback()
         app.logger.error(f"Error creating user: {str(e)}")
-        return jsonify({'success': False, 'error': 'Failed to create user'}), 500
+        app.logger.error(f"Exception type: {type(e).__name__}")
+        import traceback
+        app.logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'success': False, 'error': f'Failed to create user: {str(e)}'}), 500
 
 @app.route('/api/users', methods=['POST'])
 @admin_required_api
