@@ -56,8 +56,13 @@ def ensure_database_schema():
     """Ensure all required tables exist in the database"""
     with app.app_context():
         try:
+            # Log database connection info
+            app.logger.info(f"Database URL: {database_url}")
+            app.logger.info(f"Flask Environment: {flask_env}")
+            
             inspector = inspect(db.engine)
             existing_tables = inspector.get_table_names()
+            app.logger.info(f"Existing tables: {existing_tables}")
             
             # Required tables for the application
             required_tables = ['users', 'delivery', 'audit_log']
@@ -66,7 +71,52 @@ def ensure_database_schema():
             
             if missing_tables:
                 app.logger.info(f"Creating missing tables: {missing_tables}")
-                db.create_all()
+                
+                # Try to create tables individually for better error handling
+                for table_name in missing_tables:
+                    try:
+                        if table_name == 'users':
+                            # Create users table specifically
+                            from sqlalchemy import text
+                            
+                            # Check if we're using PostgreSQL
+                            if database_url.startswith('postgres'):
+                                db.session.execute(text("""
+                                    CREATE TABLE IF NOT EXISTS users (
+                                        id SERIAL PRIMARY KEY,
+                                        username VARCHAR(80) UNIQUE NOT NULL,
+                                        email VARCHAR(120) UNIQUE,
+                                        phone_number VARCHAR(20) UNIQUE,
+                                        password_hash VARCHAR(255) NOT NULL,
+                                        role VARCHAR(20) DEFAULT 'user',
+                                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                        is_active BOOLEAN DEFAULT TRUE
+                                    )
+                                """))
+                            else:
+                                # SQLite syntax
+                                db.session.execute(text("""
+                                    CREATE TABLE IF NOT EXISTS users (
+                                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                        username VARCHAR(80) UNIQUE NOT NULL,
+                                        email VARCHAR(120) UNIQUE,
+                                        phone_number VARCHAR(20) UNIQUE,
+                                        password_hash VARCHAR(255) NOT NULL,
+                                        role VARCHAR(20) DEFAULT 'user',
+                                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                                        is_active BOOLEAN DEFAULT TRUE
+                                    )
+                                """))
+                            
+                            db.session.commit()
+                            app.logger.info(f"Successfully created users table")
+                        else:
+                            # For other tables, use SQLAlchemy's create_all
+                            db.create_all()
+                            app.logger.info(f"Successfully created {table_name} table")
+                    except Exception as table_error:
+                        app.logger.error(f"Failed to create {table_name} table: {str(table_error)}")
+                        db.session.rollback()
                 
                 # Verify tables were created
                 inspector = inspect(db.engine)
@@ -77,14 +127,17 @@ def ensure_database_schema():
                     app.logger.info(f"Successfully created tables: {created_tables}")
                 else:
                     app.logger.error(f"Failed to create tables: {missing_tables}")
+                    # Don't fail in production, just log the error
+                    if flask_env == 'production':
+                        app.logger.warning("Continuing despite table creation failure - tables may need manual creation")
             else:
                 app.logger.info("All required tables exist")
                 
         except Exception as e:
             app.logger.error(f"Database migration error: {str(e)}")
             if flask_env == 'production':
-                # In production, we want to fail loudly if database setup fails
-                raise RuntimeError(f"Failed to setup database schema: {str(e)}")
+                # In production, log error but continue (don't crash the app)
+                app.logger.warning("Continuing despite migration error - manual table creation may be required")
             else:
                 # In development, log the error but continue
                 app.logger.warning("Continuing despite database setup error")
