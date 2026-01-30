@@ -972,9 +972,9 @@ def dashboard():
 
         # Financial statistics
 
-        total_revenue = len(deliveries) * 50  # Service Fee: KSh 50 per delivery
+        total_revenue = sum(float(d.amount) for d in deliveries if d.amount)  # Use actual delivery amounts as revenue
 
-        total_expenses = sum(float(d.amount) for d in deliveries if d.amount)  # Use amount as delivery costs
+        total_expenses = 0  # No operational costs by default
 
         
 
@@ -2560,9 +2560,8 @@ def get_summary():
 
             deliveries = query.all()
 
-            total_amount = len(deliveries) * 50  # Service Fee: KSh 50 per delivery
-
-            total_expenses = sum(d.amount for d in deliveries)  # Use amount as delivery costs
+            total_amount = sum(float(d.amount) for d in deliveries if d.amount)  # Use actual delivery amounts as revenue
+            total_expenses = 0  # No operational costs by default
 
             return {
 
@@ -2588,10 +2587,8 @@ def get_summary():
 
             'summary': {
 
-                'total_revenue': len(all_deliveries) * 50,  # Service Fee: KSh 50 per delivery
-
-                'total_expenses': sum(d.amount for d in all_deliveries),  # Use amount as delivery costs
-
+                'total_revenue': sum(float(d.amount) for d in all_deliveries if d.amount),  # Use actual delivery amounts as revenue
+                'total_expenses': 0,  # No operational costs by default
                 'total_deliveries': len(all_deliveries),
 
                 'pending': len([d for d in all_deliveries if d.status == 'Pending']),
@@ -5397,9 +5394,9 @@ def get_revenue_analytics():
 
                 daily_data[date_key] = {'revenue': 0.0, 'count': 0, 'costs': 0.0}
 
-            daily_data[date_key]['revenue'] += 50  # Service Fee: KSh 50 per delivery
+            daily_data[date_key]['revenue'] += float(amount)  # Use actual delivery amount as revenue
 
-            daily_data[date_key]['costs'] += amount  # Use amount as delivery costs
+            daily_data[date_key]['costs'] += 0  # No operational costs by default
 
             daily_data[date_key]['count'] += 1
 
