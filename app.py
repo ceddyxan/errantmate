@@ -6170,15 +6170,73 @@ def get_recent_deliveries():
 
         
 
+        # Get filter parameters
+
+        period = request.args.get('period', 'all')
+
+        status = request.args.get('status', 'all')
+
+        search = request.args.get('search', '')
+
+        
+
+        # Build base query
+
+        query = Delivery.query
+
+        
+
+        # Apply period filter
+        if period != 'all':
+            now = datetime.utcnow()
+            if period == 'today':
+                start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                query = query.filter(Delivery.created_at >= start_date)
+            elif period == 'week':
+                start_date = now - timedelta(days=7)
+                query = query.filter(Delivery.created_at >= start_date)
+            elif period == 'month':
+                start_date = now - timedelta(days=30)
+                query = query.filter(Delivery.created_at >= start_date)
+            elif period == 'year':
+                start_date = now - timedelta(days=365)
+                query = query.filter(Delivery.created_at >= start_date)
+
+        
+
+        # Apply status filter
+        if status != 'all':
+            query = query.filter(Delivery.status == status)
+
+        
+
+        # Apply search filter
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                db.or_(
+                    Delivery.display_id.ilike(search_term),
+                    Delivery.sender_name.ilike(search_term),
+                    Delivery.sender_phone.ilike(search_term),
+                    Delivery.recipient_name.ilike(search_term),
+                    Delivery.recipient_phone.ilike(search_term),
+                    Delivery.recipient_address.ilike(search_term),
+                    Delivery.delivery_person.ilike(search_term),
+                    Delivery.payment_by.ilike(search_term)
+                )
+            )
+
+        
+
         # Get total count for pagination info
 
-        total_count = Delivery.query.count()
+        total_count = query.count()
 
         
 
         # Get deliveries for current page
 
-        recent_deliveries = Delivery.query.order_by(Delivery.created_at.desc()).offset(offset).limit(per_page).all()
+        recent_deliveries = query.order_by(Delivery.created_at.desc()).offset(offset).limit(per_page).all()
 
         
 

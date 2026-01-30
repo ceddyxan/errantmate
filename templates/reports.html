@@ -2796,120 +2796,180 @@ function applyCombinedFilters() {
 
 // Export Recent Deliveries to CSV
 window.exportRecentDeliveriesToCSV = function() {
-    // Get all filtered deliveries
-    const tbody = document.getElementById('recentDeliveriesBody');
-    const rows = tbody.querySelectorAll('tr');
-    
-    if (rows.length === 0 || (rows.length === 1 && rows[0].querySelector('td[colspan]'))) {
-        alert('No deliveries to export');
-        return;
-    }
-    
-    // Define CSV headers
-    const headers = [
-        'Ref #',
-        'Display ID', 
-        'Sender Name',
-        'Sender Phone',
-        'Recipient Name',
-        'Recipient Phone',
-        'Delivery Address',
-        'Delivery Person',
-        'Pickup',
-        'Amount',
-        'Status',
-        'Date',
-        'Time Ago'
-    ];
-    
-    // Convert table rows to CSV data
-    const csvData = [];
-    csvData.push(headers.join(','));
-    
-    rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length > 1) { // Skip empty rows or loading rows
-            const rowData = [];
-            
-            // Extract data from each cell
-            rowData.push('"' + (cells[0].textContent.trim() || '') + '"'); // Ref #
-            rowData.push('"' + (cells[1].textContent.trim() || '') + '"'); // Display ID
-            
-            // Extract sender info (name and phone)
-            const senderCell = cells[2];
-            const senderName = senderCell.querySelector('.font-medium')?.textContent.trim() || '';
-            const senderPhone = senderCell.querySelector('.text-xs')?.textContent.trim() || '';
-            rowData.push('"' + senderName + '"');
-            rowData.push('"' + senderPhone + '"');
-            
-            // Extract recipient info (name and phone)
-            const recipientCell = cells[3];
-            const recipientName = recipientCell.querySelector('.font-medium')?.textContent.trim() || '';
-            const recipientPhone = recipientCell.querySelector('.text-xs')?.textContent.trim() || '';
-            rowData.push('"' + recipientName + '"');
-            rowData.push('"' + recipientPhone + '"');
-            
-            rowData.push('"' + (cells[4].textContent.trim() || '') + '"'); // Delivery Address
-            rowData.push('"' + (cells[5].textContent.trim() || '') + '"'); // Delivery Person
-            
-            // Extract pickup method (remove badge styling)
-            const pickupCell = cells[6];
-            const pickupText = pickupCell.textContent.trim() || '';
-            rowData.push('"' + pickupText + '"');
-            
-            // Extract amount (remove KSh prefix)
-            const amountCell = cells[7];
-            const amountText = amountCell.textContent.replace('KSh', '').trim() || '0.00';
-            rowData.push('"' + amountText + '"');
-            
-            // Extract status (remove badge styling)
-            const statusCell = cells[8];
-            const statusText = statusCell.textContent.trim() || '';
-            rowData.push('"' + statusText + '"');
-            
-            // Extract date info (date and time ago)
-            const dateCell = cells[9];
-            const dateText = dateCell.querySelector('.font-medium')?.textContent.trim() || '';
-            const timeAgoText = dateCell.querySelector('.text-xs')?.textContent.trim() || '';
-            rowData.push('"' + dateText + '"');
-            rowData.push('"' + timeAgoText + '"');
-            
-            csvData.push(rowData.join(','));
-        }
-    });
-    
-    // Create CSV content
-    const csvContent = csvData.join('\n');
-    
-    // Create blob and download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    // Generate filename with timestamp
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
-    const filename = `recent_deliveries_${timestamp}.csv`;
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Show success message
+    // Show loading state
     const exportBtn = document.getElementById('exportCSVBtn');
     const originalText = exportBtn.innerHTML;
-    exportBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Exported!';
-    exportBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
-    exportBtn.classList.add('bg-green-500');
+    exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Loading...';
+    exportBtn.disabled = true;
     
-    setTimeout(() => {
-        exportBtn.innerHTML = originalText;
-        exportBtn.classList.remove('bg-green-500');
-        exportBtn.classList.add('bg-green-600', 'hover:bg-green-700');
-    }, 2000);
+    // Build API URL with current filters
+    let apiUrl = '/get_recent_deliveries?per_page=10000'; // Large number to get all records
+    
+    // Add period filter if not 'all'
+    if (currentFilters.period !== 'all') {
+        apiUrl += `&period=${currentFilters.period}`;
+    }
+    
+    // Add status filter if not 'all'
+    if (currentFilters.status !== 'all') {
+        apiUrl += `&status=${currentFilters.status}`;
+    }
+    
+    // Add search filter if present
+    if (currentFilters.search) {
+        apiUrl += `&search=${encodeURIComponent(currentFilters.search)}`;
+    }
+    
+    // Fetch all filtered data from backend
+    fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+            let deliveries = [];
+            
+            // Handle different response formats
+            if (data.deliveries && Array.isArray(data.deliveries)) {
+                deliveries = data.deliveries;
+            } else if (Array.isArray(data)) {
+                deliveries = data;
+            }
+            
+            // Apply client-side filtering if needed (for period filtering)
+            if (currentFilters.period !== 'all') {
+                deliveries = filterDeliveriesByPeriod(deliveries, currentFilters.period);
+            }
+            
+            // Apply client-side status filtering
+            if (currentFilters.status !== 'all') {
+                deliveries = deliveries.filter(delivery => 
+                    delivery.status === currentFilters.status
+                );
+            }
+            
+            // Apply client-side search filtering
+            if (currentFilters.search) {
+                const searchTerm = currentFilters.search.toLowerCase();
+                deliveries = deliveries.filter(delivery => {
+                    return (
+                        (delivery.display_id && delivery.display_id.toLowerCase().includes(searchTerm)) ||
+                        (delivery.sender_name && delivery.sender_name.toLowerCase().includes(searchTerm)) ||
+                        (delivery.sender_phone && delivery.sender_phone.toLowerCase().includes(searchTerm)) ||
+                        (delivery.recipient_name && delivery.recipient_name.toLowerCase().includes(searchTerm)) ||
+                        (delivery.recipient_phone && delivery.recipient_phone.toLowerCase().includes(searchTerm)) ||
+                        (delivery.recipient_address && delivery.recipient_address.toLowerCase().includes(searchTerm)) ||
+                        (delivery.delivery_person && delivery.delivery_person.toLowerCase().includes(searchTerm)) ||
+                        (delivery.payment_by && delivery.payment_by.toLowerCase().includes(searchTerm))
+                    );
+                });
+            }
+            
+            if (deliveries.length === 0) {
+                alert('No deliveries found matching your filters.');
+                // Reset button state
+                exportBtn.innerHTML = originalText;
+                exportBtn.disabled = false;
+                return;
+            }
+            
+            // Define CSV headers
+            const headers = [
+                'Ref #',
+                'Display ID', 
+                'Sender Name',
+                'Sender Phone',
+                'Recipient Name',
+                'Recipient Phone',
+                'Delivery Address',
+                'Delivery Person',
+                'Pickup',
+                'Amount',
+                'Status',
+                'Date',
+                'Time Ago'
+            ];
+            
+            // Convert deliveries data to CSV
+            const csvData = [];
+            csvData.push(headers.join(','));
+            
+            deliveries.forEach((delivery, index) => {
+                const rowData = [];
+                
+                // Extract data from delivery object
+                rowData.push('"' + (index + 1) + '"'); // Ref #
+                rowData.push('"' + (delivery.display_id || '') + '"'); // Display ID
+                rowData.push('"' + (delivery.sender_name || '') + '"'); // Sender Name
+                rowData.push('"' + (delivery.sender_phone || '') + '"'); // Sender Phone
+                rowData.push('"' + (delivery.recipient_name || '') + '"'); // Recipient Name
+                rowData.push('"' + (delivery.recipient_phone || '') + '"'); // Recipient Phone
+                rowData.push('"' + (delivery.recipient_address || '') + '"'); // Delivery Address
+                rowData.push('"' + (delivery.delivery_person || '') + '"'); // Delivery Person
+                rowData.push('"' + (delivery.payment_by || '') + '"'); // Pickup
+                rowData.push('"' + (delivery.amount ? delivery.amount.toFixed(2) : '0.00') + '"'); // Amount
+                rowData.push('"' + (delivery.status || '') + '"'); // Status
+                
+                // Format date
+                let dateText = '';
+                let timeAgoText = '';
+                if (delivery.created_at) {
+                    const createdDate = new Date(delivery.created_at);
+                    dateText = createdDate.toLocaleDateString() + ' ' + createdDate.toLocaleTimeString();
+                    timeAgoText = delivery.time_ago || getTimeAgo(createdDate);
+                }
+                rowData.push('"' + dateText + '"'); // Date
+                rowData.push('"' + timeAgoText + '"'); // Time Ago
+                
+                csvData.push(rowData.join(','));
+            });
+            
+            // Create CSV content
+            const csvContent = csvData.join('\n');
+            
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            // Generate filename with timestamp and filter info
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+            let filename = `recent_deliveries_${timestamp}.csv`;
+            
+            // Add filter info to filename if filters are active
+            const filterParts = [];
+            if (currentFilters.period !== 'all') filterParts.push(currentFilters.period);
+            if (currentFilters.status !== 'all') filterParts.push(currentFilters.status);
+            if (currentFilters.search) filterParts.push('search');
+            
+            if (filterParts.length > 0) {
+                filename = `recent_deliveries_${filterParts.join('_')}_${timestamp}.csv`;
+            }
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Show success message with count
+            exportBtn.innerHTML = `<i class="fas fa-check mr-2"></i>Exported ${deliveries.length}!`;
+            exportBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            exportBtn.classList.add('bg-green-500');
+            
+            setTimeout(() => {
+                exportBtn.innerHTML = originalText;
+                exportBtn.classList.remove('bg-green-500');
+                exportBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                exportBtn.disabled = false;
+            }, 2000);
+        })
+        .catch(error => {
+            console.error('Error exporting deliveries:', error);
+            alert('Error exporting deliveries. Please try again.');
+            // Reset button state
+            exportBtn.innerHTML = originalText;
+            exportBtn.disabled = false;
+        });
 };
 
 // Toggle Daily Deliveries section
