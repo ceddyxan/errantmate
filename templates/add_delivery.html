@@ -150,7 +150,7 @@
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <i class="fas fa-boxes text-gray-400"></i>
                                 </div>
-                                <input type="number" id="quantity" name="quantity" autocomplete="off" min="1" required
+                                <input type="number" id="quantity" name="quantity" autocomplete="off" min="1" value="1" required
                                        class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500"
                                        placeholder="1" list="autocompleteOff" role="presentation" autocorrect="off" autocapitalize="off" spellcheck="false">
                             </div>
@@ -176,7 +176,7 @@
                                 </div>
                                 <div>
                                     <span class="text-gray-600">Service Fee:</span>
-                                    <p class="font-semibold">KSh <span id="serviceFeeDisplay">50.00</span></p>
+                                    <p class="font-semibold">KSh <span id="serviceFeeDisplay">0.00</span></p>
                                 </div>
                                 <div>
                                     <span class="text-green-700 font-bold">Total Pay Amount:</span>
@@ -1994,20 +1994,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const amount = parseFloat(amountInput.value) || 0;
         const paymentBy = document.getElementById('payment_by').value;
         
-        // Set service fee based on payment method
-        let serviceFee;
-        if (paymentBy === 'Errant') {
-            serviceFee = 50;
-        } else if (paymentBy === 'Pickup Location') {
-            serviceFee = 30;
-        } else {
-            serviceFee = 50; // Default
-        }
+        // Set service fee based on payment method (0 by default)
+        let serviceFee = 0; // Default service fee is 0
         
         // Auto-set amount based on payment method if amount is 0 or empty
         let finalAmount = amount;
         if (amount === 0) {
-            finalAmount = serviceFee;
+            if (paymentBy === 'Errant') {
+                finalAmount = 50;
+            } else if (paymentBy === 'Pickup Location') {
+                finalAmount = 30;
+            }
             amountInput.value = finalAmount;
         }
         
@@ -2189,11 +2186,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-xs text-gray-600">Service Fee:</span>
-                                <span class="text-sm font-medium text-gray-900">KSh 50.00</span>
+                                <span class="text-sm font-medium text-gray-900">KSh 0.00</span>
                             </div>
                             <div class="flex justify-between border-t border-yellow-200 pt-2">
                                 <span class="text-sm font-bold text-gray-700">Total:</span>
-                                <span class="text-lg font-bold text-green-600">KSh ${(data.amount + 50).toFixed(2)}</span>
+                                <span class="text-lg font-bold text-green-600">KSh ${data.amount.toFixed(2)}</span>
                             </div>
                         </div>
                     </div>
