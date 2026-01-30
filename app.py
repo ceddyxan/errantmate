@@ -4259,15 +4259,10 @@ def api_get_senders():
         # Get unique sender names that contain the query (anywhere in the name)
 
         senders = db.session.query(Delivery.sender_name, Delivery.sender_phone)\
-
             .filter(Delivery.sender_name.ilike(f'%{query}%'))\
-
             .distinct()\
-
             .order_by(Delivery.sender_name)\
-
             .limit(10)\
-
             .all()
 
         
