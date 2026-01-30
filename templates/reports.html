@@ -430,7 +430,12 @@
         <div class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-lg transition-all duration-300">
             <div class="p-3">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-sm font-semibold text-gray-800">User Management</h3>
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-sm font-semibold text-gray-800">User Management</h3>
+                        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
+                            <i class="fas fa-key mr-1"></i>Password View Enabled
+                        </span>
+                    </div>
                     <div class="flex items-center gap-2">
                         <button onclick="showNewUserModal()" 
                                 class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors duration-200">
@@ -3963,10 +3968,28 @@ window.loadNewUsers = function() {
                         <div>
                             <div class="text-sm font-medium text-gray-800">${user.username}</div>
                             <div class="text-xs text-gray-500">${user.role} • ${user.created_at}</div>
+                            ${user.show_password ? `
+                                <div class="text-xs text-gray-400 mt-1">
+                                    <span class="font-mono bg-gray-800 text-green-400 px-1 py-0.5 rounded" id="hash-${user.id}">
+                                        ${user.password_hash.substring(0, 12)}...
+                                    </span>
+                                    <button onclick="togglePasswordHash(${user.id}, '${user.password_hash}')" 
+                                            class="ml-2 text-blue-600 hover:text-blue-800 text-xs underline">
+                                        Show Full
+                                    </button>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
                     ${user.can_edit ? `
                         <div class="flex items-center gap-1">
+                            ${user.show_password ? `
+                                <button onclick="copyPasswordHash(${user.id}, '${user.password_hash}')" 
+                                        class="text-green-600 hover:bg-green-100 p-1.5 rounded transition-colors"
+                                        title="Copy Password Hash">
+                                    <i class="fas fa-key text-xs"></i>
+                                </button>
+                            ` : ''}
                             <button onclick="editNewUser(${user.id}, '${user.username}', '${user.role}')" 
                                     class="text-blue-600 hover:bg-blue-100 p-1.5 rounded transition-colors"
                                     title="Edit">
@@ -4127,6 +4150,43 @@ window.refreshUsers = function() {
     const usersList = document.getElementById('newUsersList');
     usersList.innerHTML = '<div class="text-center text-gray-500 text-sm py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Refreshing...</div>';
     loadNewUsers();
+};
+
+// Password viewing functions
+window.togglePasswordHash = function(userId, fullHash) {
+    const hashElement = document.getElementById(`hash-${userId}`);
+    const button = event.target;
+    
+    if (hashElement.textContent.includes('...')) {
+        hashElement.textContent = fullHash;
+        hashElement.classList.remove('bg-gray-800', 'text-green-400');
+        hashElement.classList.add('bg-red-100', 'text-red-800', 'px-2', 'py-1');
+        button.textContent = 'Hide';
+        button.classList.remove('text-blue-600', 'hover:text-blue-800');
+        button.classList.add('text-red-600', 'hover:text-red-800');
+    } else {
+        hashElement.textContent = fullHash.substring(0, 12) + '...';
+        hashElement.classList.remove('bg-red-100', 'text-red-800', 'px-2', 'py-1');
+        hashElement.classList.add('bg-gray-800', 'text-green-400', 'px-1', 'py-0.5');
+        button.textContent = 'Show Full';
+        button.classList.remove('text-red-600', 'hover:text-red-800');
+        button.classList.add('text-blue-600', 'hover:text-blue-800');
+    }
+};
+
+window.copyPasswordHash = function(userId, passwordHash) {
+    navigator.clipboard.writeText(passwordHash).then(() => {
+        showNotification('Password hash copied to clipboard', 'success');
+    }).catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = passwordHash;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showNotification('Password hash copied to clipboard', 'success');
+    });
 };
 
 // ==================== END NEW USER MANAGEMENT SYSTEM ====================

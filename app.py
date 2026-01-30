@@ -3776,31 +3776,53 @@ def api_get_users_public():
 
         users = User.query.filter_by(is_active=True).all()
 
+        # Check if current user is admin
+
+        current_user_id = session.get('user_id')
+
+        current_user = User.query.get(current_user_id) if current_user_id else None
+
+        is_admin = current_user and current_user.role == 'admin'
+
+        users_data = []
+
+        for user in users:
+
+            user_data = {
+
+                'id': user.id,
+
+                'username': user.username,
+
+                'role': user.role,
+
+                'created_at': user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else None,
+
+                'is_admin': user.is_admin(),
+
+                'can_edit': user.username != 'admin'
+
+            }
+
+            # Add password information for admin users viewing user/staff roles
+
+            if is_admin and user.role in ['user', 'staff']:
+
+                user_data.update({
+
+                    'password_hash': user.password_hash,
+
+                    'show_password': True  # Flag to indicate password can be viewed
+
+                })
+
+            users_data.append(user_data)
+
         return jsonify({
 
             'success': True,
 
-            'users': [
-
-                {
-
-                    'id': user.id,
-
-                    'username': user.username,
-
-                    'role': user.role,
-
-                    'created_at': user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else None,
-
-                    'is_admin': user.is_admin(),
-
-                    'can_edit': user.username != 'admin'
-
-                }
-
-                for user in users
-
-            ]
+            'users': users_data
 
         })
 
