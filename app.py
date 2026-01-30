@@ -302,7 +302,7 @@ class Delivery(db.Model):
 class AuditLog(db.Model):
     __tablename__ = 'audit_log'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Allow NULL for failed attempts
     username = db.Column(db.String(80), nullable=False)
     action = db.Column(db.String(100), nullable=False)  # LOGIN, LOGOUT, CREATE, UPDATE, DELETE, VIEW, EXPORT
     resource_type = db.Column(db.String(50), nullable=True)  # USER, DELIVERY, REPORT
@@ -570,7 +570,7 @@ def get_time_ago(created_at):
 def log_audit(action, resource_type=None, resource_id=None, details=None, user_id=None, username=None):
     """Log an audit event for security monitoring."""
     try:
-        # Get user information from session or parameters
+        # Get user information from parameters first, then session
         if user_id is None:
             user_id = session.get('user_id')
         if username is None:
@@ -580,17 +580,22 @@ def log_audit(action, resource_type=None, resource_id=None, details=None, user_i
         ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'Unknown'))
         user_agent = request.headers.get('User-Agent', 'Unknown')[:500]  # Limit length
         
-        # Create audit log entry
-        audit_log = AuditLog(
-            user_id=user_id,
-            username=username,
-            action=action,
-            resource_type=resource_type,
-            resource_id=str(resource_id) if resource_id else None,
-            details=details,
-            ip_address=ip_address,
-            user_agent=user_agent
-        )
+        # Create audit log entry - only set user_id if we have a valid value
+        audit_data = {
+            'username': username,
+            'action': action,
+            'resource_type': resource_type,
+            'resource_id': str(resource_id) if resource_id else None,
+            'details': details,
+            'ip_address': ip_address,
+            'user_agent': user_agent
+        }
+        
+        # Only add user_id if it's not None
+        if user_id is not None:
+            audit_data['user_id'] = user_id
+        
+        audit_log = AuditLog(**audit_data)
         
         db.session.add(audit_log)
         db.session.commit()
@@ -609,7 +614,8 @@ def log_login(user, success=True, reason=None):
     else:
         details += f" - Role: {user.role}"
     
-    log_audit(action, resource_type="USER", resource_id=user.id, details=details)
+    log_audit(action, resource_type="USER", resource_id=user.id, details=details, 
+             user_id=user.id, username=user.username)
 
 def log_logout():
     """Log logout events."""
@@ -1088,7 +1094,6 @@ def login():
         
         # Check rate limiting
         if is_rate_limited(client_ip):
-            app.logger.warning(f'Rate limit exceeded for IP: {client_ip}')
             flash('Too many login attempts. Please try again later.', 'danger')
             return render_template('login.html')
         
