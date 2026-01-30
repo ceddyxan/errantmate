@@ -709,11 +709,20 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden  hover:shadow-lg">
         <div class="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 py-4 border-b border-gray-200">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <button id="toggleDeliveries" 
-                        class="flex items-center text-blue-600 hover:text-blue-800 focus:outline-none transition-colors duration-200">
-                    <i class="fas fa-chevron-down mr-2 transition-transform duration-200" id="toggleIcon"></i>
-                    <span class="text-lg font-semibold">Recent Deliveries</span>
-                </button>
+                <div class="flex items-center gap-3">
+                    <button id="toggleDeliveries" 
+                            class="flex items-center text-blue-600 hover:text-blue-800 focus:outline-none transition-colors duration-200">
+                        <i class="fas fa-chevron-down mr-2 transition-transform duration-200" id="toggleIcon"></i>
+                        <span class="text-lg font-semibold">Recent Deliveries</span>
+                    </button>
+                    <button id="exportCSVBtn" 
+                            onclick="exportRecentDeliveriesToCSV()" 
+                            class="flex items-center px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors duration-200"
+                            title="Export to CSV">
+                        <i class="fas fa-download mr-2"></i>
+                        Export CSV
+                    </button>
+                </div>
                 
                 <!-- Recent Deliveries Filter -->
                 <div id="recentDeliveriesFilter" class="hidden">
@@ -2783,6 +2792,124 @@ function applyCombinedFilters() {
     
     updateActiveFilters();
     renumberVisibleRows();
+};
+
+// Export Recent Deliveries to CSV
+window.exportRecentDeliveriesToCSV = function() {
+    // Get all filtered deliveries
+    const tbody = document.getElementById('recentDeliveriesBody');
+    const rows = tbody.querySelectorAll('tr');
+    
+    if (rows.length === 0 || (rows.length === 1 && rows[0].querySelector('td[colspan]'))) {
+        alert('No deliveries to export');
+        return;
+    }
+    
+    // Define CSV headers
+    const headers = [
+        'Ref #',
+        'Display ID', 
+        'Sender Name',
+        'Sender Phone',
+        'Recipient Name',
+        'Recipient Phone',
+        'Delivery Address',
+        'Delivery Person',
+        'Pickup',
+        'Amount',
+        'Status',
+        'Date',
+        'Time Ago'
+    ];
+    
+    // Convert table rows to CSV data
+    const csvData = [];
+    csvData.push(headers.join(','));
+    
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length > 1) { // Skip empty rows or loading rows
+            const rowData = [];
+            
+            // Extract data from each cell
+            rowData.push('"' + (cells[0].textContent.trim() || '') + '"'); // Ref #
+            rowData.push('"' + (cells[1].textContent.trim() || '') + '"'); // Display ID
+            
+            // Extract sender info (name and phone)
+            const senderCell = cells[2];
+            const senderName = senderCell.querySelector('.font-medium')?.textContent.trim() || '';
+            const senderPhone = senderCell.querySelector('.text-xs')?.textContent.trim() || '';
+            rowData.push('"' + senderName + '"');
+            rowData.push('"' + senderPhone + '"');
+            
+            // Extract recipient info (name and phone)
+            const recipientCell = cells[3];
+            const recipientName = recipientCell.querySelector('.font-medium')?.textContent.trim() || '';
+            const recipientPhone = recipientCell.querySelector('.text-xs')?.textContent.trim() || '';
+            rowData.push('"' + recipientName + '"');
+            rowData.push('"' + recipientPhone + '"');
+            
+            rowData.push('"' + (cells[4].textContent.trim() || '') + '"'); // Delivery Address
+            rowData.push('"' + (cells[5].textContent.trim() || '') + '"'); // Delivery Person
+            
+            // Extract pickup method (remove badge styling)
+            const pickupCell = cells[6];
+            const pickupText = pickupCell.textContent.trim() || '';
+            rowData.push('"' + pickupText + '"');
+            
+            // Extract amount (remove KSh prefix)
+            const amountCell = cells[7];
+            const amountText = amountCell.textContent.replace('KSh', '').trim() || '0.00';
+            rowData.push('"' + amountText + '"');
+            
+            // Extract status (remove badge styling)
+            const statusCell = cells[8];
+            const statusText = statusCell.textContent.trim() || '';
+            rowData.push('"' + statusText + '"');
+            
+            // Extract date info (date and time ago)
+            const dateCell = cells[9];
+            const dateText = dateCell.querySelector('.font-medium')?.textContent.trim() || '';
+            const timeAgoText = dateCell.querySelector('.text-xs')?.textContent.trim() || '';
+            rowData.push('"' + dateText + '"');
+            rowData.push('"' + timeAgoText + '"');
+            
+            csvData.push(rowData.join(','));
+        }
+    });
+    
+    // Create CSV content
+    const csvContent = csvData.join('\n');
+    
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+    const filename = `recent_deliveries_${timestamp}.csv`;
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Show success message
+    const exportBtn = document.getElementById('exportCSVBtn');
+    const originalText = exportBtn.innerHTML;
+    exportBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Exported!';
+    exportBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+    exportBtn.classList.add('bg-green-500');
+    
+    setTimeout(() => {
+        exportBtn.innerHTML = originalText;
+        exportBtn.classList.remove('bg-green-500');
+        exportBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+    }, 2000);
 };
 
 // Toggle Daily Deliveries section
