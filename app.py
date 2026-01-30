@@ -2316,6 +2316,34 @@ def reports():
 
 
 
+@app.route('/rent_shelf')
+
+@login_required
+
+@database_required
+
+def rent_shelf():
+
+    """Render the rent a shelf page - Available to all users."""
+
+    try:
+
+        # Log page view
+
+        log_page_view("Rent a Shelf")
+
+        
+
+        return render_template('rent_shelf.html')
+
+    except Exception as e:
+
+        app.logger.error(f"Error loading rent shelf page: {str(e)}", exc_info=True)
+
+        return render_template('rent_shelf.html')
+
+
+
 @app.route('/get_delivery_persons')
 
 @staff_required

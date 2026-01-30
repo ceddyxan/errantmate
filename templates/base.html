@@ -851,6 +851,9 @@
                         <a href="{{ url_for('add_delivery') }}" class="nav-link {{ 'bg-green-700 shadow-md' if request.endpoint == 'add_delivery' else 'hover:bg-green-700' }}">
                             <i class="fas fa-plus mr-2 text-sm"></i>Add Delivery
                         </a>
+                        <a href="{{ url_for('rent_shelf') }}" class="nav-link {{ 'bg-green-700 shadow-md' if request.endpoint == 'rent_shelf' else 'hover:bg-green-700' }}">
+                            <i class="fas fa-warehouse mr-2 text-sm"></i>Rent a Shelf
+                        </a>
                         {% if session.user_role == 'admin' %}
                         <a href="{{ url_for('reports') }}" class="nav-link {{ 'bg-green-700 shadow-md' if request.endpoint == 'reports' else 'hover:bg-green-700' }}">
                             <i class="fas fa-chart-line mr-2 text-sm"></i>Reports
@@ -916,6 +919,10 @@
             <a href="{{ url_for('add_delivery') }}" class="flex flex-col items-center p-2 text-white {{ 'text-green-200' if request.endpoint == 'add_delivery' else '' }}">
                 <i class="fas fa-plus text-base"></i>
                 <span class="text-xs mt-1">Add</span>
+            </a>
+            <a href="{{ url_for('rent_shelf') }}" class="flex flex-col items-center p-2 text-white {{ 'text-green-200' if request.endpoint == 'rent_shelf' else '' }}">
+                <i class="fas fa-warehouse text-base"></i>
+                <span class="text-xs mt-1">Shelf</span>
             </a>
             {% if session.user_role == 'admin' %}
             <a href="{{ url_for('reports') }}" class="flex flex-col items-center p-2 text-white {{ 'text-green-200' if request.endpoint == 'reports' else '' }}">
