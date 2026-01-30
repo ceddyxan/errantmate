@@ -1762,7 +1762,7 @@ def add_delivery():
 
                 expenses=0.0,  # Will be set later via Quick Actions
 
-                payment_by='M-Pesa',  # Always M-Pesa
+                payment_by=request.form.get('payment_by', 'M-Pesa'),  # Use form value or default
 
                 status=request.form.get('status', 'Pending'),
 
@@ -1846,7 +1846,7 @@ def add_delivery():
 
                         expenses=0.0,  # Will be set later via Quick Actions
 
-                        payment_by='M-Pesa',  # Always M-Pesa
+                        payment_by=request.form.get('payment_by', 'M-Pesa'),  # Use form value or default
 
                         status=request.form.get('status', 'Pending'),
 
@@ -3147,7 +3147,7 @@ def update_delivery_details(delivery_id):
 
         delivery.amount = data.get('amount', delivery.amount)
 
-        delivery.payment_by = 'M-Pesa'  # Always M-Pesa
+        delivery.payment_by = data.get('payment_by', delivery.payment_by)  # Use form value or keep existing
 
         delivery.status = data.get('status', delivery.status)
 
