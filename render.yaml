@@ -4,10 +4,10 @@ services:
     name: errantmate
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python init_render_db.py
     startCommand: python app.py
     healthCheckPath: /health
-    # Updated: 2025-01-25 - Fix staff role validation
+    # Updated: 2026-02-01 - Add shelf rental system with database initialization
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
