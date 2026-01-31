@@ -270,6 +270,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadShelves();
             updateStats();
+            
+            // Add form submission handler
+            document.getElementById('rentForm').addEventListener('submit', handleRentShelf);
         });
 
         function loadShelves(filteredShelves = null) {
@@ -450,6 +453,102 @@
         function closeRentModal() {
             document.getElementById('rentModal').classList.add('hidden');
             document.getElementById('rentForm').reset();
+        }
+
+        function handleRentShelf(event) {
+            event.preventDefault();
+            
+            // Get form data
+            const shelfId = document.getElementById('shelfNumber').value;
+            const customerName = document.getElementById('customerName').value;
+            const customerPhone = document.getElementById('customerPhone').value;
+            const monthlyFee = document.getElementById('monthlyFee').value;
+            const itemsDescription = document.getElementById('itemsDescription').value;
+            const rentalPeriod = document.getElementById('rentalPeriod').value;
+            
+            // Find and update the shelf in the data array
+            const shelf = shelves.find(s => s.id === shelfId);
+            if (shelf) {
+                // Update shelf status to occupied
+                shelf.status = 'occupied';
+                shelf.customer = customerName;
+                shelf.phone = customerPhone;
+                shelf.rentedDate = new Date().toISOString().split('T')[0]; // Current date
+                shelf.itemsDescription = itemsDescription;
+                shelf.rentalPeriod = rentalPeriod;
+                
+                // Remove any maintenance reason if it existed
+                delete shelf.reason;
+                
+                // Show success message
+                showSuccessMessage(`Shelf ${shelfId} successfully rented to ${customerName}!`);
+                
+                // Close modal
+                closeRentModal();
+                
+                // Refresh all displays immediately
+                loadShelves();
+                updateStats();
+                
+                // If admin/staff, also refresh the shelf management card in reports
+                if (currentUserRole === 'admin' || currentUserRole === 'staff') {
+                    // Update the shelf management card if it exists
+                    updateShelfManagementCard();
+                }
+            }
+        }
+
+        function showSuccessMessage(message) {
+            // Create success notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300';
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        function updateShelfManagementCard() {
+            // Update the shelf management card in reports if it exists
+            const availableCount = document.getElementById('availableShelvesCount');
+            const occupiedCount = document.getElementById('occupiedShelvesCount');
+            const maintenanceCount = document.getElementById('maintenanceShelvesCount');
+            const revenueDisplay = document.getElementById('monthlyRevenueDisplay');
+            
+            if (availableCount) {
+                const available = shelves.filter(s => s.status === 'available').length;
+                availableCount.textContent = available;
+            }
+            
+            if (occupiedCount) {
+                const occupied = shelves.filter(s => s.status === 'occupied').length;
+                occupiedCount.textContent = occupied;
+            }
+            
+            if (maintenanceCount) {
+                const maintenance = shelves.filter(s => s.status === 'maintenance').length;
+                maintenanceCount.textContent = maintenance;
+            }
+            
+            if (revenueDisplay) {
+                const revenue = shelves.filter(s => s.status === 'occupied').reduce((sum, s) => sum + s.price, 0);
+                revenueDisplay.textContent = `KSh ${revenue.toLocaleString()}`;
+            }
         }
 
         function rentShelf(shelfId) {
