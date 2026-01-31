@@ -152,7 +152,7 @@
                             <div class="ml-5 w-0 flex-1">
                                 <dl>
                                     <dt class="text-sm font-medium text-gray-500 truncate">Monthly Revenue</dt>
-                                    <dd class="text-lg font-medium text-gray-900" id="monthlyRevenue">KSh 8,000</dd>
+                                    <dd class="text-lg font-medium text-gray-900" id="monthlyRevenue">KSh 4,600</dd>
                                 </dl>
                             </div>
                         </div>
@@ -210,7 +210,7 @@
                     </div>
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Monthly Fee (KSh)</label>
-                        <input type="number" id="monthlyFee" required min="0" step="100" value="1000" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" id="monthlyFee" required min="0" step="100" value="800" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Items Description</label>
@@ -241,18 +241,18 @@
     <script>
         // Sample shelf data
         const shelves = [
-            { id: 'A-01', status: 'available', size: 'Small', price: 1000 },
-            { id: 'A-02', status: 'occupied', customer: 'John Doe', phone: '0712345678', price: 1000, rentedDate: '2024-01-15' },
-            { id: 'A-03', status: 'available', size: 'Medium', price: 1500 },
-            { id: 'A-04', status: 'maintenance', reason: 'Repair needed', price: 1500 },
-            { id: 'B-01', status: 'occupied', customer: 'Jane Smith', phone: '0723456789', price: 2000, rentedDate: '2024-01-10' },
-            { id: 'B-02', status: 'available', size: 'Large', price: 2000 },
-            { id: 'B-03', status: 'occupied', customer: 'Mike Johnson', phone: '0734567890', price: 2000, rentedDate: '2024-01-20' },
-            { id: 'C-01', status: 'available', size: 'Small', price: 1000 },
-            { id: 'C-02', status: 'occupied', customer: 'Sarah Wilson', phone: '0745678901', price: 1500, rentedDate: '2024-01-05' },
-            { id: 'C-03', status: 'available', size: 'Medium', price: 1500 },
-            { id: 'D-01', status: 'maintenance', reason: 'Cleaning', price: 2500 },
-            { id: 'D-02', status: 'occupied', customer: 'Tom Brown', phone: '0756789012', price: 2500, rentedDate: '2024-01-25' }
+            { id: 'A-01', status: 'available', size: 'Small', price: 800 },
+            { id: 'A-02', status: 'occupied', customer: 'John Doe', phone: '0712345678', price: 800, rentedDate: '2024-01-15' },
+            { id: 'A-03', status: 'available', size: 'Small', price: 800 },
+            { id: 'A-04', status: 'maintenance', reason: 'Repair needed', price: 800 },
+            { id: 'B-01', status: 'occupied', customer: 'Jane Smith', phone: '0723456789', price: 1000, rentedDate: '2024-01-10' },
+            { id: 'B-02', status: 'available', size: 'Large', price: 1000 },
+            { id: 'B-03', status: 'occupied', customer: 'Mike Johnson', phone: '0734567890', price: 1000, rentedDate: '2024-01-20' },
+            { id: 'C-01', status: 'available', size: 'Small', price: 800 },
+            { id: 'C-02', status: 'occupied', customer: 'Sarah Wilson', phone: '0745678901', price: 800, rentedDate: '2024-01-05' },
+            { id: 'C-03', status: 'available', size: 'Large', price: 1000 },
+            { id: 'D-01', status: 'maintenance', reason: 'Cleaning', price: 1000 },
+            { id: 'D-02', status: 'occupied', customer: 'Tom Brown', phone: '0756789012', price: 1000, rentedDate: '2024-01-25' }
         ];
 
         // Initialize the page
