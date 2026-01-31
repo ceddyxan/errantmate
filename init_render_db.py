@@ -14,20 +14,76 @@ def init_render_database():
     print("🚀 Initializing ErrantMate database on Render.com...")
     
     try:
-        from app import app, db, Shelf
+        # Import here to avoid import errors if packages are missing
+        print("📦 Importing required packages...")
+        from flask import Flask
+        from flask_sqlalchemy import SQLAlchemy
+        from sqlalchemy import inspect, text
+        
+        # Create minimal Flask app for database operations
+        app = Flask(__name__)
+        
+        # Get database URL from environment
+        database_url = os.environ.get('DATABASE_URL')
+        if not database_url:
+            print("❌ DATABASE_URL not found in environment")
+            return False
+            
+        print(f"✅ Database URL found: {database_url.split('@')[0] if '@' in database_url else 'local'}")
+        
+        # Configure database
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        
+        # Initialize database
+        db = SQLAlchemy(app)
+        
+        # Define Shelf model (minimal version for initialization)
+        class Shelf(db.Model):
+            __tablename__ = 'shelf'
+            id = db.Column(db.String(10), primary_key=True)
+            status = db.Column(db.String(20), default='available')
+            size = db.Column(db.String(10), nullable=False)
+            price = db.Column(db.Integer, nullable=False)
+            customer_name = db.Column(db.String(100), nullable=True)
+            customer_phone = db.Column(db.String(20), nullable=True)
+            rented_date = db.Column(db.Date, nullable=True)
+            items_description = db.Column(db.Text, nullable=True)
+            rental_period = db.Column(db.Integer, nullable=True)
+            maintenance_reason = db.Column(db.String(200), nullable=True)
+            created_at = db.Column(db.DateTime, default=datetime.utcnow)
+            updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
         
         with app.app_context():
+            # Test database connection
+            print("🔗 Testing database connection...")
+            try:
+                db.engine.execute(text('SELECT 1'))
+                print("✅ Database connection successful")
+            except Exception as e:
+                print(f"❌ Database connection failed: {str(e)}")
+                return False
+            
             # Create tables
             print("📋 Creating database tables...")
-            db.create_all()
-            print("✅ Database tables created successfully")
+            try:
+                db.create_all()
+                print("✅ Database tables created successfully")
+            except Exception as e:
+                print(f"❌ Table creation failed: {str(e)}")
+                return False
             
             # Check if shelves already exist
-            existing_count = Shelf.query.count()
-            if existing_count > 0:
-                print(f"ℹ️  Found {existing_count} existing shelves")
-                print("✅ Database already initialized")
-                return True
+            print("🔍 Checking existing data...")
+            try:
+                existing_count = Shelf.query.count()
+                if existing_count > 0:
+                    print(f"ℹ️  Found {existing_count} existing shelves")
+                    print("✅ Database already initialized")
+                    return True
+            except Exception as e:
+                print(f"⚠️  Could not check existing data: {str(e)}")
+                # Continue with initialization anyway
             
             # Add sample shelf data
             print("📦 Adding sample shelf data...")
@@ -54,29 +110,47 @@ def init_render_database():
             ]
             
             # Add shelves to database
+            shelves_added = 0
             for data in shelf_data:
-                shelf = Shelf(**data)
-                db.session.add(shelf)
+                try:
+                    shelf = Shelf(**data)
+                    db.session.add(shelf)
+                    shelves_added += 1
+                except Exception as e:
+                    print(f"⚠️  Could not add shelf {data.get('id', 'unknown')}: {str(e)}")
             
-            db.session.commit()
-            
-            print(f"✅ Successfully initialized {len(shelf_data)} shelves")
+            try:
+                db.session.commit()
+                print(f"✅ Successfully added {shelves_added} shelves to database")
+            except Exception as e:
+                print(f"❌ Failed to commit shelves: {str(e)}")
+                db.session.rollback()
+                return False
             
             # Display statistics
-            available = Shelf.query.filter_by(status='available').count()
-            occupied = Shelf.query.filter_by(status='occupied').count()
-            maintenance = Shelf.query.filter_by(status='maintenance').count()
-            revenue = sum(shelf.price for shelf in Shelf.query.filter_by(status='occupied').all())
-            
-            print(f"📊 Database Statistics:")
-            print(f"   Available: {available}")
-            print(f"   Occupied: {occupied}")
-            print(f"   Maintenance: {maintenance}")
-            print(f"   Monthly Revenue: KSh {revenue}")
+            try:
+                available = Shelf.query.filter_by(status='available').count()
+                occupied = Shelf.query.filter_by(status='occupied').count()
+                maintenance = Shelf.query.filter_by(status='maintenance').count()
+                total = Shelf.query.count()
+                revenue = sum(shelf.price for shelf in Shelf.query.filter_by(status='occupied').all())
+                
+                print(f"📊 Database Statistics:")
+                print(f"   Total Shelves: {total}")
+                print(f"   Available: {available}")
+                print(f"   Occupied: {occupied}")
+                print(f"   Maintenance: {maintenance}")
+                print(f"   Monthly Revenue: KSh {revenue}")
+            except Exception as e:
+                print(f"⚠️  Could not calculate statistics: {str(e)}")
             
             print("🎉 Render.com database initialization completed!")
             return True
             
+    except ImportError as e:
+        print(f"❌ Import error: {str(e)}")
+        print("🔧 Please check requirements.txt for missing packages")
+        return False
     except Exception as e:
         print(f"❌ Database initialization failed: {str(e)}")
         return False
