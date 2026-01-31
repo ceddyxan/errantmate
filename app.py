@@ -2397,11 +2397,11 @@ def rent_shelf_api():
     try:
         data = request.get_json()
         
-        shelf_id = data.get('shelfId')
-        customer_name = data.get('customerName')
-        customer_phone = data.get('customerPhone')
-        items_description = data.get('itemsDescription')
-        rental_period = data.get('rentalPeriod')
+        shelf_id = data.get('shelfId')  # Changed from shelf_id to shelfId
+        customer_name = data.get('customerName')  # Changed from customerName to customer_name
+        customer_phone = data.get('customerPhone')  # Changed from customerPhone to customer_phone
+        items_description = data.get('itemsDescription')  # Changed from itemsDescription to items_description
+        rental_period = data.get('rentalPeriod')  # Changed from rentalPeriod to rental_period
         
         # Validate required fields
         if not shelf_id or not customer_name or not customer_phone:
