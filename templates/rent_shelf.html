@@ -165,6 +165,7 @@
         <div class="px-4 py-6 sm:px-0">
             <div class="bg-white shadow rounded-lg p-4">
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                    {% if session.user_role == 'admin' or session.user_role == 'staff' %}
                     <div class="flex items-center gap-3">
                         <label class="text-sm font-medium text-gray-700">Filter by Status:</label>
                         <select id="statusFilter" onchange="filterShelves()" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -174,9 +175,10 @@
                             <option value="maintenance">Maintenance</option>
                         </select>
                     </div>
+                    {% endif %}
                     <div class="flex items-center gap-3">
                         <label class="text-sm font-medium text-gray-700">Search:</label>
-                        <input type="text" id="searchInput" placeholder="Search by shelf ID or customer..." onkeyup="searchShelves()" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="searchInput" placeholder="{% if session.user_role == 'user' %}Search by shelf ID...{% else %}Search by shelf ID or customer...{% endif %}" onkeyup="searchShelves()" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
             </div>
@@ -239,6 +241,9 @@
     </div>
 
     <script>
+        // User role from session
+        const currentUserRole = '{{ session.user_role or "user" }}';
+        
         // Sample shelf data
         const shelves = [
             { id: 'A-01', status: 'available', size: 'Small', price: 800 },
@@ -263,7 +268,13 @@
 
         function loadShelves(filteredShelves = null) {
             const grid = document.getElementById('shelvesGrid');
-            const shelvesToDisplay = filteredShelves || shelves;
+            let shelvesToDisplay = filteredShelves || shelves;
+            
+            // Role-based filtering: Users can only see available shelves
+            if (currentUserRole === 'user') {
+                shelvesToDisplay = shelvesToDisplay.filter(shelf => shelf.status === 'available');
+            }
+            // Admin and Staff can see all shelves (no filtering)
             
             grid.innerHTML = '';
             
@@ -354,10 +365,21 @@
         }
 
         function updateStats() {
-            const available = shelves.filter(s => s.status === 'available').length;
-            const occupied = shelves.filter(s => s.status === 'occupied').length;
-            const maintenance = shelves.filter(s => s.status === 'maintenance').length;
-            const revenue = shelves.filter(s => s.status === 'occupied').reduce((sum, s) => sum + s.price, 0);
+            let available, occupied, maintenance, revenue;
+            
+            if (currentUserRole === 'user') {
+                // Users only see available shelves
+                available = shelves.filter(s => s.status === 'available').length;
+                occupied = 0;
+                maintenance = 0;
+                revenue = 0;
+            } else {
+                // Admin and Staff see all statistics
+                available = shelves.filter(s => s.status === 'available').length;
+                occupied = shelves.filter(s => s.status === 'occupied').length;
+                maintenance = shelves.filter(s => s.status === 'maintenance').length;
+                revenue = shelves.filter(s => s.status === 'occupied').reduce((sum, s) => sum + s.price, 0);
+            }
 
             document.getElementById('availableCount').textContent = available;
             document.getElementById('occupiedCount').textContent = occupied;
@@ -371,10 +393,12 @@
             
             let filtered = shelves;
             
+            // Apply status filter
             if (status !== 'all') {
                 filtered = filtered.filter(shelf => shelf.status === status);
             }
             
+            // Apply search filter
             if (searchTerm) {
                 filtered = filtered.filter(shelf => 
                     shelf.id.toLowerCase().includes(searchTerm) ||
@@ -382,6 +406,7 @@
                 );
             }
             
+            // Apply role-based filtering (this will be applied again in loadShelves for consistency)
             loadShelves(filtered);
         }
 
