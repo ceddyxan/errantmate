@@ -636,7 +636,24 @@ class AuditLog(db.Model):
 
         return f'<AuditLog {self.action} by {self.username} at {self.timestamp}>'
 
-
+class Shelf(db.Model):
+    __tablename__ = 'shelf'
+    
+    id = db.Column(db.String(10), primary_key=True)  # e.g., A-01, B-02
+    status = db.Column(db.String(20), default='available')  # available, occupied, maintenance
+    size = db.Column(db.String(10), nullable=False)  # Small, Large
+    price = db.Column(db.Integer, nullable=False)  # Monthly fee in KSh
+    customer_name = db.Column(db.String(100), nullable=True)
+    customer_phone = db.Column(db.String(20), nullable=True)
+    rented_date = db.Column(db.Date, nullable=True)
+    items_description = db.Column(db.Text, nullable=True)
+    rental_period = db.Column(db.Integer, nullable=True)  # in months
+    maintenance_reason = db.Column(db.String(200), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<Shelf {self.id} - {self.status}>'
 
 def generate_display_id():
 
@@ -2341,6 +2358,117 @@ def rent_shelf():
         app.logger.error(f"Error loading rent shelf page: {str(e)}", exc_info=True)
 
         return render_template('rent_shelf.html')
+
+@app.route('/api/shelves', methods=['GET'])
+@login_required
+@database_required
+def get_shelves():
+    """Get all shelves with role-based filtering."""
+    try:
+        shelves = Shelf.query.all()
+        shelves_data = []
+        
+        for shelf in shelves:
+            shelf_dict = {
+                'id': shelf.id,
+                'status': shelf.status,
+                'size': shelf.size,
+                'price': shelf.price,
+                'customer': shelf.customer_name,
+                'phone': shelf.customer_phone,
+                'rentedDate': shelf.rented_date.strftime('%Y-%m-%d') if shelf.rented_date else None,
+                'itemsDescription': shelf.items_description,
+                'rentalPeriod': shelf.rental_period,
+                'reason': shelf.maintenance_reason
+            }
+            shelves_data.append(shelf_dict)
+        
+        return jsonify(shelves_data), 200
+        
+    except Exception as e:
+        app.logger.error(f"Error fetching shelves: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+@app.route('/api/shelves/rent', methods=['POST'])
+@login_required
+@database_required
+def rent_shelf_api():
+    """Rent a shelf - update shelf status and customer information."""
+    try:
+        data = request.get_json()
+        
+        shelf_id = data.get('shelfId')
+        customer_name = data.get('customerName')
+        customer_phone = data.get('customerPhone')
+        items_description = data.get('itemsDescription')
+        rental_period = data.get('rentalPeriod')
+        
+        # Validate required fields
+        if not shelf_id or not customer_name or not customer_phone:
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        # Find the shelf
+        shelf = Shelf.query.filter_by(id=shelf_id).first()
+        if not shelf:
+            return jsonify({'success': False, 'error': 'Shelf not found'}), 404
+        
+        # Check if shelf is available
+        if shelf.status != 'available':
+            return jsonify({'success': False, 'error': 'Shelf is not available'}), 400
+        
+        # Update shelf information
+        shelf.status = 'occupied'
+        shelf.customer_name = customer_name
+        shelf.customer_phone = customer_phone
+        shelf.rented_date = datetime.utcnow().date()
+        shelf.items_description = items_description
+        shelf.rental_period = rental_period
+        shelf.maintenance_reason = None  # Clear any maintenance reason
+        shelf.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        # Log the action
+        log_action(
+            username=session.get('username', 'unknown'),
+            action=f"Rented shelf {shelf_id} to {customer_name}",
+            details=f"Phone: {customer_phone}, Period: {rental_period} months"
+        )
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Shelf {shelf_id} successfully rented to {customer_name}'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error renting shelf: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+@app.route('/api/shelves/stats', methods=['GET'])
+@login_required
+@database_required
+def get_shelf_stats():
+    """Get shelf statistics for reports."""
+    try:
+        available = Shelf.query.filter_by(status='available').count()
+        occupied = Shelf.query.filter_by(status='occupied').count()
+        maintenance = Shelf.query.filter_by(status='maintenance').count()
+        
+        # Calculate monthly revenue from occupied shelves
+        occupied_shelves = Shelf.query.filter_by(status='occupied').all()
+        revenue = sum(shelf.price for shelf in occupied_shelves)
+        
+        return jsonify({
+            'available': available,
+            'occupied': occupied,
+            'maintenance': maintenance,
+            'revenue': revenue
+        }), 200
+        
+    except Exception as e:
+        app.logger.error(f"Error fetching shelf stats: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
 
 

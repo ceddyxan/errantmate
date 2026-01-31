@@ -250,26 +250,53 @@
         // User role from session
         const currentUserRole = '{{ session.user_role or "user" }}';
         
-        // Sample shelf data
-        const shelves = [
-            { id: 'A-01', status: 'available', size: 'Small', price: 800 },
-            { id: 'A-02', status: 'occupied', customer: 'John Doe', phone: '0712345678', size: 'Small', price: 800, rentedDate: '2024-01-15' },
-            { id: 'A-03', status: 'available', size: 'Small', price: 800 },
-            { id: 'A-04', status: 'maintenance', reason: 'Repair needed', size: 'Small', price: 800 },
-            { id: 'B-01', status: 'occupied', customer: 'Jane Smith', phone: '0723456789', size: 'Large', price: 1000, rentedDate: '2024-01-10' },
-            { id: 'B-02', status: 'available', size: 'Large', price: 1000 },
-            { id: 'B-03', status: 'occupied', customer: 'Mike Johnson', phone: '0734567890', size: 'Large', price: 1000, rentedDate: '2024-01-20' },
-            { id: 'C-01', status: 'available', size: 'Small', price: 800 },
-            { id: 'C-02', status: 'occupied', customer: 'Sarah Wilson', phone: '0745678901', size: 'Small', price: 800, rentedDate: '2024-01-05' },
-            { id: 'C-03', status: 'available', size: 'Large', price: 1000 },
-            { id: 'D-01', status: 'maintenance', reason: 'Cleaning', size: 'Large', price: 1000 },
-            { id: 'D-02', status: 'occupied', customer: 'Tom Brown', phone: '0756789012', size: 'Large', price: 1000, rentedDate: '2024-01-25' }
-        ];
+        // Shelf data will be loaded from API
+        let shelves = [];
+
+        // Load shelves from API
+        async function loadShelvesFromAPI() {
+            try {
+                const response = await fetch('/api/shelves');
+                if (response.ok) {
+                    shelves = await response.json();
+                    loadShelves();
+                    updateStats();
+                } else {
+                    console.error('Failed to load shelves');
+                    // Fallback to sample data if API fails
+                    loadSampleData();
+                }
+            } catch (error) {
+                console.error('Error loading shelves:', error);
+                // Fallback to sample data if API fails
+                loadSampleData();
+            }
+        }
+
+        // Fallback sample data
+        function loadSampleData() {
+            shelves = [
+                { id: 'A-01', status: 'available', size: 'Small', price: 800 },
+                { id: 'A-02', status: 'occupied', customer: 'John Doe', phone: '0712345678', size: 'Small', price: 800, rentedDate: '2024-01-15' },
+                { id: 'A-03', status: 'available', size: 'Small', price: 800 },
+                { id: 'A-04', status: 'maintenance', reason: 'Repair needed', size: 'Small', price: 800 },
+                { id: 'B-01', status: 'occupied', customer: 'Jane Smith', phone: '0723456789', size: 'Large', price: 1000, rentedDate: '2024-01-10' },
+                { id: 'B-02', status: 'available', size: 'Large', price: 1000 },
+                { id: 'B-03', status: 'occupied', customer: 'Mike Johnson', phone: '0734567890', size: 'Large', price: 1000, rentedDate: '2024-01-20' },
+                { id: 'C-01', status: 'available', size: 'Small', price: 800 },
+                { id: 'C-02', status: 'occupied', customer: 'Sarah Wilson', phone: '0745678901', size: 'Small', price: 800, rentedDate: '2024-01-05' },
+                { id: 'C-03', status: 'available', size: 'Large', price: 1000 },
+                { id: 'D-01', status: 'maintenance', reason: 'Cleaning', size: 'Large', price: 1000 },
+                { id: 'D-02', status: 'occupied', customer: 'Tom Brown', phone: '0756789012', size: 'Large', price: 1000, rentedDate: '2024-01-25' }
+            ];
+            loadShelves();
+            updateStats();
+        }
 
         // Initialize the page
         document.addEventListener('DOMContentLoaded', function() {
-            loadShelves();
-            updateStats();
+            // Load shelves from API instead of using hardcoded data
+            loadShelvesFromAPI();
             
             // Add form submission handler
             document.getElementById('rentForm').addEventListener('submit', handleRentShelf);
@@ -455,7 +482,7 @@
             document.getElementById('rentForm').reset();
         }
 
-        function handleRentShelf(event) {
+        async function handleRentShelf(event) {
             event.preventDefault();
             
             // Get form data
@@ -466,35 +493,46 @@
             const itemsDescription = document.getElementById('itemsDescription').value;
             const rentalPeriod = document.getElementById('rentalPeriod').value;
             
-            // Find and update the shelf in the data array
-            const shelf = shelves.find(s => s.id === shelfId);
-            if (shelf) {
-                // Update shelf status to occupied
-                shelf.status = 'occupied';
-                shelf.customer = customerName;
-                shelf.phone = customerPhone;
-                shelf.rentedDate = new Date().toISOString().split('T')[0]; // Current date
-                shelf.itemsDescription = itemsDescription;
-                shelf.rentalPeriod = rentalPeriod;
+            try {
+                // Call backend API to rent the shelf
+                const response = await fetch('/api/shelves/rent', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        shelfId: shelfId,
+                        customerName: customerName,
+                        customerPhone: customerPhone,
+                        itemsDescription: itemsDescription,
+                        rentalPeriod: rentalPeriod
+                    })
+                });
                 
-                // Remove any maintenance reason if it existed
-                delete shelf.reason;
+                const result = await response.json();
                 
-                // Show success message
-                showSuccessMessage(`Shelf ${shelfId} successfully rented to ${customerName}!`);
-                
-                // Close modal
-                closeRentModal();
-                
-                // Refresh all displays immediately
-                loadShelves();
-                updateStats();
-                
-                // If admin/staff, also refresh the shelf management card in reports
-                if (currentUserRole === 'admin' || currentUserRole === 'staff') {
-                    // Update the shelf management card if it exists
-                    updateShelfManagementCard();
+                if (result.success) {
+                    // Show success message
+                    showSuccessMessage(result.message);
+                    
+                    // Close modal
+                    closeRentModal();
+                    
+                    // Reload shelves from API to get updated data
+                    await loadShelvesFromAPI();
+                    
+                    // If admin/staff, also refresh the shelf management card in reports
+                    if (currentUserRole === 'admin' || currentUserRole === 'staff') {
+                        updateShelfManagementCard();
+                    }
+                } else {
+                    // Show error message
+                    showErrorMessage(result.error || 'Failed to rent shelf');
                 }
+                
+            } catch (error) {
+                console.error('Error renting shelf:', error);
+                showErrorMessage('Network error. Please try again.');
             }
         }
 
@@ -505,6 +543,31 @@
             notification.innerHTML = `
                 <div class="flex items-center">
                     <i class="fas fa-check-circle mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        function showErrorMessage(message) {
+            // Create error notification
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300';
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
                     <span>${message}</span>
                 </div>
             `;
