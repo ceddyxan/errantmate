@@ -92,7 +92,8 @@
             </div>
         </div>
 
-        <!-- Stats Cards -->
+        <!-- Stats Cards (Admin/Staff Only) -->
+        {% if session.user_role == 'admin' or session.user_role == 'staff' %}
         <div class="px-4 py-6 sm:px-0">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="bg-white overflow-hidden shadow rounded-lg">
@@ -160,8 +161,10 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
-        <!-- Filter and Search -->
+        <!-- Filter and Search (Admin/Staff Only) -->
+        {% if session.user_role == 'admin' or session.user_role == 'staff' %}
         <div class="px-4 py-6 sm:px-0">
             <div class="bg-white shadow rounded-lg p-4">
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -183,6 +186,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
         <!-- Shelves Grid -->
         <div class="px-4 py-6 sm:px-0">
@@ -200,7 +204,9 @@
                 <form id="rentForm">
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Shelf Number</label>
-                        <input type="text" id="shelfNumber" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., A-01">
+                        <select id="shelfNumber" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select an available shelf...</option>
+                        </select>
                     </div>
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Customer Name</label>
@@ -415,6 +421,29 @@
         }
 
         function openRentModal() {
+            // Populate shelf dropdown with available shelves only
+            const shelfSelect = document.getElementById('shelfNumber');
+            const availableShelves = shelves.filter(shelf => shelf.status === 'available');
+            
+            // Clear existing options
+            shelfSelect.innerHTML = '<option value="">Select an available shelf...</option>';
+            
+            // Add available shelves to dropdown
+            availableShelves.forEach(shelf => {
+                const option = document.createElement('option');
+                option.value = shelf.id;
+                option.textContent = `${shelf.id} - ${shelf.size} (KSh ${shelf.price}/month)`;
+                shelfSelect.appendChild(option);
+            });
+            
+            // Auto-select monthly fee based on selected shelf
+            shelfSelect.addEventListener('change', function() {
+                const selectedShelf = availableShelves.find(s => s.id === this.value);
+                if (selectedShelf) {
+                    document.getElementById('monthlyFee').value = selectedShelf.price;
+                }
+            });
+            
             document.getElementById('rentModal').classList.remove('hidden');
         }
 
