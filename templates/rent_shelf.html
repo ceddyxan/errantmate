@@ -527,16 +527,35 @@
 
         function closeRentModal() {
             document.getElementById('rentModal').classList.add('hidden');
-            document.getElementById('rentForm').reset();
+            // Don't reset form here - it might be interfering with form submission
+            // document.getElementById('rentForm').reset();
         }
 
         async function handleRentShelf(event) {
             event.preventDefault();
             
             console.log('=== FORM SUBMISSION DEBUG ===');
+            console.log('Form submission event:', event);
+            console.log('Form target:', event.target);
+            console.log('Form action:', event.target.action);
+            console.log('Form method:', event.target.method);
+            
+            // Check if form is being submitted multiple times
+            if (window.formSubmitting) {
+                console.log('Form already being submitted, ignoring duplicate');
+                return;
+            }
+            window.formSubmitting = true;
             
             // IMPORTANT: Read form values IMMEDIATELY before any reset happens
             const formData = new FormData(event.target);
+            
+            console.log('FormData object:', formData);
+            console.log('FormData entries:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`  ${key}: "${value}"`);
+            }
+            
             const shelfId = formData.get('shelfNumber') || '';
             const customerName = formData.get('customerName') || '';
             const customerPhone = formData.get('customerPhone') || '';
@@ -616,6 +635,9 @@
             } catch (error) {
                 console.error('Error renting shelf:', error);
                 showErrorMessage('Network error. Please try again.');
+            } finally {
+                // Reset form submission flag
+                window.formSubmitting = false;
             }
         }
 
