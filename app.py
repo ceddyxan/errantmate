@@ -2408,6 +2408,29 @@ def get_shelves():
         app.logger.error(f"Error fetching shelves: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
+@app.route('/api/test/db', methods=['GET'])
+@login_required
+@database_required
+def test_database():
+    """Test database connection and shelf table."""
+    try:
+        # Test basic database connection
+        shelves = Shelf.query.limit(1).all()
+        app.logger.info(f"Database test successful - found {len(shelves)} shelves")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Database connection successful',
+            'shelves_found': len(shelves)
+        })
+    except Exception as e:
+        app.logger.error(f"Database test failed: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Database connection failed'
+        }), 500
+
 @app.route('/api/debug/rent', methods=['POST'])
 @login_required
 @database_required
@@ -2475,14 +2498,25 @@ def rent_shelf_api():
         shelf.maintenance_reason = None  # Clear any maintenance reason
         shelf.updated_at = datetime.utcnow()
         
-        db.session.commit()
+        try:
+            db.session.commit()
+            app.logger.info(f"Successfully committed shelf rental for {shelf_id}")
+        except Exception as db_error:
+            app.logger.error(f"Database commit error: {str(db_error)}", exc_info=True)
+            db.session.rollback()
+            return jsonify({'success': False, 'error': 'Database error occurred'}), 500
         
         # Log the action
-        log_action(
-            username=session.get('username', 'unknown'),
-            action=f"Rented shelf {shelf_id} to {customer_name}",
-            details=f"Phone: {customer_phone}, Period: {rental_period} months"
-        )
+        try:
+            log_action(
+                username=session.get('username', 'unknown'),
+                action=f"Rented shelf {shelf_id} to {customer_name}",
+                details=f"Phone: {customer_phone}, Period: {rental_period} months"
+            )
+            app.logger.info(f"Successfully logged rental action for {shelf_id}")
+        except Exception as log_error:
+            app.logger.warning(f"Failed to log action but rental succeeded: {str(log_error)}")
+            # Don't fail the request if logging fails
         
         return jsonify({
             'success': True, 
