@@ -533,16 +533,53 @@
         async function handleRentShelf(event) {
             event.preventDefault();
             
-            // Debug: Check if form elements exist
+            console.log('=== FORM SUBMISSION DEBUG ===');
+            
+            // Debug: Check if form elements exist and their properties
             const shelfNumberEl = document.getElementById('shelfNumber');
             const customerNameEl = document.getElementById('customerName');
             const customerPhoneEl = document.getElementById('customerPhone');
+            
+            console.log('Form elements:', {
+                shelfNumber: shelfNumberEl,
+                customerName: customerNameEl,
+                customerPhone: customerPhoneEl
+            });
             
             console.log('Form elements found:', {
                 shelfNumber: !!shelfNumberEl,
                 customerName: !!customerNameEl,
                 customerPhone: !!customerPhoneEl
             });
+            
+            // Debug: Check element properties
+            if (shelfNumberEl) {
+                console.log('Shelf Number Element:', {
+                    tagName: shelfNumberEl.tagName,
+                    type: shelfNumberEl.type,
+                    value: shelfNumberEl.value,
+                    textContent: shelfNumberEl.textContent,
+                    innerHTML: shelfNumberEl.innerHTML
+                });
+            }
+            
+            if (customerNameEl) {
+                console.log('Customer Name Element:', {
+                    tagName: customerNameEl.tagName,
+                    type: customerNameEl.type,
+                    value: customerNameEl.value,
+                    placeholder: customerNameEl.placeholder
+                });
+            }
+            
+            if (customerPhoneEl) {
+                console.log('Customer Phone Element:', {
+                    tagName: customerPhoneEl.tagName,
+                    type: customerPhoneEl.type,
+                    value: customerPhoneEl.value,
+                    placeholder: customerPhoneEl.placeholder
+                });
+            }
             
             // Get form data
             const shelfId = shelfNumberEl ? shelfNumberEl.value : '';
@@ -552,7 +589,7 @@
             const itemsDescription = document.getElementById('itemsDescription').value;
             const rentalPeriod = document.getElementById('rentalPeriod').value;
             
-            console.log('Form values:', {
+            console.log('Extracted form values:', {
                 shelfId: `"${shelfId}"`,
                 customerName: `"${customerName}"`,
                 customerPhone: `"${customerPhone}"`,
@@ -560,12 +597,23 @@
                 rentalPeriod: `"${rentalPeriod}"`
             });
             
+            console.log('Value checks:', {
+                shelfIdEmpty: !shelfId,
+                shelfIdLength: shelfId.length,
+                customerNameEmpty: !customerName,
+                customerNameLength: customerName.length,
+                customerPhoneEmpty: !customerPhone,
+                customerPhoneLength: customerPhone.length
+            });
+            
             // Check if required fields are empty
             if (!shelfId || !customerName || !customerPhone) {
+                console.log('VALIDATION FAILED - Fields are empty');
                 alert('Please fill in all required fields (Shelf Number, Customer Name, and Customer Phone)');
                 return;
             }
             
+            console.log('VALIDATION PASSED - Proceeding with rental');
             console.log('Renting shelf:', { shelfId, customerName, customerPhone, itemsDescription, rentalPeriod });
             
             try {
