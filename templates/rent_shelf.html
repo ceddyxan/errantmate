@@ -258,12 +258,17 @@
         async function loadShelvesFromAPI() {
             try {
                 const response = await fetch('/api/shelves');
+                console.log('API Response status:', response.status);
+                console.log('API Response ok:', response.ok);
+                
                 if (response.ok) {
                     shelves = await response.json();
+                    console.log('Shelves loaded:', shelves);
                     loadShelves();
                     updateStats();
                 } else {
-                    console.error('Failed to load shelves');
+                    console.error('Failed to load shelves - Status:', response.status);
+                    console.error('Response text:', await response.text());
                     // Fallback to sample data if API fails
                     loadSampleData();
                 }
@@ -500,6 +505,8 @@
             const itemsDescription = document.getElementById('itemsDescription').value;
             const rentalPeriod = document.getElementById('rentalPeriod').value;
             
+            console.log('Renting shelf:', { shelfId, customerName, customerPhone, itemsDescription, rentalPeriod });
+            
             try {
                 // Call backend API to rent the shelf
                 const response = await fetch('/api/shelves/rent', {
@@ -516,7 +523,9 @@
                     })
                 });
                 
+                console.log('Rent API Response status:', response.status);
                 const result = await response.json();
+                console.log('Rent API Response:', result);
                 
                 if (result.success) {
                     // Show success message
