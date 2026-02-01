@@ -541,7 +541,7 @@
             
             try {
                 // Call backend API to rent the shelf
-                const response = await fetch('/api/shelves/rent', {
+                const response = await fetch('/api/debug/rent', {  // Using debug endpoint temporarily
                     method: 'POST',
                     credentials: 'include',  // Include session cookies
                     headers: {

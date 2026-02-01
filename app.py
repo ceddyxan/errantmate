@@ -2408,6 +2408,29 @@ def get_shelves():
         app.logger.error(f"Error fetching shelves: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
+@app.route('/api/debug/rent', methods=['POST'])
+@login_required
+@database_required
+def debug_rent_shelf():
+    """Debug endpoint to see what data is being sent."""
+    try:
+        data = request.get_json()
+        app.logger.info(f"DEBUG: Raw request data: {data}")
+        app.logger.info(f"DEBUG: Request headers: {dict(request.headers)}")
+        
+        return jsonify({
+            'success': True,
+            'received_data': data,
+            'message': 'Debug endpoint - check logs for details'
+        })
+    except Exception as e:
+        app.logger.error(f"DEBUG endpoint error: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Debug endpoint failed'
+        }), 500
+
 @app.route('/api/shelves/rent', methods=['POST'])
 @login_required
 @database_required
@@ -2416,14 +2439,21 @@ def rent_shelf_api():
     try:
         data = request.get_json()
         
+        # Log the received data for debugging
+        app.logger.info(f"Received rent shelf request data: {data}")
+        
         shelf_id = data.get('shelfId')  # Changed from shelf_id to shelfId
         customer_name = data.get('customerName')  # Changed from customerName to customer_name
         customer_phone = data.get('customerPhone')  # Changed from customerPhone to customer_phone
         items_description = data.get('itemsDescription')  # Changed from itemsDescription to items_description
         rental_period = data.get('rentalPeriod')  # Changed from rentalPeriod to rental_period
         
+        # Log extracted fields for debugging
+        app.logger.info(f"Extracted fields - shelfId: {shelf_id}, customerName: {customer_name}, customerPhone: {customer_phone}")
+        
         # Validate required fields
         if not shelf_id or not customer_name or not customer_phone:
+            app.logger.warning(f"Missing required fields - shelfId: {shelf_id}, customerName: {customer_name}, customerPhone: {customer_phone}")
             return jsonify({'success': False, 'error': 'Missing required fields'}), 400
         
         # Find the shelf
