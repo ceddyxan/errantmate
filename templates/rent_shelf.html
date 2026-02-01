@@ -534,66 +534,25 @@
         async function handleRentShelf(event) {
             event.preventDefault();
             
-            console.log('=== FORM SUBMISSION DEBUG ===');
-            console.log('Form submission event:', event);
-            console.log('Form target:', event.target);
-            console.log('Form action:', event.target.action);
-            console.log('Form method:', event.target.method);
-            
-            // Check if form is being submitted multiple times
-            if (window.formSubmitting) {
-                console.log('Form already being submitted, ignoring duplicate');
-                return;
-            }
-            window.formSubmitting = true;
-            
-            // IMPORTANT: Read form values IMMEDIATELY before any reset happens
+            // Read form values immediately
             const formData = new FormData(event.target);
-            
-            console.log('FormData object:', formData);
-            console.log('FormData entries:');
-            for (let [key, value] of formData.entries()) {
-                console.log(`  ${key}: "${value}"`);
-            }
-            
             const shelfId = formData.get('shelfNumber') || '';
             const customerName = formData.get('customerName') || '';
             const customerPhone = formData.get('customerPhone') || '';
             const itemsDescription = formData.get('itemsDescription') || '';
             const rentalPeriod = formData.get('rentalPeriod') || '1';
             
-            console.log('FormData values (immediate read):', {
-                shelfId: `"${shelfId}"`,
-                customerName: `"${customerName}"`,
-                customerPhone: `"${customerPhone}"`,
-                itemsDescription: `"${itemsDescription}"`,
-                rentalPeriod: `"${rentalPeriod}"`
-            });
+            console.log('Renting shelf:', { shelfId, customerName, customerPhone, itemsDescription, rentalPeriod });
             
-            // Also check DOM elements for comparison
-            const shelfNumberEl = document.getElementById('shelfNumber');
-            const customerNameEl = document.getElementById('customerName');
-            const customerPhoneEl = document.getElementById('customerPhone');
-            
-            console.log('DOM element values (after preventDefault):', {
-                shelfId: `"${shelfNumberEl?.value || ''}"`,
-                customerName: `"${customerNameEl?.value || ''}"`,
-                customerPhone: `"${customerPhoneEl?.value || ''}"`
-            });
-            
-            // Check if required fields are empty using FormData values
+            // Validate required fields
             if (!shelfId || !customerName || !customerPhone) {
-                console.log('VALIDATION FAILED - Fields are empty');
                 alert('Please fill in all required fields (Shelf Number, Customer Name, and Customer Phone)');
                 return;
             }
             
-            console.log('VALIDATION PASSED - Proceeding with rental');
-            console.log('Renting shelf:', { shelfId, customerName, customerPhone, itemsDescription, rentalPeriod });
-            
             try {
                 // Call backend API to rent the shelf
-                const response = await fetch('/api/debug/rent', {  // Using debug endpoint temporarily
+                const response = await fetch('/api/shelves/rent', {  // Back to real API endpoint
                     method: 'POST',
                     credentials: 'include',  // Include session cookies
                     headers: {
@@ -617,8 +576,9 @@
                     // Show success message
                     showSuccessMessage(result.message);
                     
-                    // Close modal
+                    // Close modal and reset form
                     closeRentModal();
+                    document.getElementById('rentForm').reset();
                     
                     // Reload shelves from API to get updated data
                     await loadShelvesFromAPI();
@@ -635,9 +595,6 @@
             } catch (error) {
                 console.error('Error renting shelf:', error);
                 showErrorMessage('Network error. Please try again.');
-            } finally {
-                // Reset form submission flag
-                window.formSubmitting = false;
             }
         }
 
