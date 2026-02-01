@@ -247,12 +247,16 @@
         </div>
     </div>
 
+    <!-- Hidden div to store server-side shelf data -->
+    <div id="serverShelvesData" style="display: none;">{{ shelves_data|tojson|safe if shelves_data else '[]' }}</div>
+
     <script>
         // User role from session
         const currentUserRole = '{{ session.user_role or "user" }}';
         
         // Server-side shelf data (fallback if API fails)
-        const serverShelvesData = {{ shelves_data|tojson|safe }};
+        const serverShelvesDataElement = document.getElementById('serverShelvesData');
+        const serverShelvesData = JSON.parse(serverShelvesDataElement.textContent);
         
         // Shelf data will be loaded from API, with server data as fallback
         let shelves = [];
@@ -529,13 +533,38 @@
         async function handleRentShelf(event) {
             event.preventDefault();
             
+            // Debug: Check if form elements exist
+            const shelfNumberEl = document.getElementById('shelfNumber');
+            const customerNameEl = document.getElementById('customerName');
+            const customerPhoneEl = document.getElementById('customerPhone');
+            
+            console.log('Form elements found:', {
+                shelfNumber: !!shelfNumberEl,
+                customerName: !!customerNameEl,
+                customerPhone: !!customerPhoneEl
+            });
+            
             // Get form data
-            const shelfId = document.getElementById('shelfNumber').value;
-            const customerName = document.getElementById('customerName').value;
-            const customerPhone = document.getElementById('customerPhone').value;
+            const shelfId = shelfNumberEl ? shelfNumberEl.value : '';
+            const customerName = customerNameEl ? customerNameEl.value : '';
+            const customerPhone = customerPhoneEl ? customerPhoneEl.value : '';
             const monthlyFee = document.getElementById('monthlyFee').value;
             const itemsDescription = document.getElementById('itemsDescription').value;
             const rentalPeriod = document.getElementById('rentalPeriod').value;
+            
+            console.log('Form values:', {
+                shelfId: `"${shelfId}"`,
+                customerName: `"${customerName}"`,
+                customerPhone: `"${customerPhone}"`,
+                itemsDescription: `"${itemsDescription}"`,
+                rentalPeriod: `"${rentalPeriod}"`
+            });
+            
+            // Check if required fields are empty
+            if (!shelfId || !customerName || !customerPhone) {
+                alert('Please fill in all required fields (Shelf Number, Customer Name, and Customer Phone)');
+                return;
+            }
             
             console.log('Renting shelf:', { shelfId, customerName, customerPhone, itemsDescription, rentalPeriod });
             
