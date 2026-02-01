@@ -251,13 +251,22 @@
         // User role from session
         const currentUserRole = '{{ session.user_role or "user" }}';
         
-        // Shelf data will be loaded from API
+        // Server-side shelf data (fallback if API fails)
+        const serverShelvesData = {{ shelves_data|tojson|safe }};
+        
+        // Shelf data will be loaded from API, with server data as fallback
         let shelves = [];
 
         // Load shelves from API
         async function loadShelvesFromAPI() {
             try {
-                const response = await fetch('/api/shelves');
+                const response = await fetch('/api/shelves', {
+                    method: 'GET',
+                    credentials: 'include',  // Include session cookies
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'  // Mark as AJAX request
+                    }
+                });
                 console.log('API Response status:', response.status);
                 console.log('API Response ok:', response.ok);
                 
@@ -269,13 +278,29 @@
                 } else {
                     console.error('Failed to load shelves - Status:', response.status);
                     console.error('Response text:', await response.text());
-                    // Fallback to sample data if API fails
-                    loadSampleData();
+                    // Fallback to server-side data if API fails
+                    if (serverShelvesData && serverShelvesData.length > 0) {
+                        console.log('Using server-side shelf data as fallback');
+                        shelves = serverShelvesData;
+                        loadShelves();
+                        updateStats();
+                    } else {
+                        console.log('No server data available, using hardcoded sample data');
+                        loadSampleData();
+                    }
                 }
             } catch (error) {
                 console.error('Error loading shelves:', error);
-                // Fallback to sample data if API fails
-                loadSampleData();
+                // Fallback to server-side data if API fails
+                if (serverShelvesData && serverShelvesData.length > 0) {
+                    console.log('Using server-side shelf data as fallback');
+                    shelves = serverShelvesData;
+                    loadShelves();
+                    updateStats();
+                } else {
+                    console.log('No server data available, using hardcoded sample data');
+                    loadSampleData();
+                }
             }
         }
 
@@ -301,6 +326,13 @@
 
         // Initialize the page
         document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is authenticated before making API calls
+            const userRole = '{{ session.user_role or "" }}';
+            if (!userRole || userRole === '') {
+                showErrorMessage('Please log in to rent shelves');
+                return;
+            }
+            
             // Load shelves from API instead of using hardcoded data
             loadShelvesFromAPI();
             
@@ -511,8 +543,10 @@
                 // Call backend API to rent the shelf
                 const response = await fetch('/api/shelves/rent', {
                     method: 'POST',
+                    credentials: 'include',  // Include session cookies
                     headers: {
                         'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'  // Mark as AJAX request
                     },
                     body: JSON.stringify({
                         shelfId: shelfId,

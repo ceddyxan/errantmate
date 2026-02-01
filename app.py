@@ -2351,7 +2351,26 @@ def rent_shelf():
 
         
 
-        return render_template('rent_shelf.html')
+        # Get initial shelf data for server-side rendering
+        shelves = Shelf.query.all()
+        shelves_data = []
+        
+        for shelf in shelves:
+            shelf_dict = {
+                'id': shelf.id,
+                'status': shelf.status,
+                'size': shelf.size,
+                'price': shelf.price,
+                'customer': shelf.customer_name,
+                'phone': shelf.customer_phone,
+                'rentedDate': shelf.rented_date.strftime('%Y-%m-%d') if shelf.rented_date else None,
+                'itemsDescription': shelf.items_description,
+                'rentalPeriod': shelf.rental_period,
+                'reason': shelf.maintenance_reason
+            }
+            shelves_data.append(shelf_dict)
+
+        return render_template('rent_shelf.html', shelves_data=shelves_data)
 
     except Exception as e:
 
