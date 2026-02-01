@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rent a Shelf - ErrantMate</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -417,10 +418,16 @@
                 revenue = shelves.filter(s => s.status === 'occupied').reduce((sum, s) => sum + s.price, 0);
             }
 
-            document.getElementById('availableCount').textContent = available;
-            document.getElementById('occupiedCount').textContent = occupied;
-            document.getElementById('maintenanceCount').textContent = maintenance;
-            document.getElementById('monthlyRevenue').textContent = `KSh ${revenue.toLocaleString()}`;
+            // Update DOM elements with null checks
+            const availableEl = document.getElementById('availableCount');
+            const occupiedEl = document.getElementById('occupiedCount');
+            const maintenanceEl = document.getElementById('maintenanceCount');
+            const revenueEl = document.getElementById('monthlyRevenue');
+            
+            if (availableEl) availableEl.textContent = available;
+            if (occupiedEl) occupiedEl.textContent = occupied;
+            if (maintenanceEl) maintenanceEl.textContent = maintenance;
+            if (revenueEl) revenueEl.textContent = `KSh ${revenue.toLocaleString()}`;
         }
 
         function filterShelves() {
