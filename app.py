@@ -2489,14 +2489,20 @@ def rent_shelf_api():
             return jsonify({'success': False, 'error': 'Shelf is not available'}), 400
         
         # Update shelf information
+        current_date = datetime.now().date()
+        current_datetime = datetime.now()
+        
         shelf.status = 'occupied'
         shelf.customer_name = customer_name
         shelf.customer_phone = customer_phone
-        shelf.rented_date = datetime.utcnow().date()
+        shelf.rented_date = current_date  # Use local date instead of UTC
         shelf.items_description = items_description
         shelf.rental_period = rental_period
         shelf.maintenance_reason = None  # Clear any maintenance reason
-        shelf.updated_at = datetime.utcnow()
+        shelf.updated_at = current_datetime  # Use local datetime instead of UTC
+        
+        app.logger.info(f"Setting rented_date to: {current_date} (local date)")
+        app.logger.info(f"Setting updated_at to: {current_datetime} (local datetime)")
         
         try:
             db.session.commit()
