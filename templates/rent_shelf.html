@@ -417,9 +417,11 @@
                         <span class="text-gray-600 text-sm">Rented:</span>
                         <span class="font-medium ml-2">${shelf.rentedDate}</span>
                     </div>
+                    ${currentUserRole === 'admin' || currentUserRole === 'staff' ? `
                     <button onclick="manageShelf('${shelf.id}')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors duration-200">
                         <i class="fas fa-cog mr-2"></i>Manage
                     </button>
+                    ` : ''}
                 `;
             } else if (shelf.status === 'available') {
                 cardContent += `
@@ -433,9 +435,11 @@
                         <span class="text-gray-600 text-sm">Reason:</span>
                         <div class="font-medium ml-2">${shelf.reason}</div>
                     </div>
+                    ${currentUserRole === 'admin' || currentUserRole === 'staff' ? `
                     <button onclick="completeMaintenance('${shelf.id}')" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded transition-colors duration-200">
                         <i class="fas fa-check mr-2"></i>Complete Maintenance
                     </button>
+                    ` : ''}
                 `;
             }
 
