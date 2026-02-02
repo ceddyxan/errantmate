@@ -2683,6 +2683,144 @@ def update_shelf_details_ultra():
             'error': 'Internal server error'
         }), 500
 
+@app.route('/api/shelves/create', methods=['POST'])
+@login_required
+@database_required
+def create_shelf():
+    """Create a new shelf - for staff/admin only."""
+    try:
+        # Check if user has permission
+        if session.get('user_role') not in ['admin', 'staff']:
+            return jsonify({'success': False, 'error': 'Permission denied'}), 403
+        
+        data = request.get_json()
+        shelf_id = data.get('shelfId', '').strip()
+        price = data.get('price', 0)
+        
+        if not shelf_id:
+            return jsonify({'success': False, 'error': 'Shelf ID is required'}), 400
+        
+        if price < 0:
+            return jsonify({'success': False, 'error': 'Price must be positive'}), 400
+        
+        # Check if shelf already exists
+        existing_shelf = Shelf.query.filter_by(id=shelf_id).first()
+        if existing_shelf:
+            return jsonify({'success': False, 'error': 'Shelf with this ID already exists'}), 400
+        
+        # Create new shelf
+        new_shelf = Shelf(
+            id=shelf_id,
+            price=price,
+            status='available'
+        )
+        
+        db.session.add(new_shelf)
+        db.session.commit()
+        
+        app.logger.info(f"New shelf created: {shelf_id} by {session.get('username', 'unknown')}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Shelf {shelf_id} created successfully'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error creating shelf: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+@app.route('/api/shelves/update-info', methods=['POST'])
+@login_required
+@database_required
+def update_shelf_info():
+    """Update shelf ID and price - for staff/admin only."""
+    try:
+        # Check if user has permission
+        if session.get('user_role') not in ['admin', 'staff']:
+            return jsonify({'success': False, 'error': 'Permission denied'}), 403
+        
+        data = request.get_json()
+        original_shelf_id = data.get('originalShelfId', '').strip()
+        new_shelf_id = data.get('newShelfId', '').strip()
+        price = data.get('price', 0)
+        
+        if not original_shelf_id or not new_shelf_id:
+            return jsonify({'success': False, 'error': 'Shelf IDs are required'}), 400
+        
+        # Find the shelf
+        shelf = Shelf.query.filter_by(id=original_shelf_id).first()
+        if not shelf:
+            return jsonify({'success': False, 'error': 'Shelf not found'}), 404
+        
+        # Check if new ID already exists (if different from original)
+        if new_shelf_id != original_shelf_id:
+            existing_shelf = Shelf.query.filter_by(id=new_shelf_id).first()
+            if existing_shelf:
+                return jsonify({'success': False, 'error': 'Shelf with this ID already exists'}), 400
+        
+        # Update shelf information
+        shelf.id = new_shelf_id
+        if price > 0:
+            shelf.price = price
+        
+        shelf.updated_at = get_local_time()
+        
+        db.session.commit()
+        
+        app.logger.info(f"Shelf info updated: {original_shelf_id} -> {new_shelf_id} by {session.get('username', 'unknown')}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Shelf information updated successfully'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error updating shelf info: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+@app.route('/api/shelves/delete', methods=['POST'])
+@login_required
+@database_required
+def delete_shelf():
+    """Delete a shelf - for staff/admin only."""
+    try:
+        # Check if user has permission
+        if session.get('user_role') not in ['admin', 'staff']:
+            return jsonify({'success': False, 'error': 'Permission denied'}), 403
+        
+        data = request.get_json()
+        shelf_id = data.get('shelfId', '').strip()
+        
+        if not shelf_id:
+            return jsonify({'success': False, 'error': 'Shelf ID is required'}), 400
+        
+        # Find the shelf
+        shelf = Shelf.query.filter_by(id=shelf_id).first()
+        if not shelf:
+            return jsonify({'success': False, 'error': 'Shelf not found'}), 404
+        
+        # Check if shelf is occupied (prevent deletion of occupied shelves)
+        if shelf.status == 'occupied':
+            return jsonify({'success': False, 'error': 'Cannot delete occupied shelf'}), 400
+        
+        # Delete the shelf
+        db.session.delete(shelf)
+        db.session.commit()
+        
+        app.logger.info(f"Shelf deleted: {shelf_id} by {session.get('username', 'unknown')}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Shelf {shelf_id} deleted successfully'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error deleting shelf: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
 @app.route('/api/shelves/update', methods=['POST'])
 @login_required
 @database_required
