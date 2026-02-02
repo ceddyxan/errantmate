@@ -2674,9 +2674,9 @@ def end_shelf_rental_simple():
         
         # Direct database update without using Shelf model to avoid field recognition issues
         try:
-            # Update shelf directly using SQL
+            # Update shelf directly using SQL - PostgreSQL compatible
             if 'sqlite' in str(db.engine.url).lower():
-                # SQLite
+                # SQLite syntax
                 sql = """
                 UPDATE shelf 
                 SET status = 'available',
@@ -2692,8 +2692,9 @@ def end_shelf_rental_simple():
                     updated_at = datetime('now')
                 WHERE id = ?
                 """
+                params = (shelf_id,)
             else:
-                # PostgreSQL
+                # PostgreSQL syntax - fix the parameter binding
                 sql = """
                 UPDATE shelf 
                 SET status = 'available',
@@ -2707,14 +2708,12 @@ def end_shelf_rental_simple():
                     rented_date = NULL,
                     maintenance_reason = NULL,
                     updated_at = NOW()
-                WHERE id = %s
+                WHERE id = :shelf_id
                 """
+                params = {'shelf_id': shelf_id}
             
             with db.engine.connect() as conn:
-                if 'sqlite' in str(db.engine.url).lower():
-                    result = conn.execute(db.text(sql), (shelf_id,))
-                else:
-                    result = conn.execute(db.text(sql), (shelf_id,))
+                result = conn.execute(db.text(sql), params)
                 conn.commit()
             
             if result.rowcount > 0:
