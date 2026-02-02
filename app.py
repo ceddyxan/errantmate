@@ -2824,11 +2824,11 @@ def end_shelf_rental_simple():
                     }), 500
             
         except Exception as e:
-        app.logger.error(f"PostgreSQL end-rental database error: {str(e)}", exc_info=True)
-        return jsonify({
-            'success': False,
-            'error': 'Database update failed'
-        }), 500
+            app.logger.error(f"PostgreSQL end-rental database error: {str(e)}", exc_info=True)
+            return jsonify({
+                'success': False,
+                'error': 'Database update failed'
+            }), 500
             
     except Exception as e:
         app.logger.error(f"❌ Simple end-rental failed: {str(e)}", exc_info=True)
