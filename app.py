@@ -2654,6 +2654,104 @@ def update_shelf_details():
         app.logger.error(f"Error updating shelf: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
+@app.route('/api/shelves/end-rental-simple', methods=['POST'])
+@login_required
+@database_required
+def end_shelf_rental_simple():
+    """Simple end rental that bypasses model field recognition issues"""
+    try:
+        # Check if user has permission
+        if session.get('user_role') not in ['admin', 'staff']:
+            return jsonify({'success': False, 'error': 'Permission denied'}), 403
+        
+        data = request.get_json()
+        shelf_id = data.get('shelfId')
+        
+        if not shelf_id:
+            return jsonify({'success': False, 'error': 'Shelf ID required'}), 400
+        
+        app.logger.info(f"Simple end-rental requested for shelf: {shelf_id}")
+        
+        # Direct database update without using Shelf model to avoid field recognition issues
+        try:
+            # Update shelf directly using SQL
+            if 'sqlite' in str(db.engine.url).lower():
+                # SQLite
+                sql = """
+                UPDATE shelf 
+                SET status = 'available',
+                    customer_name = NULL,
+                    customer_phone = NULL,
+                    customer_email = NULL,
+                    card_number = NULL,
+                    items_description = NULL,
+                    rental_period = NULL,
+                    discount = NULL,
+                    rented_date = NULL,
+                    maintenance_reason = NULL,
+                    updated_at = datetime('now')
+                WHERE id = ?
+                """
+            else:
+                # PostgreSQL
+                sql = """
+                UPDATE shelf 
+                SET status = 'available',
+                    customer_name = NULL,
+                    customer_phone = NULL,
+                    customer_email = NULL,
+                    card_number = NULL,
+                    items_description = NULL,
+                    rental_period = NULL,
+                    discount = NULL,
+                    rented_date = NULL,
+                    maintenance_reason = NULL,
+                    updated_at = NOW()
+                WHERE id = %s
+                """
+            
+            with db.engine.connect() as conn:
+                if 'sqlite' in str(db.engine.url).lower():
+                    result = conn.execute(db.text(sql), (shelf_id,))
+                else:
+                    result = conn.execute(db.text(sql), (shelf_id,))
+                conn.commit()
+            
+            if result.rowcount > 0:
+                app.logger.info(f"✅ Simple end-rental successful for shelf: {shelf_id}")
+                
+                # Log the action
+                log_action(
+                    username=session.get('username', 'unknown'),
+                    action=f"Ended rental for shelf {shelf_id} (simple method)",
+                    details="Rental ended using direct SQL update to bypass model issues"
+                )
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'Shelf {shelf_id} rental ended successfully'
+                }), 200
+            else:
+                app.logger.warning(f"⚠️  Shelf {shelf_id} not found or already available")
+                return jsonify({
+                    'success': False,
+                    'error': 'Shelf not found or already available'
+                }), 400
+                
+        except Exception as e:
+            app.logger.error(f"❌ Simple end-rental database error: {str(e)}", exc_info=True)
+            return jsonify({
+                'success': False,
+                'error': 'Database update failed'
+            }), 500
+            
+    except Exception as e:
+        app.logger.error(f"❌ Simple end-rental failed: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'Internal server error'
+        }), 500
+
 @app.route('/api/shelves/end-rental', methods=['POST'])
 @login_required
 @database_required

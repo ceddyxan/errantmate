@@ -779,7 +779,8 @@
             }
             
             try {
-                const response = await fetch('/api/shelves/end-rental', {
+                // Use the simple end-rental endpoint to avoid model field issues
+                const response = await fetch('/api/shelves/end-rental-simple', {
                     method: 'POST',
                     credentials: 'include',
                     headers: {
