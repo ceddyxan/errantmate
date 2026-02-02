@@ -2685,12 +2685,8 @@ def end_shelf_rental_ultra():
                 if result.rowcount > 0:
                     app.logger.info(f"Ultra-simple end-rental success: {shelf_id}")
                     
-                    # Log the action
-                    log_action(
-                        username=session.get('username', 'unknown'),
-                        action=f"Ended rental for shelf {shelf_id} (ultra-simple method)",
-                        details="Rental ended using ultra-simple SQL update"
-                    )
+                    # Simple logging without log_action function
+                    app.logger.info(f"User {session.get('username', 'unknown')} ended rental for shelf {shelf_id}")
                     
                     return jsonify({
                         'success': True,
