@@ -2408,6 +2408,34 @@ def get_shelves():
         app.logger.error(f"Error fetching shelves: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
+@app.route('/api/test/time', methods=['GET'])
+@login_required
+@database_required
+def test_server_time():
+    """Test server current time and date."""
+    try:
+        from datetime import datetime
+        import time
+        
+        utc_now = datetime.utcnow()
+        local_now = datetime.now()
+        timestamp_now = datetime.fromtimestamp(time.time())
+        
+        return jsonify({
+            'success': True,
+            'utc_now': str(utc_now),
+            'local_now': str(local_now),
+            'timestamp_now': str(timestamp_now),
+            'utc_date': str(utc_now.date()),
+            'local_date': str(local_now.date()),
+            'server_timezone': 'Local server time'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @app.route('/api/test/db', methods=['GET'])
 @login_required
 @database_required
@@ -2492,6 +2520,9 @@ def rent_shelf_api():
         current_date = datetime.now().date()
         current_datetime = datetime.now()
         
+        app.logger.info(f"DEBUG: Current local date: {current_date}")
+        app.logger.info(f"DEBUG: Current local datetime: {current_datetime}")
+        
         shelf.status = 'occupied'
         shelf.customer_name = customer_name
         shelf.customer_phone = customer_phone
@@ -2501,8 +2532,8 @@ def rent_shelf_api():
         shelf.maintenance_reason = None  # Clear any maintenance reason
         shelf.updated_at = current_datetime  # Use local datetime instead of UTC
         
-        app.logger.info(f"Setting rented_date to: {current_date} (local date)")
-        app.logger.info(f"Setting updated_at to: {current_datetime} (local datetime)")
+        app.logger.info(f"FINAL: Setting rented_date to: {current_date}")
+        app.logger.info(f"FINAL: Setting updated_at to: {current_datetime}")
         
         try:
             db.session.commit()
