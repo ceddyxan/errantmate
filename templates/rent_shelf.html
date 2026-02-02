@@ -779,8 +779,8 @@
             }
             
             try {
-                // Use the simple end-rental endpoint to avoid model field issues
-                const response = await fetch('/api/shelves/end-rental-simple', {
+                // Use the PostgreSQL-safe end-rental endpoint
+                const response = await fetch('/api/shelves/end-rental-safe', {
                     method: 'POST',
                     credentials: 'include',
                     headers: {

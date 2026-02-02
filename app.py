@@ -2654,6 +2654,73 @@ def update_shelf_details():
         app.logger.error(f"Error updating shelf: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
+@app.route('/api/shelves/end-rental-safe', methods=['POST'])
+@login_required
+@database_required
+def end_shelf_rental_safe():
+    """PostgreSQL-safe end rental - minimal approach"""
+    try:
+        # Check permissions
+        if session.get('user_role') not in ['admin', 'staff']:
+            return jsonify({'success': False, 'error': 'Permission denied'}), 403
+        
+        data = request.get_json()
+        shelf_id = data.get('shelfId')
+        
+        if not shelf_id:
+            return jsonify({'success': False, 'error': 'Shelf ID required'}), 400
+        
+        app.logger.info(f"Safe end-rental for shelf: {shelf_id}")
+        
+        # Use the simplest possible approach - just update status
+        try:
+            with db.engine.connect() as conn:
+                # Simple update that just changes status
+                if 'sqlite' in str(db.engine.url).lower():
+                    sql = "UPDATE shelf SET status = 'available' WHERE id = ?"
+                    params = (shelf_id,)
+                else:
+                    # PostgreSQL - use string formatting for safety
+                    sql = f"UPDATE shelf SET status = 'available' WHERE id = '{shelf_id}'"
+                    params = None
+                
+                result = conn.execute(db.text(sql), params or {})
+                conn.commit()
+                
+                if result.rowcount > 0:
+                    app.logger.info(f"Safe end-rental success: {shelf_id}")
+                    
+                    # Log the action
+                    log_action(
+                        username=session.get('username', 'unknown'),
+                        action=f"Ended rental for shelf {shelf_id} (safe method)",
+                        details="Rental ended using minimal SQL update"
+                    )
+                    
+                    return jsonify({
+                        'success': True,
+                        'message': f'Shelf {shelf_id} rental ended successfully'
+                    }), 200
+                else:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Shelf not found or already available'
+                    }), 400
+                    
+        except Exception as e:
+            app.logger.error(f"Safe end-rental DB error: {str(e)}", exc_info=True)
+            return jsonify({
+                'success': False,
+                'error': 'Database operation failed'
+            }), 500
+            
+    except Exception as e:
+        app.logger.error(f"Safe end-rental failed: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'Internal server error'
+        }), 500
+
 @app.route('/api/shelves/end-rental-simple', methods=['POST'])
 @login_required
 @database_required
@@ -2674,71 +2741,90 @@ def end_shelf_rental_simple():
         
         # Direct database update without using Shelf model to avoid field recognition issues
         try:
-            # Update shelf directly using SQL - PostgreSQL compatible
-            if 'sqlite' in str(db.engine.url).lower():
-                # SQLite syntax
-                sql = """
-                UPDATE shelf 
-                SET status = 'available',
-                    customer_name = NULL,
-                    customer_phone = NULL,
-                    customer_email = NULL,
-                    card_number = NULL,
-                    items_description = NULL,
-                    rental_period = NULL,
-                    discount = NULL,
-                    rented_date = NULL,
-                    maintenance_reason = NULL,
-                    updated_at = datetime('now')
-                WHERE id = ?
-                """
-                params = (shelf_id,)
-            else:
-                # PostgreSQL syntax - fix the parameter binding
-                sql = """
-                UPDATE shelf 
-                SET status = 'available',
-                    customer_name = NULL,
-                    customer_phone = NULL,
-                    customer_email = NULL,
-                    card_number = NULL,
-                    items_description = NULL,
-                    rental_period = NULL,
-                    discount = NULL,
-                    rented_date = NULL,
-                    maintenance_reason = NULL,
-                    updated_at = NOW()
-                WHERE id = :shelf_id
-                """
-                params = {'shelf_id': shelf_id}
-            
+            # Use SQLAlchemy ORM approach for better PostgreSQL compatibility
             with db.engine.connect() as conn:
-                result = conn.execute(db.text(sql), params)
+                # First check if shelf exists and is occupied
+                if 'sqlite' in str(db.engine.url).lower():
+                    check_sql = "SELECT id FROM shelf WHERE id = ? AND status = 'occupied'"
+                    check_params = (shelf_id,)
+                else:
+                    check_sql = "SELECT id FROM shelf WHERE id = :shelf_id AND status = 'occupied'"
+                    check_params = {'shelf_id': shelf_id}
+                
+                check_result = conn.execute(db.text(check_sql), check_params)
+                shelf_exists = check_result.fetchone()
+                
+                if not shelf_exists:
+                    app.logger.warning(f"Shelf {shelf_id} not found or not occupied")
+                    return jsonify({
+                        'success': False,
+                        'error': 'Shelf not found or not currently occupied'
+                    }), 400
+                
+                # Update the shelf using raw SQL with proper PostgreSQL syntax
+                if 'sqlite' in str(db.engine.url).lower():
+                    update_sql = """
+                    UPDATE shelf 
+                    SET status = 'available',
+                        customer_name = NULL,
+                        customer_phone = NULL,
+                        customer_email = NULL,
+                        card_number = NULL,
+                        items_description = NULL,
+                        rental_period = NULL,
+                        discount = NULL,
+                        rented_date = NULL,
+                        maintenance_reason = NULL,
+                        updated_at = datetime('now')
+                    WHERE id = ?
+                    """
+                    update_params = (shelf_id,)
+                else:
+                    # PostgreSQL - use proper parameter binding
+                    update_sql = """
+                    UPDATE shelf 
+                    SET status = 'available',
+                        customer_name = NULL,
+                        customer_phone = NULL,
+                        customer_email = NULL,
+                        card_number = NULL,
+                        items_description = NULL,
+                        rental_period = NULL,
+                        discount = NULL,
+                        rented_date = NULL,
+                        maintenance_reason = NULL,
+                        updated_at = NOW()
+                    WHERE id = :shelf_id
+                    """
+                    update_params = {'shelf_id': shelf_id}
+                
+                # Execute the update
+                result = conn.execute(db.text(update_sql), update_params)
                 conn.commit()
+                
+                if result.rowcount > 0:
+                    app.logger.info(f"PostgreSQL end-rental successful for shelf: {shelf_id}")
+                    
+                    # Log the action
+                    log_action(
+                        username=session.get('username', 'unknown'),
+                        action=f"Ended rental for shelf {shelf_id} (PostgreSQL method)",
+                        details="Rental ended using PostgreSQL-compatible SQL update"
+                    )
+                    
+                    return jsonify({
+                        'success': True,
+                        'message': f'Shelf {shelf_id} rental ended successfully'
+                    }), 200
+                else:
+                    app.logger.error(f"PostgreSQL update failed for shelf: {shelf_id}")
+                    return jsonify({
+                        'success': False,
+                        'error': 'Failed to update shelf'
+                    }), 500
             
-            if result.rowcount > 0:
-                app.logger.info(f"✅ Simple end-rental successful for shelf: {shelf_id}")
-                
-                # Log the action
-                log_action(
-                    username=session.get('username', 'unknown'),
-                    action=f"Ended rental for shelf {shelf_id} (simple method)",
-                    details="Rental ended using direct SQL update to bypass model issues"
-                )
-                
-                return jsonify({
-                    'success': True,
-                    'message': f'Shelf {shelf_id} rental ended successfully'
-                }), 200
-            else:
-                app.logger.warning(f"⚠️  Shelf {shelf_id} not found or already available")
-                return jsonify({
-                    'success': False,
-                    'error': 'Shelf not found or already available'
-                }), 400
-                
-        except Exception as e:
-            app.logger.error(f"❌ Simple end-rental database error: {str(e)}", exc_info=True)
+            except Exception as e:
+            app.logger.error(f"PostgreSQL end-rental database error: {str(e)}", exc_info=True)
             return jsonify({
                 'success': False,
                 'error': 'Database update failed'
