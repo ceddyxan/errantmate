@@ -900,6 +900,23 @@ def emergency_migrate():
             'error': str(e)
         }), 500
 
+@app.route('/force-restart', methods=['POST'])
+def force_restart():
+    """Force restart by causing intentional error to trigger Render.com restart"""
+    try:
+        app.logger.info("🔄 Force restart requested - causing intentional error")
+        
+        # Cause an intentional error that will force Render.com to restart the service
+        raise Exception("INTENTIONAL ERROR: Force application restart for model reload")
+        
+    except Exception as e:
+        app.logger.info(f"✅ Force restart triggered: {str(e)}")
+        return jsonify({
+            'success': True,
+            'message': 'Force restart triggered - application will restart',
+            'error': str(e)
+        }), 500  # Return 500 to ensure Render.com restarts
+
 @app.route('/restart-app', methods=['POST'])
 def restart_app():
     """Restart the application to reload models after migration"""
