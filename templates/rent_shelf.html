@@ -682,7 +682,169 @@
         }
 
         function manageShelf(shelfId) {
-            alert(`Manage shelf ${shelfId} - This would open a management modal`);
+            // Check if user has permission to manage shelves
+            if (currentUserRole !== 'admin' && currentUserRole !== 'staff') {
+                alert('You do not have permission to manage shelves.');
+                return;
+            }
+            
+            // Find the shelf data
+            const shelf = shelves.find(s => s.id === shelfId);
+            if (!shelf) {
+                alert('Shelf not found');
+                return;
+            }
+            
+            // Populate management modal with shelf data
+            document.getElementById('manageShelfId').textContent = shelf.id;
+            document.getElementById('manageCurrentStatus').textContent = shelf.status;
+            document.getElementById('manageCustomerName').value = shelf.customer || '';
+            document.getElementById('manageCustomerPhone').value = shelf.phone || '';
+            document.getElementById('manageCustomerEmail').value = shelf.customerEmail || '';
+            document.getElementById('manageCardNumber').value = shelf.cardNumber || '';
+            document.getElementById('manageItemsDescription').value = shelf.itemsDescription || '';
+            document.getElementById('manageRentalPeriod').value = shelf.rentalPeriod || '1';
+            document.getElementById('manageMonthlyFee').value = shelf.price || 0;
+            document.getElementById('manageDiscount').value = shelf.discount || 0;
+            document.getElementById('manageRentedDate').textContent = shelf.rentedDate || 'N/A';
+            document.getElementById('manageTotalRevenue').textContent = `KSh ${calculateTotalRevenue(shelf)}`;
+            
+            // Show management modal
+            document.getElementById('manageModal').classList.remove('hidden');
+        }
+        
+        function calculateTotalRevenue(shelf) {
+            const monthlyFee = shelf.price || 0;
+            const rentalPeriod = parseInt(shelf.rentalPeriod) || 1;
+            const discount = parseFloat(shelf.discount) || 0;
+            const total = (monthlyFee * rentalPeriod) * (1 - discount / 100);
+            return total.toFixed(2);
+        }
+        
+        function closeManageModal() {
+            document.getElementById('manageModal').classList.add('hidden');
+        }
+        
+        async function updateShelfDetails() {
+            const shelfId = document.getElementById('manageShelfId').textContent;
+            const customerName = document.getElementById('manageCustomerName').value;
+            const customerPhone = document.getElementById('manageCustomerPhone').value;
+            const customerEmail = document.getElementById('manageCustomerEmail').value;
+            const cardNumber = document.getElementById('manageCardNumber').value;
+            const itemsDescription = document.getElementById('manageItemsDescription').value;
+            const rentalPeriod = document.getElementById('manageRentalPeriod').value;
+            const monthlyFee = document.getElementById('manageMonthlyFee').value;
+            const discount = document.getElementById('manageDiscount').value;
+            
+            try {
+                const response = await fetch('/api/shelves/update', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        shelfId: shelfId,
+                        customerName: customerName,
+                        customerPhone: customerPhone,
+                        customerEmail: customerEmail,
+                        cardNumber: cardNumber,
+                        itemsDescription: itemsDescription,
+                        rentalPeriod: rentalPeriod,
+                        monthlyFee: monthlyFee,
+                        discount: discount
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showSuccessMessage('Shelf details updated successfully');
+                    closeManageModal();
+                    await loadShelvesFromAPI();
+                } else {
+                    showErrorMessage(result.error || 'Failed to update shelf details');
+                }
+            } catch (error) {
+                console.error('Error updating shelf:', error);
+                showErrorMessage('Network error. Please try again.');
+            }
+        }
+        
+        async function endRental() {
+            const shelfId = document.getElementById('manageShelfId').textContent;
+            
+            if (!confirm('Are you sure you want to end this rental? This will free up the shelf.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/shelves/end-rental', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        shelfId: shelfId
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showSuccessMessage('Rental ended successfully');
+                    closeManageModal();
+                    await loadShelvesFromAPI();
+                } else {
+                    showErrorMessage(result.error || 'Failed to end rental');
+                }
+            } catch (error) {
+                console.error('Error ending rental:', error);
+                showErrorMessage('Network error. Please try again.');
+            }
+        }
+        
+        function generateRentalReport() {
+            const shelfId = document.getElementById('manageShelfId').textContent;
+            const shelf = shelves.find(s => s.id === shelfId);
+            
+            if (!shelf) {
+                alert('Shelf not found');
+                return;
+            }
+            
+            // Generate rental report content
+            const reportContent = `
+SHELF RENTAL REPORT
+==================
+Shelf ID: ${shelf.id}
+Status: ${shelf.status}
+Customer Name: ${shelf.customer || 'N/A'}
+Customer Phone: ${shelf.phone || 'N/A'}
+Customer Email: ${shelf.customerEmail || 'N/A'}
+Card Number: ${shelf.cardNumber || 'N/A'}
+Items Description: ${shelf.itemsDescription || 'N/A'}
+Rental Period: ${shelf.rentalPeriod || 'N/A'} months
+Monthly Fee: KSh ${shelf.price || 0}
+Discount: ${shelf.discount || 0}%
+Total Revenue: KSh ${calculateTotalRevenue(shelf)}
+Rented Date: ${shelf.rentedDate || 'N/A'}
+Generated: ${new Date().toLocaleString()}
+            `;
+            
+            // Create and download report
+            const blob = new Blob([reportContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `shelf_${shelfId}_rental_report.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            showSuccessMessage('Rental report generated successfully');
         }
 
         function completeMaintenance(shelfId) {
@@ -745,5 +907,113 @@
             alert(`Shelf ${formData.shelfNumber} has been successfully rented to ${formData.customerName}!`);
         });
     </script>
+
+<!-- Manage Shelf Modal -->
+<div id="manageModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-5 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-medium text-gray-900">Manage Shelf</h3>
+                <button onclick="closeManageModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Shelf Information -->
+            <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <span class="text-sm text-gray-600">Shelf ID:</span>
+                        <span id="manageShelfId" class="font-medium ml-2"></span>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-600">Current Status:</span>
+                        <span id="manageCurrentStatus" class="font-medium ml-2"></span>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-600">Rented Date:</span>
+                        <span id="manageRentedDate" class="font-medium ml-2"></span>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-600">Total Revenue:</span>
+                        <span id="manageTotalRevenue" class="font-medium ml-2"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Customer Information -->
+            <div class="mb-6">
+                <h4 class="text-lg font-medium text-gray-900 mb-3">Customer Information</h4>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Customer Name</label>
+                        <input type="text" id="manageCustomerName" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Customer Phone</label>
+                        <input type="tel" id="manageCustomerPhone" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Customer Email</label>
+                        <input type="email" id="manageCustomerEmail" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Card Number</label>
+                        <input type="text" id="manageCardNumber" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Rental Details -->
+            <div class="mb-6">
+                <h4 class="text-lg font-medium text-gray-900 mb-3">Rental Details</h4>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Items Description</label>
+                        <textarea id="manageItemsDescription" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Rental Period (months)</label>
+                        <select id="manageRentalPeriod" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="1">1 Month</option>
+                            <option value="3">3 Months</option>
+                            <option value="6">6 Months</option>
+                            <option value="12">12 Months</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Monthly Fee (KSh)</label>
+                        <input type="number" id="manageMonthlyFee" min="0" step="100" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Discount (%)</label>
+                        <input type="number" id="manageDiscount" min="0" max="100" step="5" value="0" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap gap-3 justify-between">
+                <div class="flex gap-3">
+                    <button onclick="updateShelfDetails()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200">
+                        <i class="fas fa-save mr-2"></i>Update Details
+                    </button>
+                    <button onclick="generateRentalReport()" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200">
+                        <i class="fas fa-file-download mr-2"></i>Generate Report
+                    </button>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="endRental()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200">
+                        <i class="fas fa-stop mr-2"></i>End Rental
+                    </button>
+                    <button onclick="closeManageModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors duration-200">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

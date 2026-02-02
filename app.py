@@ -645,9 +645,12 @@ class Shelf(db.Model):
     price = db.Column(db.Integer, nullable=False)  # Monthly fee in KSh
     customer_name = db.Column(db.String(100), nullable=True)
     customer_phone = db.Column(db.String(20), nullable=True)
+    customer_email = db.Column(db.String(100), nullable=True)
+    card_number = db.Column(db.String(50), nullable=True)
     rented_date = db.Column(db.Date, nullable=True)
     items_description = db.Column(db.Text, nullable=True)
     rental_period = db.Column(db.Integer, nullable=True)  # in months
+    discount = db.Column(db.Float, default=0.0)  # Discount percentage
     maintenance_reason = db.Column(db.String(200), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -2395,9 +2398,12 @@ def get_shelves():
                 'price': shelf.price,
                 'customer': shelf.customer_name,
                 'phone': shelf.customer_phone,
+                'customerEmail': shelf.customer_email,
+                'cardNumber': shelf.card_number,
                 'rentedDate': shelf.rented_date.strftime('%Y-%m-%d') if shelf.rented_date else None,
                 'itemsDescription': shelf.items_description,
                 'rentalPeriod': shelf.rental_period,
+                'discount': shelf.discount,
                 'reason': shelf.maintenance_reason
             }
             shelves_data.append(shelf_dict)
@@ -2458,6 +2464,133 @@ def test_database():
             'error': str(e),
             'message': 'Database connection failed'
         }), 500
+
+@app.route('/api/shelves/update', methods=['POST'])
+@login_required
+@database_required
+def update_shelf_details():
+    """Update shelf details - for staff/admin only."""
+    try:
+        # Check if user has permission
+        if session.get('user_role') not in ['admin', 'staff']:
+            return jsonify({'success': False, 'error': 'Permission denied'}), 403
+        
+        data = request.get_json()
+        app.logger.info(f"Received update shelf request: {data}")
+        
+        shelf_id = data.get('shelfId')
+        customer_name = data.get('customerName')
+        customer_phone = data.get('customerPhone')
+        customer_email = data.get('customerEmail')
+        card_number = data.get('cardNumber')
+        items_description = data.get('itemsDescription')
+        rental_period = data.get('rentalPeriod')
+        monthly_fee = data.get('monthlyFee')
+        discount = data.get('discount')
+        
+        # Find the shelf
+        shelf = Shelf.query.filter_by(id=shelf_id).first()
+        if not shelf:
+            return jsonify({'success': False, 'error': 'Shelf not found'}), 404
+        
+        # Update shelf information
+        if customer_name is not None:
+            shelf.customer_name = customer_name
+        if customer_phone is not None:
+            shelf.customer_phone = customer_phone
+        if customer_email is not None:
+            shelf.customer_email = customer_email
+        if card_number is not None:
+            shelf.card_number = card_number
+        if items_description is not None:
+            shelf.items_description = items_description
+        if rental_period is not None:
+            shelf.rental_period = rental_period
+        if monthly_fee is not None:
+            shelf.price = float(monthly_fee)
+        if discount is not None:
+            shelf.discount = float(discount)
+        
+        shelf.updated_at = datetime.now()
+        
+        db.session.commit()
+        
+        # Log the action
+        log_action(
+            username=session.get('username', 'unknown'),
+            action=f"Updated shelf {shelf_id} details",
+            details=f"Customer: {customer_name}, Period: {rental_period} months"
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': f'Shelf {shelf_id} details updated successfully'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error updating shelf: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+@app.route('/api/shelves/end-rental', methods=['POST'])
+@login_required
+@database_required
+def end_shelf_rental():
+    """End shelf rental and free up the shelf - for staff/admin only."""
+    try:
+        # Check if user has permission
+        if session.get('user_role') not in ['admin', 'staff']:
+            return jsonify({'success': False, 'error': 'Permission denied'}), 403
+        
+        data = request.get_json()
+        app.logger.info(f"Received end rental request: {data}")
+        
+        shelf_id = data.get('shelfId')
+        
+        # Find the shelf
+        shelf = Shelf.query.filter_by(id=shelf_id).first()
+        if not shelf:
+            return jsonify({'success': False, 'error': 'Shelf not found'}), 404
+        
+        # Check if shelf is occupied
+        if shelf.status != 'occupied':
+            return jsonify({'success': False, 'error': 'Shelf is not currently occupied'}), 400
+        
+        # Store rental info for logging
+        customer_name = shelf.customer_name
+        rental_period = shelf.rental_period
+        
+        # Clear rental information
+        shelf.status = 'available'
+        shelf.customer_name = None
+        shelf.customer_phone = None
+        shelf.customer_email = None
+        shelf.card_number = None
+        shelf.items_description = None
+        shelf.rental_period = None
+        shelf.discount = None
+        shelf.rented_date = None
+        shelf.maintenance_reason = None
+        shelf.updated_at = datetime.now()
+        
+        db.session.commit()
+        
+        # Log the action
+        log_action(
+            username=session.get('username', 'unknown'),
+            action=f"Ended rental for shelf {shelf_id}",
+            details=f"Previous customer: {customer_name}, Period: {rental_period} months"
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': f'Shelf {shelf_id} rental ended successfully'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error ending rental: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
 @app.route('/api/debug/rent', methods=['POST'])
 @login_required
