@@ -779,8 +779,8 @@
             }
             
             try {
-                // Use the PostgreSQL-safe end-rental endpoint
-                const response = await fetch('/api/shelves/end-rental-safe', {
+                // Use the ultra-simple end-rental endpoint for maximum PostgreSQL compatibility
+                const response = await fetch('/api/shelves/end-rental-ultra', {
                     method: 'POST',
                     credentials: 'include',
                     headers: {

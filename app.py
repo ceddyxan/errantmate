@@ -2654,6 +2654,68 @@ def update_shelf_details():
         app.logger.error(f"Error updating shelf: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
+@app.route('/api/shelves/end-rental-ultra', methods=['POST'])
+@login_required
+@database_required
+def end_shelf_rental_ultra():
+    """Ultra-simple PostgreSQL end rental - most basic approach"""
+    try:
+        # Check permissions
+        if session.get('user_role') not in ['admin', 'staff']:
+            return jsonify({'success': False, 'error': 'Permission denied'}), 403
+        
+        data = request.get_json()
+        shelf_id = data.get('shelfId')
+        
+        if not shelf_id:
+            return jsonify({'success': False, 'error': 'Shelf ID required'}), 400
+        
+        app.logger.info(f"Ultra-simple end-rental for shelf: {shelf_id}")
+        
+        # Use the most basic approach possible
+        try:
+            # Use raw SQL with the simplest possible syntax
+            with db.engine.connect() as conn:
+                # Use the most basic UPDATE statement
+                sql = "UPDATE shelf SET status = 'available' WHERE id = '" + shelf_id + "'"
+                
+                result = conn.execute(db.text(sql))
+                conn.commit()
+                
+                if result.rowcount > 0:
+                    app.logger.info(f"Ultra-simple end-rental success: {shelf_id}")
+                    
+                    # Log the action
+                    log_action(
+                        username=session.get('username', 'unknown'),
+                        action=f"Ended rental for shelf {shelf_id} (ultra-simple method)",
+                        details="Rental ended using ultra-simple SQL update"
+                    )
+                    
+                    return jsonify({
+                        'success': True,
+                        'message': f'Shelf {shelf_id} rental ended successfully'
+                    }), 200
+                else:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Shelf not found or already available'
+                    }), 400
+                    
+        except Exception as e:
+            app.logger.error(f"Ultra-simple end-rental DB error: {str(e)}", exc_info=True)
+            return jsonify({
+                'success': False,
+                'error': f'Database operation failed: {str(e)}'
+            }), 500
+            
+    except Exception as e:
+        app.logger.error(f"Ultra-simple end-rental failed: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'Internal server error'
+        }), 500
+
 @app.route('/api/shelves/end-rental-safe', methods=['POST'])
 @login_required
 @database_required
