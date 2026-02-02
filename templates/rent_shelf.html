@@ -737,7 +737,8 @@
             const discount = document.getElementById('manageDiscount').value;
             
             try {
-                const response = await fetch('/api/shelves/update', {
+                // Use the ultra-simple update endpoint for maximum PostgreSQL compatibility
+                const response = await fetch('/api/shelves/update-ultra', {
                     method: 'POST',
                     credentials: 'include',
                     headers: {
@@ -747,12 +748,10 @@
                     body: JSON.stringify({
                         shelfId: shelfId,
                         customerName: customerName,
-                        customerPhone: customerPhone,
                         customerEmail: customerEmail,
                         cardNumber: cardNumber,
                         itemsDescription: itemsDescription,
                         rentalPeriod: rentalPeriod,
-                        monthlyFee: monthlyFee,
                         discount: discount
                     })
                 });
