@@ -900,6 +900,37 @@ def emergency_migrate():
             'error': str(e)
         }), 500
 
+@app.route('/restart-app', methods=['POST'])
+def restart_app():
+    """Restart the application to reload models after migration"""
+    try:
+        app.logger.info("🔄 Application restart requested")
+        
+        # Test if Shelf model works after restart
+        try:
+            shelves = Shelf.query.all()
+            app.logger.info(f"✅ Shelf model working: {len(shelves)} shelves found")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Application models reloaded successfully',
+                'shelves_count': len(shelves)
+            })
+            
+        except Exception as e:
+            app.logger.error(f"❌ Shelf model still failing: {e}")
+            return jsonify({
+                'success': False,
+                'error': f'Shelf model error: {str(e)}'
+            }), 500
+            
+    except Exception as e:
+        app.logger.error(f"❌ Restart failed: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @app.route('/health')
 
 def health_check():
