@@ -714,6 +714,20 @@
             document.getElementById('manageRentedDate').textContent = shelf.rentedDate || 'N/A';
             document.getElementById('manageTotalRevenue').textContent = `KSh ${calculateTotalRevenue(shelf)}`;
             
+            // Show/hide buttons based on shelf status
+            const endRentalBtn = document.getElementById('endRentalBtn');
+            const deleteShelfBtn = document.getElementById('deleteShelfBtn');
+            
+            if (shelf.status === 'occupied') {
+                // Show End Rental, hide Delete
+                endRentalBtn.style.display = 'inline-flex';
+                deleteShelfBtn.style.display = 'none';
+            } else {
+                // Hide End Rental, show Delete
+                endRentalBtn.style.display = 'none';
+                deleteShelfBtn.style.display = 'inline-flex';
+            }
+            
             // Show management modal
             document.getElementById('manageModal').classList.remove('hidden');
         }
@@ -1128,10 +1142,10 @@ Generated: ${new Date().toLocaleString()}
                     <button onclick="updateAllShelfInfo()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
                         <i class="fas fa-save mr-1"></i>Update All
                     </button>
-                    <button onclick="endRental()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                    <button onclick="endRental()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors" id="endRentalBtn">
                         <i class="fas fa-stop-circle mr-1"></i>End Rental
                     </button>
-                    <button onclick="deleteShelf()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                    <button onclick="deleteShelf()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors" id="deleteShelfBtn">
                         <i class="fas fa-trash mr-1"></i>Delete Shelf
                     </button>
                     <button onclick="generateRentalReport()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
