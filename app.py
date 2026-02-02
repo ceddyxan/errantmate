@@ -332,6 +332,14 @@ else:
 
 
 
+def get_local_time():
+    """Get current time in UTC+3 (Kenya timezone)"""
+    return datetime.utcnow() + timedelta(hours=3)
+
+def get_local_date():
+    """Get current date in UTC+3 (Kenya timezone)"""
+    return (datetime.utcnow() + timedelta(hours=3)).date()
+
 # Use simple datetime (browser local time will be set from frontend)
 
 
@@ -652,8 +660,8 @@ class Shelf(db.Model):
     rental_period = db.Column(db.Integer, nullable=True)  # in months
     discount = db.Column(db.Float, default=0.0)  # Discount percentage
     maintenance_reason = db.Column(db.String(200), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=get_local_time)
+    updated_at = db.Column(db.DateTime, default=get_local_time, onupdate=get_local_time)
     
     def __repr__(self):
         return f'<Shelf {self.id} - {self.status}>'
@@ -3101,8 +3109,8 @@ def rent_shelf_api():
             return jsonify({'success': False, 'error': 'Shelf is not available'}), 400
         
         # Update shelf information
-        current_date = datetime.now().date()
-        current_datetime = datetime.now()
+        current_date = get_local_date()
+        current_datetime = get_local_time()
         
         app.logger.info(f"DEBUG: Current local date: {current_date}")
         app.logger.info(f"DEBUG: Current local datetime: {current_datetime}")
