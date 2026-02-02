@@ -779,46 +779,6 @@
             }
         }
 
-        async function updateShelfInfo() {
-            const originalShelfId = document.getElementById('manageShelfIdInput').getAttribute('data-original-id') || 
-                                 document.getElementById('manageShelfIdInput').value;
-            const newShelfId = document.getElementById('manageShelfIdInput').value.trim();
-            const monthlyFee = document.getElementById('manageMonthlyFee').value;
-            
-            if (!newShelfId) {
-                showErrorMessage('Shelf ID is required');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/shelves/update-info', {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        originalShelfId: originalShelfId,
-                        newShelfId: newShelfId,
-                        price: parseInt(monthlyFee) || 0
-                    })
-                });
-                
-                const result = await response.json();
-                if (result.success) {
-                    showSuccessMessage('Shelf information updated successfully');
-                    closeManageModal();
-                    await loadShelvesFromAPI();
-                } else {
-                    showErrorMessage(result.error || 'Failed to update shelf information');
-                }
-            } catch (error) {
-                console.error('Error updating shelf info:', error);
-                showErrorMessage('Network error. Please try again.');
-            }
-        }
-
         async function deleteShelf() {
             const shelfId = document.getElementById('manageShelfIdInput').value.trim();
             
@@ -865,10 +825,11 @@
             document.getElementById('manageModal').classList.add('hidden');
         }
         
-        async function updateShelfDetails() {
-            const shelfId = document.getElementById('manageShelfId').textContent;
+        async function updateAllShelfInfo() {
+            const originalShelfId = document.getElementById('manageShelfIdInput').getAttribute('data-original-id') || 
+                                 document.getElementById('manageShelfIdInput').value;
+            const newShelfId = document.getElementById('manageShelfIdInput').value.trim();
             const customerName = document.getElementById('manageCustomerName').value;
-            const customerPhone = document.getElementById('manageCustomerPhone').value;
             const customerEmail = document.getElementById('manageCustomerEmail').value;
             const cardNumber = document.getElementById('manageCardNumber').value;
             const itemsDescription = document.getElementById('manageItemsDescription').value;
@@ -876,9 +837,37 @@
             const monthlyFee = document.getElementById('manageMonthlyFee').value;
             const discount = document.getElementById('manageDiscount').value;
             
+            if (!newShelfId) {
+                showErrorMessage('Shelf ID is required');
+                return;
+            }
+            
             try {
-                // Use the ultra-simple update endpoint for maximum PostgreSQL compatibility
-                const response = await fetch('/api/shelves/update-ultra', {
+                // First update shelf info (ID and price) if changed
+                if (newShelfId !== originalShelfId || monthlyFee) {
+                    const shelfInfoResponse = await fetch('/api/shelves/update-info', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            originalShelfId: originalShelfId,
+                            newShelfId: newShelfId,
+                            price: parseInt(monthlyFee) || 0
+                        })
+                    });
+                    
+                    const shelfInfoResult = await shelfInfoResponse.json();
+                    if (!shelfInfoResult.success) {
+                        showErrorMessage(shelfInfoResult.error || 'Failed to update shelf information');
+                        return;
+                    }
+                }
+                
+                // Then update customer details
+                const customerDetailsResponse = await fetch('/api/shelves/update-ultra', {
                     method: 'POST',
                     credentials: 'include',
                     headers: {
@@ -886,7 +875,7 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify({
-                        shelfId: shelfId,
+                        shelfId: newShelfId, // Use potentially new shelf ID
                         customerName: customerName,
                         customerEmail: customerEmail,
                         cardNumber: cardNumber,
@@ -896,22 +885,22 @@
                     })
                 });
                 
-                const result = await response.json();
-                if (result.success) {
-                    showSuccessMessage('Shelf details updated successfully');
+                const customerDetailsResult = await customerDetailsResponse.json();
+                if (customerDetailsResult.success) {
+                    showSuccessMessage('All shelf information updated successfully');
                     closeManageModal();
                     await loadShelvesFromAPI();
                 } else {
-                    showErrorMessage(result.error || 'Failed to update shelf details');
+                    showErrorMessage(customerDetailsResult.error || 'Failed to update customer details');
                 }
             } catch (error) {
-                console.error('Error updating shelf:', error);
+                console.error('Error updating shelf info:', error);
                 showErrorMessage('Network error. Please try again.');
             }
         }
         
         async function endRental() {
-            const shelfId = document.getElementById('manageShelfId').textContent;
+            const shelfId = document.getElementById('manageShelfIdInput').value.trim();
             
             if (!confirm('Are you sure you want to end this rental? This will free up the shelf.')) {
                 return;
@@ -946,7 +935,7 @@
         }
         
         function generateRentalReport() {
-            const shelfId = document.getElementById('manageShelfId').textContent;
+            const shelfId = document.getElementById('manageShelfIdInput').value.trim();
             const shelf = shelves.find(s => s.id === shelfId);
             
             if (!shelf) {
@@ -1136,11 +1125,8 @@ Generated: ${new Date().toLocaleString()}
             <div class="border-t pt-4">
                 <h4 class="text-lg font-medium text-gray-900 mb-3">Shelf Management</h4>
                 <div class="flex flex-wrap gap-2">
-                    <button onclick="updateShelfDetails()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-                        <i class="fas fa-save mr-1"></i>Update Details
-                    </button>
-                    <button onclick="updateShelfInfo()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-                        <i class="fas fa-edit mr-1"></i>Update Shelf Info
+                    <button onclick="updateAllShelfInfo()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                        <i class="fas fa-save mr-1"></i>Update All
                     </button>
                     <button onclick="endRental()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
                         <i class="fas fa-stop-circle mr-1"></i>End Rental
