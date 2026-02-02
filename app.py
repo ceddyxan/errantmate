@@ -826,6 +826,80 @@ def create_admin():
 
 
 
+@app.route('/emergency-migrate', methods=['POST'])
+def emergency_migrate():
+    """Emergency migration endpoint to fix production database"""
+    try:
+        with app.app_context():
+            app.logger.info("🚨 Emergency migration started")
+            
+            # Check current columns
+            inspector = db.inspect(db.engine)
+            columns = inspector.get_columns('shelf')
+            column_names = [col['name'] for col in columns]
+            
+            app.logger.info(f"Current shelf columns: {column_names}")
+            
+            # Add missing columns
+            migrations = [
+                ('customer_email', 'VARCHAR(100)', None),
+                ('card_number', 'VARCHAR(50)', None),
+                ('discount', 'FLOAT', '0.0')
+            ]
+            
+            added_columns = []
+            
+            for column_name, column_type, default_value in migrations:
+                if column_name not in column_names:
+                    app.logger.info(f"Adding {column_name} column...")
+                    
+                    if 'sqlite' in str(db.engine.url).lower():
+                        # SQLite
+                        if default_value:
+                            sql = f'ALTER TABLE shelf ADD COLUMN {column_name} {column_type} DEFAULT {default_value}'
+                        else:
+                            sql = f'ALTER TABLE shelf ADD COLUMN {column_name} {column_type}'
+                    else:
+                        # PostgreSQL
+                        if default_value:
+                            sql = f'ALTER TABLE shelf ADD COLUMN {column_name} {column_type} DEFAULT {default_value}'
+                        else:
+                            sql = f'ALTER TABLE shelf ADD COLUMN {column_name} {column_type}'
+                    
+                    with db.engine.connect() as conn:
+                        conn.execute(db.text(sql))
+                        conn.commit()
+                    
+                    added_columns.append(column_name)
+                    app.logger.info(f"✅ {column_name} added successfully")
+                else:
+                    app.logger.info(f"✅ {column_name} already exists")
+            
+            # Test the Shelf model
+            try:
+                test_shelf = Shelf.query.first()
+                if test_shelf:
+                    app.logger.info(f"✅ Shelf model test successful: {test_shelf.id}")
+            except Exception as e:
+                app.logger.error(f"❌ Shelf model test failed: {e}")
+                return jsonify({'success': False, 'error': f'Shelf model test failed: {str(e)}'}), 500
+            
+            app.logger.info(f"🎉 Emergency migration completed! Added columns: {added_columns}")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Emergency migration completed successfully',
+                'added_columns': added_columns,
+                'total_columns': len(column_names) + len(added_columns)
+            })
+            
+    except Exception as e:
+        app.logger.error(f"❌ Emergency migration failed: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @app.route('/health')
 
 def health_check():
