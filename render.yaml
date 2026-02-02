@@ -4,7 +4,7 @@ services:
     name: errantmate
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt && python init_render_db.py
+    buildCommand: pip install -r requirements.txt && python init_render_db.py && python migrate_render_shelf_fields.py
     startCommand: python app.py
     healthCheckPath: /health
     # Updated: 2026-02-01 - Add shelf rental system with database initialization
