@@ -722,14 +722,19 @@
             const endRentalBtn = document.getElementById('endRentalBtn');
             const deleteShelfBtn = document.getElementById('deleteShelfBtn');
             
+            console.log('DEBUG: Shelf status:', shelf.status);
+            console.log('DEBUG: Current user role:', currentUserRole);
+            
             if (shelf.status === 'occupied') {
                 // Show End Rental, hide Delete
                 endRentalBtn.style.display = 'inline-flex';
                 deleteShelfBtn.style.display = 'none';
+                console.log('DEBUG: Showing End Rental, hiding Delete');
             } else {
                 // Hide End Rental, show Delete
                 endRentalBtn.style.display = 'none';
                 deleteShelfBtn.style.display = 'inline-flex';
+                console.log('DEBUG: Hiding End Rental, showing Delete');
             }
             
             // Show management modal
