@@ -775,7 +775,8 @@
             }
             
             try {
-                const response = await fetch('/api/shelves/create', {
+                // Use the ultra-simple create endpoint for maximum PostgreSQL compatibility
+                const response = await fetch('/api/shelves/create-ultra', {
                     method: 'POST',
                     credentials: 'include',
                     headers: {

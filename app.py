@@ -2683,6 +2683,64 @@ def update_shelf_details_ultra():
             'error': 'Internal server error'
         }), 500
 
+@app.route('/api/shelves/create-ultra', methods=['POST'])
+@login_required
+@database_required
+def create_shelf_ultra():
+    """Ultra-simple create shelf endpoint using raw SQL for PostgreSQL compatibility."""
+    try:
+        # Check if user has permission
+        if session.get('user_role') not in ['admin', 'staff']:
+            return jsonify({'success': False, 'error': 'Permission denied'}), 403
+        
+        data = request.get_json()
+        shelf_id = data.get('shelfId', '').strip()
+        price = data.get('price', 0)
+        
+        if not shelf_id:
+            return jsonify({'success': False, 'error': 'Shelf ID is required'}), 400
+        
+        if price < 0:
+            return jsonify({'success': False, 'error': 'Price must be positive'}), 400
+        
+        # Use raw SQL for maximum PostgreSQL compatibility
+        from sqlalchemy import text
+        
+        # Check if shelf already exists
+        check_sql = text("SELECT id FROM shelves WHERE id = :shelf_id")
+        existing = db.session.execute(check_sql, {'shelf_id': shelf_id}).fetchone()
+        
+        if existing:
+            return jsonify({'success': False, 'error': 'Shelf with this ID already exists'}), 400
+        
+        # Create new shelf using raw SQL
+        insert_sql = text("""
+            INSERT INTO shelves (id, price, status, created_at, updated_at)
+            VALUES (:shelf_id, :price, 'available', NOW(), NOW())
+        """)
+        
+        db.session.execute(insert_sql, {
+            'shelf_id': shelf_id,
+            'price': price
+        })
+        
+        db.session.commit()
+        
+        app.logger.info(f"New shelf created: {shelf_id} by {session.get('username', 'unknown')}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Shelf {shelf_id} created successfully'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Ultra-simple create shelf failed: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'Internal server error'
+        }), 500
+
 @app.route('/api/shelves/create', methods=['POST'])
 @login_required
 @database_required
@@ -2712,7 +2770,9 @@ def create_shelf():
         new_shelf = Shelf(
             id=shelf_id,
             price=price,
-            status='available'
+            status='available',
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
         
         db.session.add(new_shelf)
