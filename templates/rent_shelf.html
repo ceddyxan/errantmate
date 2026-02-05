@@ -1040,14 +1040,35 @@ Generated: ${new Date().toLocaleString()}
             showSuccessMessage('Rental report generated successfully');
         }
 
-        function completeMaintenance(shelfId) {
+        async function completeMaintenance(shelfId) {
             if (confirm(`Mark shelf ${shelfId} as available?`)) {
-                const shelf = shelves.find(s => s.id === shelfId);
-                if (shelf) {
-                    shelf.status = 'available';
-                    delete shelf.reason;
-                    loadShelves();
-                    updateStats();
+                try {
+                    // Call backend API to complete maintenance
+                    const response = await fetch('/api/shelves/complete-maintenance', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            shelfId: shelfId
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showSuccessMessage(result.message);
+                        // Reload shelves from server to get updated data
+                        await loadShelvesFromAPI();
+                        updateStats();
+                    } else {
+                        showErrorMessage(result.error || 'Failed to complete maintenance');
+                    }
+                } catch (error) {
+                    console.error('Error completing maintenance:', error);
+                    showErrorMessage('Network error. Please try again.');
                 }
             }
         }

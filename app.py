@@ -2681,6 +2681,53 @@ def update_shelf_details_ultra():
             'error': 'Internal server error'
         }), 500
 
+@app.route('/api/shelves/complete-maintenance', methods=['POST'])
+@login_required
+@database_required
+def complete_maintenance():
+    """Complete maintenance for a shelf - change status from maintenance to available."""
+    try:
+        # Check if user has permission
+        if session.get('user_role') not in ['admin', 'staff']:
+            return jsonify({'success': False, 'error': 'Permission denied'}), 403
+        
+        data = request.get_json()
+        shelf_id = data.get('shelfId', '').strip()
+        
+        if not shelf_id:
+            return jsonify({'success': False, 'error': 'Shelf ID is required'}), 400
+        
+        # Find the shelf
+        shelf = Shelf.query.filter_by(id=shelf_id).first()
+        if not shelf:
+            return jsonify({'success': False, 'error': 'Shelf not found'}), 404
+        
+        # Check if shelf is in maintenance
+        if shelf.status != 'maintenance':
+            return jsonify({'success': False, 'error': 'Shelf is not in maintenance'}), 400
+        
+        # Update shelf status to available and clear maintenance reason
+        shelf.status = 'available'
+        shelf.maintenance_reason = None
+        shelf.updated_at = get_local_time()
+        
+        db.session.commit()
+        
+        app.logger.info(f"Maintenance completed for shelf: {shelf_id} by {session.get('username', 'unknown')}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Shelf {shelf_id} is now available'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Complete maintenance failed: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'Internal server error'
+        }), 500
+
 @app.route('/api/shelves/create-orm', methods=['POST'])
 @login_required
 @database_required
