@@ -345,10 +345,8 @@ def get_local_date():
 
 
 def get_current_time():
-
-    """Get current datetime."""
-
-    return datetime.now()
+    """Get current datetime in UTC+3 (Kenya timezone)."""
+    return datetime.utcnow() + timedelta(hours=3)
 
 
 
