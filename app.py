@@ -2705,19 +2705,23 @@ def create_shelf_simple():
         
         # Use string concatenation for maximum PostgreSQL compatibility
         # Check if shelf already exists
-        check_query = f"SELECT id FROM shelves WHERE id = '{shelf_id}'"
-        existing = db.session.execute(check_query).fetchone()
+        from sqlalchemy import text
+        check_query = text("SELECT id FROM shelves WHERE id = :shelf_id")
+        existing = db.session.execute(check_query, {'shelf_id': shelf_id}).fetchone()
         
         if existing:
             return jsonify({'success': False, 'error': 'Shelf with this ID already exists'}), 400
         
         # Create new shelf using string concatenation
-        insert_query = f"""
+        insert_query = text("""
             INSERT INTO shelves (id, price, status, created_at, updated_at)
-            VALUES ('{shelf_id}', {price}, 'available', NOW(), NOW())
-        """
+            VALUES (:shelf_id, :price, 'available', NOW(), NOW())
+        """)
         
-        db.session.execute(insert_query)
+        db.session.execute(insert_query, {
+            'shelf_id': shelf_id,
+            'price': price
+        })
         db.session.commit()
         
         app.logger.info(f"New shelf created: {shelf_id} by {session.get('username', 'unknown')}")
