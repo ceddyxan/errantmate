@@ -2683,6 +2683,63 @@ def update_shelf_details_ultra():
             'error': 'Internal server error'
         }), 500
 
+@app.route('/api/shelves/create-secure', methods=['POST'])
+@login_required
+@database_required
+def create_shelf_secure():
+    """Secure create shelf endpoint using proper SQLAlchemy parameter binding."""
+    try:
+        # Check if user has permission
+        if session.get('user_role') not in ['admin', 'staff']:
+            return jsonify({'success': False, 'error': 'Permission denied'}), 403
+        
+        data = request.get_json()
+        shelf_id = data.get('shelfId', '').strip()
+        price = data.get('price', 0)
+        
+        if not shelf_id:
+            return jsonify({'success': False, 'error': 'Shelf ID is required'}), 400
+        
+        if price < 0:
+            return jsonify({'success': False, 'error': 'Price must be positive'}), 400
+        
+        # SECURE: Use proper SQLAlchemy parameter binding
+        from sqlalchemy import text
+        
+        # Check if shelf already exists (SECURE)
+        check_query = text("SELECT id FROM shelves WHERE id = :shelf_id")
+        existing = db.session.execute(check_query, {'shelf_id': shelf_id}).fetchone()
+        
+        if existing:
+            return jsonify({'success': False, 'error': 'Shelf with this ID already exists'}), 400
+        
+        # Create new shelf (SECURE)
+        insert_query = text("""
+            INSERT INTO shelves (id, price, status, created_at, updated_at)
+            VALUES (:shelf_id, :price, 'available', NOW(), NOW())
+        """)
+        
+        db.session.execute(insert_query, {
+            'shelf_id': shelf_id,
+            'price': price
+        })
+        db.session.commit()
+        
+        app.logger.info(f"New shelf created: {shelf_id} by {session.get('username', 'unknown')}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Shelf {shelf_id} created successfully'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Secure create shelf failed: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'Internal server error'
+        }), 500
+
 @app.route('/api/shelves/create-raw', methods=['POST'])
 @login_required
 @database_required

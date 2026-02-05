@@ -775,8 +775,8 @@
             }
             
             try {
-                // Use raw SQL endpoint to bypass SQLAlchemy text() issues
-                const response = await fetch('/api/shelves/create-raw', {
+                // Use secure SQLAlchemy endpoint with proper parameter binding
+                const response = await fetch('/api/shelves/create-secure', {
                     method: 'POST',
                     credentials: 'include',
                     headers: {
