@@ -775,8 +775,8 @@
             }
             
             try {
-                // Use secure SQLAlchemy endpoint with proper parameter binding
-                const response = await fetch('/api/shelves/create-secure', {
+                // Use ORM endpoint for maximum PostgreSQL compatibility
+                const response = await fetch('/api/shelves/create-orm', {
                     method: 'POST',
                     credentials: 'include',
                     headers: {

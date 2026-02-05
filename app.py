@@ -2683,6 +2683,56 @@ def update_shelf_details_ultra():
             'error': 'Internal server error'
         }), 500
 
+@app.route('/api/shelves/create-orm', methods=['POST'])
+@login_required
+@database_required
+def create_shelf_orm():
+    """Create shelf using SQLAlchemy ORM for maximum PostgreSQL compatibility."""
+    try:
+        # Check if user has permission
+        if session.get('user_role') not in ['admin', 'staff']:
+            return jsonify({'success': False, 'error': 'Permission denied'}), 403
+        
+        data = request.get_json()
+        shelf_id = data.get('shelfId', '').strip()
+        price = data.get('price', 0)
+        
+        if not shelf_id:
+            return jsonify({'success': False, 'error': 'Shelf ID is required'}), 400
+        
+        if price < 0:
+            return jsonify({'success': False, 'error': 'Price must be positive'}), 400
+        
+        # Check if shelf already exists using ORM
+        existing_shelf = Shelf.query.filter_by(id=shelf_id).first()
+        if existing_shelf:
+            return jsonify({'success': False, 'error': 'Shelf with this ID already exists'}), 400
+        
+        # Create new shelf using ORM (most compatible)
+        new_shelf = Shelf(
+            id=shelf_id,
+            price=price,
+            status='available'
+        )
+        
+        db.session.add(new_shelf)
+        db.session.commit()
+        
+        app.logger.info(f"New shelf created: {shelf_id} by {session.get('username', 'unknown')}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Shelf {shelf_id} created successfully'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"ORM create shelf failed: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'Internal server error'
+        }), 500
+
 @app.route('/api/shelves/create-secure', methods=['POST'])
 @login_required
 @database_required
