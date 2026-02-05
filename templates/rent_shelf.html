@@ -775,8 +775,8 @@
             }
             
             try {
-                // Use the simple create endpoint for maximum PostgreSQL compatibility
-                const response = await fetch('/api/shelves/create-simple', {
+                // Use raw SQL endpoint to bypass SQLAlchemy text() issues
+                const response = await fetch('/api/shelves/create-raw', {
                     method: 'POST',
                     credentials: 'include',
                     headers: {
