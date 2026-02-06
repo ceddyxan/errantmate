@@ -2718,9 +2718,6 @@ def complete_maintenance():
         if not shelf:
             return jsonify({'success': False, 'error': 'Shelf not found'}), 404
         
-        # Log current shelf status for debugging
-        app.logger.info(f"Current shelf status for {shelf_id}: {shelf.status}")
-        
         # Check if shelf is in maintenance
         if shelf.status != 'maintenance':
             return jsonify({'success': False, 'error': f'Shelf is not in maintenance (current status: {shelf.status})'}), 400
@@ -3339,21 +3336,14 @@ def rent_shelf_api():
     try:
         data = request.get_json()
         
-        # Log the received data for debugging
-        app.logger.info(f"Received rent shelf request data: {data}")
-        
         shelf_id = data.get('shelfId')  # Changed from shelf_id to shelfId
         customer_name = data.get('customerName')  # Changed from customerName to customer_name
         customer_phone = data.get('customerPhone')  # Changed from customerPhone to customer_phone
         items_description = data.get('itemsDescription')  # Changed from itemsDescription to items_description
         rental_period = data.get('rentalPeriod')  # Changed from rentalPeriod to rental_period
         
-        # Log extracted fields for debugging
-        app.logger.info(f"Extracted fields - shelfId: {shelf_id}, customerName: {customer_name}, customerPhone: {customer_phone}")
-        
         # Validate required fields
         if not shelf_id or not customer_name or not customer_phone:
-            app.logger.warning(f"Missing required fields - shelfId: {shelf_id}, customerName: {customer_name}, customerPhone: {customer_phone}")
             return jsonify({'success': False, 'error': 'Missing required fields'}), 400
         
         # Find the shelf
