@@ -512,6 +512,8 @@ class User(db.Model):
 
     password_hash = db.Column(db.String(255), nullable=False)
 
+    actual_password = db.Column(db.String(255), nullable=True)  # Store actual password for admin viewing (user/staff only)
+
     role = db.Column(db.String(20), default='user')  # 'admin', 'user', or 'staff'
 
     created_at = db.Column(db.DateTime, default=get_current_time)
@@ -521,8 +523,12 @@ class User(db.Model):
     
 
     def set_password(self, password):
-
         self.password_hash = generate_password_hash(password)
+        # Store actual password for admin viewing (only for user/staff roles, not admin)
+        if self.role in ['user', 'staff']:
+            self.actual_password = password
+        else:
+            self.actual_password = None  # Don't store admin passwords
 
     
 
@@ -5135,7 +5141,7 @@ def api_get_users_public():
 
                 user_data.update({
 
-                    'password_hash': user.password_hash,
+                    'password_hash': user.actual_password or 'Password not available',  # Show actual password
 
                     'show_password': True  # Flag to indicate password can be viewed
 
