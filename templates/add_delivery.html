@@ -2598,26 +2598,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Add manual test - show dropdown when typing "test"
-    if (senderNameInput && autocompleteDropdown) {
-        senderNameInput.addEventListener('input', function() {
-            if (this.value.toLowerCase() === 'test') {
-                console.log('Manual test: showing dropdown with test data');
-                autocompleteDropdown.innerHTML = `
-                    <div class="sender-suggestion px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100" 
-                         data-name="Test Sender" 
-                         data-phone="0712345678">
-                        <div class="flex flex-col">
-                            <span class="font-medium text-gray-900">Test Sender</span>
-                            <span class="text-sm text-gray-500">0712345678</span>
-                        </div>
-                    </div>
-                `;
-                autocompleteDropdown.classList.remove('hidden');
-            }
-        });
-    }
-
     if (senderNameInput && autocompleteDropdown) {
         // Input event handler for sender name
         senderNameInput.addEventListener('input', function() {

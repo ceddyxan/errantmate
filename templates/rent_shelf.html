@@ -297,8 +297,11 @@
                         loadShelves();
                         updateStats();
                     } else {
-                        console.log('No server data available, using hardcoded sample data');
-                        loadSampleData();
+                        console.log('No server data available - showing empty state');
+                        // Show empty state instead of hardcoded data
+                        shelves = [];
+                        loadShelves();
+                        updateStats();
                     }
                 }
             } catch (error) {
@@ -310,31 +313,16 @@
                     loadShelves();
                     updateStats();
                 } else {
-                    console.log('No server data available, using hardcoded sample data');
-                    loadSampleData();
+                    console.log('No server data available - showing empty state');
+                    // Show empty state instead of hardcoded data
+                    shelves = [];
+                    loadShelves();
+                    updateStats();
                 }
             }
         }
 
-        // Fallback sample data
-        function loadSampleData() {
-            shelves = [
-                { id: 'A-01', status: 'available', size: 'Small', price: 800 },
-                { id: 'A-02', status: 'occupied', customer: 'John Doe', phone: '0712345678', size: 'Small', price: 800, rentedDate: '2024-01-15' },
-                { id: 'A-03', status: 'available', size: 'Small', price: 800 },
-                { id: 'A-04', status: 'maintenance', reason: 'Repair needed', size: 'Small', price: 800 },
-                { id: 'B-01', status: 'occupied', customer: 'Jane Smith', phone: '0723456789', size: 'Large', price: 1000, rentedDate: '2024-01-10' },
-                { id: 'B-02', status: 'available', size: 'Large', price: 1000 },
-                { id: 'B-03', status: 'occupied', customer: 'Mike Johnson', phone: '0734567890', size: 'Large', price: 1000, rentedDate: '2024-01-20' },
-                { id: 'C-01', status: 'available', size: 'Small', price: 800 },
-                { id: 'C-02', status: 'occupied', customer: 'Sarah Wilson', phone: '0745678901', size: 'Small', price: 800, rentedDate: '2024-01-05' },
-                { id: 'C-03', status: 'available', size: 'Large', price: 1000 },
-                { id: 'D-01', status: 'maintenance', reason: 'Cleaning', size: 'Large', price: 1000 },
-                { id: 'D-02', status: 'occupied', customer: 'Tom Brown', phone: '0756789012', size: 'Large', price: 1000, rentedDate: '2024-01-25' }
-            ];
-            loadShelves();
-            updateStats();
-        }
+        // Removed hardcoded sample data - now uses real database data only
 
         // Initialize the page
         document.addEventListener('DOMContentLoaded', function() {
