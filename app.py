@@ -2702,9 +2702,12 @@ def complete_maintenance():
         if not shelf:
             return jsonify({'success': False, 'error': 'Shelf not found'}), 404
         
+        # Log current shelf status for debugging
+        app.logger.info(f"Current shelf status for {shelf_id}: {shelf.status}")
+        
         # Check if shelf is in maintenance
         if shelf.status != 'maintenance':
-            return jsonify({'success': False, 'error': 'Shelf is not in maintenance'}), 400
+            return jsonify({'success': False, 'error': f'Shelf is not in maintenance (current status: {shelf.status})'}), 400
         
         # Update shelf status to available and clear maintenance reason
         shelf.status = 'available'

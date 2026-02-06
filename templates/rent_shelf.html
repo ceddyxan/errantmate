@@ -481,11 +481,6 @@
             if (occupiedEl) occupiedEl.textContent = occupied;
             if (maintenanceEl) maintenanceEl.textContent = maintenance;
             if (revenueEl) revenueEl.textContent = `KSh ${revenue.toLocaleString()}`;
-            
-            // Also update shelf management card in reports (for admin/staff)
-            if (currentUserRole === 'admin' || currentUserRole === 'staff') {
-                updateShelfManagementCard();
-            }
         }
 
         function filterShelves() {
