@@ -565,6 +565,21 @@
                 <div class="h-64">
                     <canvas id="statusDistributionChart"></canvas>
                 </div>
+                <!-- Status Count Display -->
+                <div class="mt-4 grid grid-cols-3 gap-4">
+                    <div class="text-center p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div class="text-2xl font-bold text-gray-700" id="pendingCount">0</div>
+                        <div class="text-sm text-gray-500 mt-1">Pending</div>
+                    </div>
+                    <div class="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <div class="text-2xl font-bold text-blue-700" id="inTransitCount">0</div>
+                        <div class="text-sm text-blue-500 mt-1">In Transit</div>
+                    </div>
+                    <div class="text-center p-3 bg-green-50 rounded-lg border border-green-200">
+                        <div class="text-2xl font-bold text-green-700" id="deliveredCount">0</div>
+                        <div class="text-sm text-green-500 mt-1">Delivered</div>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden  hover:shadow-lg">
@@ -2374,6 +2389,23 @@ window.closeDeliveryDetailsModal = function() {
     document.getElementById('deliveryDetailsModal').classList.add('hidden');
 };
 
+// Animate numeric value changes
+function animateValue(element, start, end, duration) {
+    const range = end - start;
+    const increment = range / (duration / 16); // 60fps
+    let current = start;
+    
+    const timer = setInterval(() => {
+        current += increment;
+        if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+            element.textContent = end;
+            clearInterval(timer);
+        } else {
+            element.textContent = Math.round(current);
+        }
+    }, 16);
+}
+
 // Toggle sections
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Load More button visibility
@@ -2641,6 +2673,27 @@ window.updateStatusDistributionForPeriod = function(period) {
             const statusCanvas = document.getElementById('statusDistributionChart');
             if (statusCanvas && data.labels && data.data) {
                 const ctx = statusCanvas.getContext('2d');
+                
+                // Update status count displays
+                const pendingCount = document.getElementById('pendingCount');
+                const inTransitCount = document.getElementById('inTransitCount');
+                const deliveredCount = document.getElementById('deliveredCount');
+                
+                // Find the index of each status in the data
+                const pendingIndex = data.labels.indexOf('Pending');
+                const inTransitIndex = data.labels.indexOf('In Transit');
+                const deliveredIndex = data.labels.indexOf('Delivered');
+                
+                // Update count displays with animation
+                if (pendingCount && pendingIndex !== -1) {
+                    animateValue(pendingCount, parseInt(pendingCount.textContent) || 0, data.data[pendingIndex], 500);
+                }
+                if (inTransitCount && inTransitIndex !== -1) {
+                    animateValue(inTransitCount, parseInt(inTransitCount.textContent) || 0, data.data[inTransitIndex], 500);
+                }
+                if (deliveredCount && deliveredIndex !== -1) {
+                    animateValue(deliveredCount, parseInt(deliveredCount.textContent) || 0, data.data[deliveredIndex], 500);
+                }
                 
                 // Destroy existing chart if it exists
                 if (window.statusDistributionChartInstance) {
