@@ -2775,7 +2775,7 @@ def create_shelf_orm():
         # Create new shelf using ORM (most compatible)
         new_shelf = Shelf(
             id=shelf_id,
-            size='Medium',  # Default size
+            size='Small',  # Default size
             price=price,
             status='available'
         )
@@ -2831,7 +2831,7 @@ def create_shelf_secure():
         # Create new shelf (SECURE)
         insert_query = text("""
             INSERT INTO shelves (id, size, price, status, created_at, updated_at)
-            VALUES (:shelf_id, 'Medium', :price, 'available', NOW(), NOW())
+            VALUES (:shelf_id, 'Small', :price, 'available', NOW(), NOW())
         """)
         
         db.session.execute(insert_query, {
@@ -2888,7 +2888,7 @@ def create_shelf_raw():
             
             # Create new shelf using raw SQL
             connection.execute(
-                f"INSERT INTO shelves (id, size, price, status, created_at, updated_at) VALUES ('{shelf_id}', 'Medium', {price}, 'available', NOW(), NOW())"
+                f"INSERT INTO shelves (id, size, price, status, created_at, updated_at) VALUES ('{shelf_id}', 'Small', {price}, 'available', NOW(), NOW())"
             )
             connection.commit()
         
@@ -2938,7 +2938,7 @@ def create_shelf_simple():
         # Create new shelf using string concatenation
         insert_query = text("""
             INSERT INTO shelves (id, size, price, status, created_at, updated_at)
-            VALUES (:shelf_id, 'Medium', :price, 'available', NOW(), NOW())
+            VALUES (:shelf_id, 'Small', :price, 'available', NOW(), NOW())
         """)
         
         db.session.execute(insert_query, {
@@ -2995,7 +2995,7 @@ def create_shelf_ultra():
         # Create new shelf using raw SQL
         insert_sql = text("""
             INSERT INTO shelves (id, size, price, status, created_at, updated_at)
-            VALUES (:shelf_id, 'Medium', :price, 'available', NOW(), NOW())
+            VALUES (:shelf_id, 'Small', :price, 'available', NOW(), NOW())
         """)
         
         db.session.execute(insert_sql, {
@@ -3033,7 +3033,7 @@ def create_shelf():
         data = request.get_json()
         shelf_id = data.get('shelfId', '').strip()
         price = data.get('price', 0)
-        size = data.get('size', 'Medium')  # Default size
+        size = data.get('size', 'Small')  # Default size
         
         if not shelf_id:
             return jsonify({'success': False, 'error': 'Shelf ID is required'}), 400
