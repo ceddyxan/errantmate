@@ -3051,9 +3051,7 @@ def create_shelf():
             id=shelf_id,
             size=size,
             price=price,
-            status='available',
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
+            status='available'
         )
         
         db.session.add(new_shelf)
