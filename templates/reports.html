@@ -4278,6 +4278,8 @@ window.loadNewUsers = function() {
                                     ` : ''}
                                 </div>
                             `}
+                        </div>
+                        <div class="flex items-center gap-1">
                             <button onclick="editNewUser(${user.id}, '${user.username}', '${user.role}')" 
                                     class="text-blue-600 hover:bg-blue-100 p-1.5 rounded transition-colors"
                                     title="Edit">
@@ -4289,14 +4291,9 @@ window.loadNewUsers = function() {
                                         title="Delete">
                                     <i class="fas fa-trash text-xs"></i>
                                 </button>
-                            ` : ''}
-                            <button onclick="deleteNewUser(${user.id}, '${user.username}')" 
-                                    class="text-red-600 hover:bg-red-100 p-1.5 rounded transition-colors"
-                                    title="Delete">
-                                <i class="fas fa-trash text-xs"></i>
-                            </button>
+                            ` : '<span class="text-xs text-gray-400 font-medium">Protected</span>'}
                         </div>
-                    ` : '<span class="text-xs text-gray-400 font-medium">Protected</span>'}
+                    </div>
                 </div>
             `).join('');
             
