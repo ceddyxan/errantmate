@@ -2867,6 +2867,7 @@ def create_shelf_raw():
         
         data = request.get_json()
         shelf_id = data.get('shelfId', '').strip()
+        size = data.get('size', 'Small')  # Get size from request
         price = data.get('price', 0)
         
         if not shelf_id:
@@ -2888,7 +2889,7 @@ def create_shelf_raw():
             
             # Create new shelf using raw SQL
             connection.execute(
-                f"INSERT INTO shelves (id, size, price, status, created_at, updated_at) VALUES ('{shelf_id}', 'Small', {price}, 'available', NOW(), NOW())"
+                f"INSERT INTO shelves (id, size, price, status, created_at, updated_at) VALUES ('{shelf_id}', '{size}', {price}, 'available', NOW(), NOW())"
             )
             connection.commit()
         
