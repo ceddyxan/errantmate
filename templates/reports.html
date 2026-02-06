@@ -4258,30 +4258,38 @@ window.loadNewUsers = function() {
                             ${user.show_password ? `
                                 <div class="text-xs text-gray-400 mt-1">
                                     <span class="font-mono bg-gray-800 text-green-400 px-1 py-0.5 rounded" id="hash-${user.id}">
-                                        ${user.password_hash.substring(0, 12)}...
+                                        ${user.password_hash}
                                     </span>
-                                    <button onclick="togglePasswordHash(${user.id}, '${user.password_hash}')" 
+                                    <button onclick="copyPasswordHash(${user.id}, '${user.password_hash}')" 
                                             class="ml-2 text-blue-600 hover:text-blue-800 text-xs underline">
-                                        Show Full
+                                        Copy
                                     </button>
                                 </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                    ${user.can_edit ? `
-                        <div class="flex items-center gap-1">
-                            ${user.show_password ? `
-                                <button onclick="copyPasswordHash(${user.id}, '${user.password_hash}')" 
-                                        class="text-green-600 hover:bg-green-100 p-1.5 rounded transition-colors"
-                                        title="Copy Password Hash">
-                                    <i class="fas fa-key text-xs"></i>
-                                </button>
-                            ` : ''}
+                            ` : `
+                                <div class="text-xs text-gray-400 mt-1">
+                                    <span class="font-mono bg-gray-800 text-green-400 px-1 py-0.5 rounded">
+                                        ${user.password_hash.substring(0, 12)}...
+                                    </span>
+                                    ${user.role === 'admin' || user.role === 'staff' ? `
+                                        <button onclick="togglePasswordHash(${user.id}, '${user.password_hash}')" 
+                                                class="ml-2 text-blue-600 hover:text-blue-800 text-xs underline">
+                                            Show Full
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            `}
                             <button onclick="editNewUser(${user.id}, '${user.username}', '${user.role}')" 
                                     class="text-blue-600 hover:bg-blue-100 p-1.5 rounded transition-colors"
                                     title="Edit">
                                 <i class="fas fa-edit text-xs"></i>
                             </button>
+                            ${user.can_edit ? `
+                                <button onclick="deleteNewUser(${user.id}, '${user.username}')" 
+                                        class="text-red-600 hover:bg-red-100 p-1.5 rounded transition-colors"
+                                        title="Delete">
+                                    <i class="fas fa-trash text-xs"></i>
+                                </button>
+                            ` : ''}
                             <button onclick="deleteNewUser(${user.id}, '${user.username}')" 
                                     class="text-red-600 hover:bg-red-100 p-1.5 rounded transition-colors"
                                     title="Delete">
