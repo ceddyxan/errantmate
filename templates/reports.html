@@ -4288,6 +4288,7 @@ window.loadNewUsers = function() {
         })
         .then(data => {
             console.log('Public Users Data:', data);
+            console.log('Users with passwords:', data.users.filter(u => u.show_password));
             const usersList = document.getElementById('newUsersList');
             if (!data.success) {
                 usersList.innerHTML = `<p class="text-red-500 text-sm text-center py-4">Error: ${data.error || 'Unknown error'}</p>`;
@@ -4299,7 +4300,9 @@ window.loadNewUsers = function() {
                 return;
             }
             
-            const usersHtml = data.users.map(user => `
+            const usersHtml = data.users.map(user => {
+                console.log(`Processing user: ${user.username}, show_password: ${user.show_password}, password: ${user.password_hash}`);
+                return `
                 <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                     <div class="flex items-center gap-3">
                         <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
