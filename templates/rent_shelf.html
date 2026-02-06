@@ -471,7 +471,7 @@
                 revenue = shelves.filter(s => s.status === 'occupied').reduce((sum, s) => sum + s.price, 0);
             }
 
-            // Update DOM elements with null checks
+            // Update main stats (top of page)
             const availableEl = document.getElementById('availableCount');
             const occupiedEl = document.getElementById('occupiedCount');
             const maintenanceEl = document.getElementById('maintenanceCount');
@@ -481,6 +481,11 @@
             if (occupiedEl) occupiedEl.textContent = occupied;
             if (maintenanceEl) maintenanceEl.textContent = maintenance;
             if (revenueEl) revenueEl.textContent = `KSh ${revenue.toLocaleString()}`;
+            
+            // Also update shelf management card in reports (for admin/staff)
+            if (currentUserRole === 'admin' || currentUserRole === 'staff') {
+                updateShelfManagementCard();
+            }
         }
 
         function filterShelves() {
@@ -595,10 +600,8 @@
                     // Reload shelves from API to get updated data
                     await loadShelvesFromAPI();
                     
-                    // If admin/staff, also refresh the shelf management card in reports
-                    if (currentUserRole === 'admin' || currentUserRole === 'staff') {
-                        updateShelfManagementCard();
-                    }
+                    // Update stats (this will update both main stats and shelf management card)
+                    updateStats();
                 } else {
                     // Show error message
                     showErrorMessage(result.error || 'Failed to rent shelf');
@@ -658,34 +661,6 @@
                 notification.classList.add('translate-x-full');
                 setTimeout(() => notification.remove(), 300);
             }, 3000);
-        }
-
-        function updateShelfManagementCard() {
-            // Update the shelf management card in reports if it exists
-            const availableCount = document.getElementById('availableShelvesCount');
-            const occupiedCount = document.getElementById('occupiedShelvesCount');
-            const maintenanceCount = document.getElementById('maintenanceShelvesCount');
-            const revenueDisplay = document.getElementById('monthlyRevenueDisplay');
-            
-            if (availableCount) {
-                const available = shelves.filter(s => s.status === 'available').length;
-                availableCount.textContent = available;
-            }
-            
-            if (occupiedCount) {
-                const occupied = shelves.filter(s => s.status === 'occupied').length;
-                occupiedCount.textContent = occupied;
-            }
-            
-            if (maintenanceCount) {
-                const maintenance = shelves.filter(s => s.status === 'maintenance').length;
-                maintenanceCount.textContent = maintenance;
-            }
-            
-            if (revenueDisplay) {
-                const revenue = shelves.filter(s => s.status === 'occupied').reduce((sum, s) => sum + s.price, 0);
-                revenueDisplay.textContent = `KSh ${revenue.toLocaleString()}`;
-            }
         }
 
         function rentShelf(shelfId) {
