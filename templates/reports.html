@@ -4310,12 +4310,13 @@ window.loadNewUsers = function() {
                             <div class="text-xs text-gray-500">${user.role} • ${user.created_at}</div>
                             ${user.show_password ? `
                                 <div class="text-xs text-gray-400 mt-1">
-                                    <span class="font-mono bg-gray-800 text-green-400 px-1 py-0.5 rounded" id="hash-${user.id}">
-                                        ${user.password_hash.substring(0, 12)}...
+                                    <span class="text-gray-600 font-medium">Password:</span>
+                                    <span class="font-mono bg-green-100 text-green-800 px-2 py-0.5 rounded border border-green-200" id="hash-${user.id}">
+                                        ${user.password_hash}
                                     </span>
-                                    <button onclick="togglePasswordHash(${user.id}, '${user.password_hash}')" 
-                                            class="ml-2 text-blue-600 hover:text-blue-800 text-xs underline">
-                                        Show Full
+                                    <button onclick="copyPassword(${user.id}, '${user.password_hash}')" 
+                                            class="ml-2 text-green-600 hover:text-green-800 text-xs underline font-medium">
+                                        <i class="fas fa-copy mr-1"></i>Copy
                                     </button>
                                 </div>
                             ` : ''}
@@ -4323,13 +4324,6 @@ window.loadNewUsers = function() {
                     </div>
                     ${user.can_edit ? `
                         <div class="flex items-center gap-1">
-                            ${user.show_password ? `
-                                <button onclick="copyPasswordHash(${user.id}, '${user.password_hash}')" 
-                                        class="text-green-600 hover:bg-green-100 p-1.5 rounded transition-colors"
-                                        title="Copy Actual Password">
-                                    <i class="fas fa-key text-xs"></i>
-                                </button>
-                            ` : ''}
                             <button onclick="editNewUser(${user.id}, '${user.username}', '${user.role}')" 
                                     class="text-blue-600 hover:bg-blue-100 p-1.5 rounded transition-colors"
                                     title="Edit">
@@ -4651,27 +4645,10 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-// Password viewing functions
-window.togglePasswordHash = function(userId, fullPassword) {
-    const hashElement = document.getElementById(`hash-${userId}`);
-    const button = event.target;
-    
-    if (hashElement.textContent.includes('...')) {
-        hashElement.textContent = fullPassword;
-        hashElement.classList.remove('bg-gray-800', 'text-green-400');
-        hashElement.classList.add('bg-red-100', 'text-red-800', 'px-2', 'py-1');
-        button.textContent = 'Hide';
-    } else {
-        hashElement.textContent = fullPassword.substring(0, 12) + '...';
-        hashElement.classList.remove('bg-red-100', 'text-red-800', 'px-2', 'py-1');
-        hashElement.classList.add('bg-gray-800', 'text-green-400');
-        button.textContent = 'Show Full';
-    }
-};
-
-window.copyPasswordHash = function(userId, actualPassword) {
+// Password copying functions
+window.copyPassword = function(userId, actualPassword) {
     navigator.clipboard.writeText(actualPassword).then(() => {
-        showNotification('Actual password copied to clipboard', 'success');
+        showNotification('Password copied to clipboard', 'success');
     }).catch(() => {
         // Fallback for older browsers
         const textArea = document.createElement('textarea');
@@ -4680,7 +4657,7 @@ window.copyPasswordHash = function(userId, actualPassword) {
         textArea.select();
         document.execCommand('copy');
         document.body.removeChild(textArea);
-        showNotification('Actual password copied to clipboard', 'success');
+        showNotification('Password copied to clipboard', 'success');
     });
 };
 
