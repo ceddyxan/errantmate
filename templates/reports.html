@@ -461,54 +461,106 @@
         </div>
         {% endif %}
 
-        <!-- Rent a Shelf Management Card (Admin Only) -->
+        <!-- Modern Shelf Management Card (Admin Only) -->
         {% if session.user_role == 'admin' %}
-        <div class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-lg transition-all duration-300">
-            <div class="p-3">
+        <div class="bg-gradient-to-br from-slate-50 to-gray-50 border border-gray-200/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
+            <!-- Header Section -->
+            <div class="p-6 border-b border-gray-200/50">
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <h3 class="text-sm font-semibold text-gray-800">Shelf Management</h3>
-                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">
-                            <i class="fas fa-warehouse mr-1"></i>12 Shelves
-                        </span>
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
+                            <i class="fas fa-warehouse text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800">Shelf Management</h3>
+                            <p class="text-xs text-gray-500 mt-0.5">Real-time inventory overview</p>
+                        </div>
                     </div>
                     <div class="flex items-center gap-2">
                         <button onclick="window.location.href='/rent_shelf'" 
-                                class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors duration-200">
-                            <i class="fas fa-eye mr-1"></i>View Shelves
+                                class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
+                            <i class="fas fa-eye mr-2"></i>Manage Shelves
                         </button>
                         <button onclick="refreshShelfStats()" 
-                                class="text-gray-600 hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-100 transition-colors flex items-center gap-1 text-xs"
-                                title="Refresh shelf stats">
+                                id="refreshBtn"
+                                class="bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 px-3 py-2 rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105"
+                                title="Refresh shelf statistics">
                             <i class="fas fa-sync-alt"></i>
                         </button>
                     </div>
                 </div>
-                
-                <!-- Shelf Statistics -->
-                <div class="mt-3 border-t border-gray-200 pt-3">
-                    <div class="grid grid-cols-3 gap-2 text-center">
-                        <div class="bg-green-50 rounded p-2">
-                            <div class="text-lg font-bold text-green-600" id="availableShelvesCount">6</div>
-                            <div class="text-xs text-gray-600">Available</div>
+            </div>
+            
+            <!-- Statistics Grid -->
+            <div class="p-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <!-- Available Shelves -->
+                    <div class="group relative bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200/50 rounded-xl p-4 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:scale-105">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="p-2 bg-green-500 rounded-lg shadow-sm">
+                                <i class="fas fa-check-circle text-white text-sm"></i>
+                            </div>
+                            <span class="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded-full">Live</span>
                         </div>
-                        <div class="bg-blue-50 rounded p-2">
-                            <div class="text-lg font-bold text-blue-600" id="occupiedShelvesCount">5</div>
-                            <div class="text-xs text-gray-600">Occupied</div>
+                        <div class="text-2xl font-bold text-green-700 mb-1" id="availableShelvesCount">0</div>
+                        <div class="text-xs text-gray-600 font-medium">Available</div>
+                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    </div>
+                    
+                    <!-- Occupied Shelves -->
+                    <div class="group relative bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200/50 rounded-xl p-4 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:scale-105">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="p-2 bg-blue-500 rounded-lg shadow-sm">
+                                <i class="fas fa-box text-white text-sm"></i>
+                            </div>
+                            <span class="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">Active</span>
                         </div>
-                        <div class="bg-yellow-50 rounded p-2">
-                            <div class="text-lg font-bold text-yellow-600" id="maintenanceShelvesCount">1</div>
-                            <div class="text-xs text-gray-600">Maintenance</div>
+                        <div class="text-2xl font-bold text-blue-700 mb-1" id="occupiedShelvesCount">0</div>
+                        <div class="text-xs text-gray-600 font-medium">Occupied</div>
+                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                    </div>
+                    
+                    <!-- Maintenance Shelves -->
+                    <div class="group relative bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200/50 rounded-xl p-4 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:scale-105">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="p-2 bg-yellow-500 rounded-lg shadow-sm">
+                                <i class="fas fa-tools text-white text-sm"></i>
+                            </div>
+                            <span class="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">Pending</span>
                         </div>
+                        <div class="text-2xl font-bold text-yellow-700 mb-1" id="maintenanceShelvesCount">0</div>
+                        <div class="text-xs text-gray-600 font-medium">Maintenance</div>
+                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
                     </div>
                     
                     <!-- Monthly Revenue -->
-                    <div class="mt-3 bg-purple-50 rounded p-2">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs text-gray-600">Monthly Revenue</span>
-                            <span class="text-lg font-bold text-purple-600" id="monthlyRevenueDisplay">KSh 4,600</span>
+                    <div class="group relative bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200/50 rounded-xl p-4 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:scale-105 md:col-span-1 col-span-2">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="p-2 bg-purple-500 rounded-lg shadow-sm">
+                                <i class="fas fa-chart-line text-white text-sm"></i>
+                            </div>
+                            <span class="text-xs font-medium text-purple-600 bg-purple-100 px-2 py-1 rounded-full">Revenue</span>
                         </div>
+                        <div class="text-2xl font-bold text-purple-700 mb-1" id="monthlyRevenueDisplay">KSh 0</div>
+                        <div class="text-xs text-gray-600 font-medium">Monthly Revenue</div>
+                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
                     </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="mt-6 flex flex-wrap gap-3">
+                    <button onclick="window.location.href='/rent_shelf?action=create'" 
+                            class="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
+                        <i class="fas fa-plus mr-2"></i>Create Shelf
+                    </button>
+                    <button onclick="window.location.href='/rent_shelf?action=maintenance'" 
+                            class="flex-1 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 text-white px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
+                        <i class="fas fa-wrench mr-2"></i>View Maintenance
+                    </button>
+                    <button onclick="exportShelfReport()" 
+                            class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
+                        <i class="fas fa-download mr-2"></i>Export Report
+                    </button>
                 </div>
             </div>
         </div>
@@ -4403,43 +4455,164 @@ window.refreshUsers = function() {
     loadNewUsers();
 };
 
-// Refresh shelf statistics
-window.refreshShelfStats = function() {
-    // Simulate refreshing with animation
+// Modern Shelf Management Functions
+window.refreshShelfStats = async function() {
+    const refreshBtn = document.getElementById('refreshBtn');
     const availableElement = document.getElementById('availableShelvesCount');
     const occupiedElement = document.getElementById('occupiedShelvesCount');
     const maintenanceElement = document.getElementById('maintenanceShelvesCount');
     const revenueElement = document.getElementById('monthlyRevenueDisplay');
     
     // Add loading animation
+    if (refreshBtn) {
+        refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        refreshBtn.disabled = true;
+    }
+    
     [availableElement, occupiedElement, maintenanceElement, revenueElement].forEach(el => {
         if (el) {
             el.style.opacity = '0.5';
-            el.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            el.innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i>';
         }
     });
     
-    // Simulate API call delay
-    setTimeout(() => {
-        // Update with current data (in real implementation, this would fetch from API)
-        if (availableElement) {
-            availableElement.style.opacity = '1';
-            availableElement.textContent = '6';
+    try {
+        // Fetch real-time data from API
+        const response = await fetch('/api/shelves', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        if (response.ok) {
+            const shelves = await response.json();
+            
+            // Calculate real statistics
+            const available = shelves.filter(s => s.status === 'available').length;
+            const occupied = shelves.filter(s => s.status === 'occupied').length;
+            const maintenance = shelves.filter(s => s.status === 'maintenance').length;
+            const revenue = shelves.filter(s => s.status === 'occupied').reduce((sum, s) => sum + s.price, 0);
+            
+            // Update with real data and animations
+            setTimeout(() => {
+                if (availableElement) {
+                    availableElement.style.opacity = '1';
+                    availableElement.textContent = available;
+                    availableElement.classList.add('animate-pulse');
+                    setTimeout(() => availableElement.classList.remove('animate-pulse'), 1000);
+                }
+                if (occupiedElement) {
+                    occupiedElement.style.opacity = '1';
+                    occupiedElement.textContent = occupied;
+                    occupiedElement.classList.add('animate-pulse');
+                    setTimeout(() => occupiedElement.classList.remove('animate-pulse'), 1000);
+                }
+                if (maintenanceElement) {
+                    maintenanceElement.style.opacity = '1';
+                    maintenanceElement.textContent = maintenance;
+                    maintenanceElement.classList.add('animate-pulse');
+                    setTimeout(() => maintenanceElement.classList.remove('animate-pulse'), 1000);
+                }
+                if (revenueElement) {
+                    revenueElement.style.opacity = '1';
+                    revenueElement.textContent = `KSh ${revenue.toLocaleString()}`;
+                    revenueElement.classList.add('animate-pulse');
+                    setTimeout(() => revenueElement.classList.remove('animate-pulse'), 1000);
+                }
+                
+                // Show success notification
+                showNotification('Shelf statistics updated successfully!', 'success');
+            }, 500);
+        } else {
+            throw new Error('Failed to fetch shelf data');
         }
-        if (occupiedElement) {
-            occupiedElement.style.opacity = '1';
-            occupiedElement.textContent = '5';
+    } catch (error) {
+        console.error('Error refreshing shelf stats:', error);
+        
+        // Fallback to original values with error notification
+        [availableElement, occupiedElement, maintenanceElement, revenueElement].forEach(el => {
+            if (el) {
+                el.style.opacity = '1';
+                el.innerHTML = el.textContent || '0';
+            }
+        });
+        
+        showNotification('Failed to refresh shelf statistics', 'error');
+    } finally {
+        // Restore refresh button
+        if (refreshBtn) {
+            refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            refreshBtn.disabled = false;
         }
-        if (maintenanceElement) {
-            maintenanceElement.style.opacity = '1';
-            maintenanceElement.textContent = '1';
-        }
-        if (revenueElement) {
-            revenueElement.style.opacity = '1';
-            revenueElement.textContent = 'KSh 4,600';
-        }
-    }, 500);
+    }
 };
+
+// Export shelf report functionality
+window.exportShelfReport = function() {
+    try {
+        const available = document.getElementById('availableShelvesCount').textContent;
+        const occupied = document.getElementById('occupiedShelvesCount').textContent;
+        const maintenance = document.getElementById('maintenanceShelvesCount').textContent;
+        const revenue = document.getElementById('monthlyRevenueDisplay').textContent;
+        
+        const report = `SHELF MANAGEMENT REPORT
+Generated: ${new Date().toLocaleString()}
+
+SUMMARY:
+- Available Shelves: ${available}
+- Occupied Shelves: ${occupied}
+- Maintenance Shelves: ${maintenance}
+- Monthly Revenue: ${revenue}
+
+This is an automated report from ErrantMate Shelf Management System.
+`;
+
+        // Create and download file
+        const blob = new Blob([report], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `shelf_management_report_${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        showNotification('Shelf report exported successfully!', 'success');
+    } catch (error) {
+        console.error('Error exporting report:', error);
+        showNotification('Failed to export shelf report', 'error');
+    }
+};
+
+// Notification system
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+    
+    notification.className = `fixed top-4 right-4 z-50 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-all duration-300`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} mr-2"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
 
 // Password viewing functions
 window.togglePasswordHash = function(userId, fullHash) {
