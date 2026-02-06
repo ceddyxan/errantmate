@@ -225,7 +225,7 @@
                 <div class="flex items-center justify-between">
                     <div class="flex-1">
                         <p class="text-green-600 text-sm font-black uppercase tracking-wider drop-shadow-sm">Revenue</p>
-                        <p class="text-3xl font-black text-green-700 mt-2 drop-shadow-md" id="revenue">KSh 2830.00</p>
+                        <p class="text-3xl font-black text-green-700 mt-2 drop-shadow-md" id="revenue">KSh 0</p>
                         <div class="flex items-center mt-3">
                             <span class="text-sm text-green-600 font-bold">Total income</span>
                             <div class="ml-2 w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg"></div>
@@ -244,7 +244,7 @@
                 <div class="flex items-center justify-between">
                     <div class="flex-1">
                         <p class="text-red-700 text-sm font-black uppercase tracking-wider drop-shadow-sm">Delivery Costs</p>
-                        <p class="text-3xl font-black text-red-800 mt-2 drop-shadow-md" id="expenses">KSh 860.00</p>
+                        <p class="text-3xl font-black text-red-800 mt-2 drop-shadow-md" id="expenses">KSh 0</p>
                         <div class="flex items-center mt-3">
                             <span class="text-sm text-red-600 font-bold">Total delivery costs</span>
                             <div class="ml-2 w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-lg"></div>
@@ -646,7 +646,7 @@
                         </div>
                         <div class="flex-1">
                             <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Revenue</p>
-                            <p class="text-2xl font-bold text-gray-900" id="totalRevenueAnalytics">KSh 2,830</p>
+                            <p class="text-2xl font-bold text-gray-900" id="totalRevenueAnalytics">KSh 0</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
@@ -664,7 +664,7 @@
                         </div>
                         <div class="flex-1">
                             <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Average Daily</p>
-                            <p class="text-2xl font-bold text-gray-900" id="avgDailyRevenue">KSh 404</p>
+                            <p class="text-2xl font-bold text-gray-900" id="avgDailyRevenue">KSh 0</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
@@ -682,7 +682,7 @@
                         </div>
                         <div class="flex-1">
                             <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Peak Day</p>
-                            <p class="text-2xl font-bold text-gray-900" id="peakRevenueDay">KSh 1,630</p>
+                            <p class="text-2xl font-bold text-gray-900" id="peakRevenueDay">KSh 0</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
@@ -703,7 +703,7 @@
                         </div>
                         <div class="flex-1">
                             <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Growth Rate</p>
-                            <p class="text-2xl font-bold text-gray-900" id="revenueGrowthRate">+100.0%</p>
+                            <p class="text-2xl font-bold text-gray-900" id="revenueGrowthRate">+0.0%</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
@@ -4028,6 +4028,14 @@ window.updateRevenueAnalytics = function() {
                 if (peakElement) peakElement.textContent = `KSh ${data.metrics.peak_revenue.toLocaleString()}`;
                 if (peakNameElement) peakNameElement.textContent = data.metrics.peak_label;
                 if (growthElement) growthElement.textContent = data.metrics.growth_rate;
+                
+                // Also update the main revenue display at the top
+                const mainRevenueElement = document.getElementById('revenue');
+                if (mainRevenueElement) mainRevenueElement.textContent = `KSh ${data.metrics.total_revenue.toLocaleString()}`;
+                
+                // Also update delivery costs if available
+                const expensesElement = document.getElementById('expenses');
+                if (expensesElement) expensesElement.textContent = `KSh ${data.summary.total_expenses.toLocaleString()}`;
             } catch (error) {
                 console.error('Error updating revenue metrics:', error);
             }
