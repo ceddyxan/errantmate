@@ -461,105 +461,89 @@
         </div>
         {% endif %}
 
-        <!-- Modern Shelf Management Card (Admin Only) -->
+        <!-- Minimalistic Shelf Management Card (Admin Only) -->
         {% if session.user_role == 'admin' %}
-        <div class="bg-gradient-to-br from-slate-50 to-gray-50 border border-gray-200/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
-            <!-- Header Section -->
-            <div class="p-6 border-b border-gray-200/50">
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
+            <!-- Clean Header -->
+            <div class="px-4 py-3 border-b border-gray-100">
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
-                            <i class="fas fa-warehouse text-white text-lg"></i>
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-warehouse text-white text-sm"></i>
                         </div>
                         <div>
-                            <h3 class="text-lg font-bold text-gray-800">Shelf Management</h3>
-                            <p class="text-xs text-gray-500 mt-0.5">Real-time inventory overview</p>
+                            <h3 class="text-sm font-semibold text-gray-800">Shelf Management</h3>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-1">
                         <button onclick="window.location.href='/rent_shelf'" 
-                                class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
-                            <i class="fas fa-eye mr-2"></i>Manage Shelves
+                                class="text-gray-600 hover:text-gray-800 p-1.5 rounded hover:bg-gray-50 transition-colors"
+                                title="Manage shelves">
+                            <i class="fas fa-cog text-xs"></i>
                         </button>
                         <button onclick="refreshShelfStats()" 
                                 id="refreshBtn"
-                                class="bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 px-3 py-2 rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105"
-                                title="Refresh shelf statistics">
-                            <i class="fas fa-sync-alt"></i>
+                                class="text-gray-600 hover:text-gray-800 p-1.5 rounded hover:bg-gray-50 transition-colors"
+                                title="Refresh statistics">
+                            <i class="fas fa-sync-alt text-xs"></i>
                         </button>
                     </div>
                 </div>
             </div>
             
-            <!-- Statistics Grid -->
-            <div class="p-6">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <!-- Available Shelves -->
-                    <div class="group relative bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200/50 rounded-xl p-4 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:scale-105">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="p-2 bg-green-500 rounded-lg shadow-sm">
-                                <i class="fas fa-check-circle text-white text-sm"></i>
-                            </div>
-                            <span class="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded-full">Live</span>
+            <!-- Clean Statistics Grid -->
+            <div class="p-4">
+                <div class="grid grid-cols-4 gap-3">
+                    <!-- Available -->
+                    <div class="text-center p-3 bg-green-50 rounded-lg border border-green-100">
+                        <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <i class="fas fa-check text-white text-xs"></i>
                         </div>
-                        <div class="text-2xl font-bold text-green-700 mb-1" id="availableShelvesCount">0</div>
-                        <div class="text-xs text-gray-600 font-medium">Available</div>
-                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <div class="text-xl font-bold text-gray-800 mb-1" id="availableShelvesCount">0</div>
+                        <div class="text-xs text-gray-600">Available</div>
                     </div>
                     
-                    <!-- Occupied Shelves -->
-                    <div class="group relative bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200/50 rounded-xl p-4 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:scale-105">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="p-2 bg-blue-500 rounded-lg shadow-sm">
-                                <i class="fas fa-box text-white text-sm"></i>
-                            </div>
-                            <span class="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">Active</span>
+                    <!-- Occupied -->
+                    <div class="text-center p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <i class="fas fa-box text-white text-xs"></i>
                         </div>
-                        <div class="text-2xl font-bold text-blue-700 mb-1" id="occupiedShelvesCount">0</div>
-                        <div class="text-xs text-gray-600 font-medium">Occupied</div>
-                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                        <div class="text-xl font-bold text-gray-800 mb-1" id="occupiedShelvesCount">0</div>
+                        <div class="text-xs text-gray-600">Occupied</div>
                     </div>
                     
-                    <!-- Maintenance Shelves -->
-                    <div class="group relative bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200/50 rounded-xl p-4 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:scale-105">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="p-2 bg-yellow-500 rounded-lg shadow-sm">
-                                <i class="fas fa-tools text-white text-sm"></i>
-                            </div>
-                            <span class="text-xs font-medium text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">Pending</span>
+                    <!-- Maintenance -->
+                    <div class="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+                        <div class="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <i class="fas fa-tools text-white text-xs"></i>
                         </div>
-                        <div class="text-2xl font-bold text-yellow-700 mb-1" id="maintenanceShelvesCount">0</div>
-                        <div class="text-xs text-gray-600 font-medium">Maintenance</div>
-                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                        <div class="text-xl font-bold text-gray-800 mb-1" id="maintenanceShelvesCount">0</div>
+                        <div class="text-xs text-gray-600">Maintenance</div>
                     </div>
                     
-                    <!-- Monthly Revenue -->
-                    <div class="group relative bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200/50 rounded-xl p-4 hover:shadow-md transition-all duration-200 cursor-pointer transform hover:scale-105 md:col-span-1 col-span-2">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="p-2 bg-purple-500 rounded-lg shadow-sm">
-                                <i class="fas fa-chart-line text-white text-sm"></i>
-                            </div>
-                            <span class="text-xs font-medium text-purple-600 bg-purple-100 px-2 py-1 rounded-full">Revenue</span>
+                    <!-- Revenue -->
+                    <div class="text-center p-3 bg-purple-50 rounded-lg border border-purple-100">
+                        <div class="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <i class="fas fa-chart-line text-white text-xs"></i>
                         </div>
-                        <div class="text-2xl font-bold text-purple-700 mb-1" id="monthlyRevenueDisplay">KSh 0</div>
-                        <div class="text-xs text-gray-600 font-medium">Monthly Revenue</div>
-                        <div class="absolute -top-1 -right-1 w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                        <div class="text-xl font-bold text-gray-800 mb-1" id="monthlyRevenueDisplay">KSh 0</div>
+                        <div class="text-xs text-gray-600">Revenue</div>
                     </div>
                 </div>
                 
-                <!-- Quick Actions -->
-                <div class="mt-6 flex flex-wrap gap-3">
-                    <button onclick="window.location.href='/rent_shelf?action=create'" 
-                            class="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
-                        <i class="fas fa-plus mr-2"></i>Create Shelf
+                <!-- Simple Actions -->
+                <div class="mt-4 flex gap-2">
+                    <button onclick="window.location.href='/rent_shelf'" 
+                            class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs font-medium transition-colors">
+                        <i class="fas fa-plus mr-1"></i>Create
                     </button>
-                    <button onclick="window.location.href='/rent_shelf?action=maintenance'" 
-                            class="flex-1 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 text-white px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
-                        <i class="fas fa-wrench mr-2"></i>View Maintenance
+                    <button onclick="window.location.href='/rent_shelf'" 
+                            class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs font-medium transition-colors">
+                        <i class="fas fa-wrench mr-1"></i>Maintain
                     </button>
                     <button onclick="exportShelfReport()" 
-                            class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105">
-                        <i class="fas fa-download mr-2"></i>Export Report
+                            class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs font-medium transition-colors">
+                        <i class="fas fa-download mr-1"></i>Export
                     </button>
                 </div>
             </div>
