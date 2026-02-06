@@ -72,24 +72,26 @@ database_url = os.environ.get('DATABASE_URL')
 
 flask_env = os.environ.get('FLASK_ENV', 'development')
 
-
-
 if not database_url:
-
     # Default to SQLite for local development
-
     database_url = 'sqlite:///deliveries.db'
-
     print(f"Using SQLite for local development: {database_url}")
-
-
+else:
+    # Test PostgreSQL connection
+    try:
+        import psycopg2
+        # Test if we can connect to PostgreSQL
+        test_conn = psycopg2.connect(database_url)
+        test_conn.close()
+        print(f"PostgreSQL connection successful: {database_url.split('@')[1] if '@' in database_url else 'hidden'}")
+    except Exception as e:
+        print(f"PostgreSQL connection failed: {str(e)}")
+        print("Falling back to SQLite for development")
+        database_url = 'sqlite:///deliveries.db'
 
 # For production, ensure PostgreSQL is used
-
 if flask_env == 'production' and not database_url.startswith('postgres'):
-
     raise ValueError("DATABASE_URL must be a PostgreSQL connection string in production")
-
 
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
@@ -178,6 +180,8 @@ def ensure_database_schema():
 
                                         password_hash VARCHAR(255) NOT NULL,
 
+                                        actual_password VARCHAR(255),
+
                                         role VARCHAR(20) DEFAULT 'user',
 
                                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -205,6 +209,8 @@ def ensure_database_schema():
                                         phone_number VARCHAR(20) UNIQUE,
 
                                         password_hash VARCHAR(255) NOT NULL,
+
+                                        actual_password VARCHAR(255),
 
                                         role VARCHAR(20) DEFAULT 'user',
 
