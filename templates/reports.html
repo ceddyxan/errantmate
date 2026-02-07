@@ -3855,9 +3855,16 @@ window.toggleQuickActions = function() {
 
 // Load users on page load (only if admin)
 document.addEventListener('DOMContentLoaded', function() {
-    // Load new users system
-    if (document.body.dataset.userRole === 'admin') {
+    // Load new users system - multiple checks
+    const userRole = document.body.dataset.userRole;
+    console.log('User role detected:', userRole);
+    
+    if (userRole === 'admin' || '{{ session.user_role }}' === 'admin') {
+        console.log('Admin user detected, loading User Management...');
         loadNewUsers();
+    } else {
+        console.log('Non-admin user detected, User Management disabled');
+        console.log('Session user role from template:', '{{ session.user_role }}');
     }
     
     // Initialize charts
@@ -4275,7 +4282,10 @@ window.ensureRevenueMetricsVisible = function() {
 
 // Load users on page load
 window.loadNewUsers = function() {
-    // First test the health endpoint
+    console.log('loadNewUsers function called');
+    console.log('User role from dataset:', document.body.dataset.userRole);
+    
+    // First test health endpoint
     fetch('/api/health')
         .then(response => response.json())
         .then(healthData => {
