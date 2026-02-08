@@ -3897,9 +3897,22 @@ window.toggleQuickActions = function() {
 
 // Load charts and users on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Load users if admin
-    if ('{{ session.user_role }}' === 'admin') {
+    // Load users if admin - check multiple methods
+    const isAdmin = document.body.dataset.userRole === 'admin' || 
+                     '{{ session.user_role }}' === 'admin' || 
+                     document.querySelector('[data-user-role]')?.dataset?.userRole === 'admin';
+    
+    console.log('User role detection:', {
+        'dataset': document.body.dataset.userRole,
+        'template': '{{ session.user_role }}',
+        'isAdmin': isAdmin
+    });
+    
+    if (isAdmin) {
+        console.log('Admin user detected, loading users...');
         loadUsers();
+    } else {
+        console.log('Non-admin user detected, User Management disabled');
     }
     
     // Initialize charts
@@ -4345,17 +4358,13 @@ window.loadUsers = function() {
             }
             
             const usersHtml = data.users.map(user => {
-                return `
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                            <span class="text-white text-sm font-bold">${user.username[0].toUpperCase()}</span>
-                        </div>
-                        <div>
-                            <div class="text-sm font-medium text-gray-800">${user.username}</div>
-                            <div class="text-xs text-gray-500">${user.role} • ${user.created_at}</div>
-                            ${user.show_password ? `
-                                <div class="text-xs text-gray-400 mt-1">
+                const userInitial = user.username[0].toUpperCase();
+                const userInfo = `<div class="text-sm font-medium text-gray-800">${user.username}</div>
+                            <div class="text-xs text-gray-500">${user.role} • ${user.created_at}</div>`;
+                
+                let passwordHtml = '';
+                if (user.show_password) {
+                    passwordHtml = `<div class="text-xs text-gray-400 mt-1">
                                     <span class="text-gray-600 font-medium">Password:</span>
                                     <span class="font-mono bg-green-100 text-green-800 px-2 py-0.5 rounded border border-green-200 text-xs">
                                         ${user.password_hash}
@@ -4364,26 +4373,37 @@ window.loadUsers = function() {
                                             class="ml-2 text-green-600 hover:text-green-800 text-xs underline font-medium">
                                         <i class="fas fa-copy mr-1"></i>Copy
                                     </button>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <button onclick="editUser(${user.id}, '${user.username}', '${user.role}')" 
-                                class="text-blue-600 hover:bg-blue-100 p-1.5 rounded transition-colors"
-                                title="Edit">
-                            <i class="fas fa-edit text-xs"></i>
-                        </button>
-                        ${user.username !== 'admin' ? `
-                            <button onclick="deleteUser(${user.id}, '${user.username}')" 
+                                </div>`;
+                }
+                
+                let actionsHtml = '';
+                if (user.username !== 'admin') {
+                    actionsHtml = `<button onclick="deleteUser(${user.id}, '${user.username}')" 
                                     class="text-red-600 hover:bg-red-100 p-1.5 rounded transition-colors"
                                     title="Delete">
                                 <i class="fas fa-trash text-xs"></i>
-                            </button>
-                        ` : '<span class="text-xs text-gray-400 font-medium">Protected</span>'}
-                    </div>
-                </div>
-            `}).join('');
+                            </button>`;
+                } else {
+                    actionsHtml = '<span class="text-xs text-gray-400 font-medium">Protected</span>';
+                }
+                
+                return '<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200">' +
+                    '<div class="flex items-center gap-3">' +
+                        '<div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">' +
+                            '<span class="text-white text-sm font-bold">' + userInitial + '</span>' +
+                        '</div>' +
+                        '<div>' + userInfo + passwordHtml + '</div>' +
+                    '</div>' +
+                    '<div class="flex items-center gap-1">' +
+                        '<button onclick="editUser(${user.id}, \'' + user.username + '\', \'' + user.role + '\')" ' +
+                                'class="text-blue-600 hover:bg-blue-100 p-1.5 rounded transition-colors" ' +
+                                'title="Edit">' +
+                            '<i class="fas fa-edit text-xs"></i>' +
+                        '</button>' +
+                        actionsHtml +
+                    '</div>' +
+                '</div>';
+            }).join('');
             
             document.getElementById('usersList').innerHTML = usersHtml;
             updateUsersStats(data.users);
