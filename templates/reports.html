@@ -4308,6 +4308,11 @@ window.loadUsers = function() {
                     </div>
                     ${user.username !== 'admin' ? `
                         <div class="flex items-center gap-1">
+                            <button onclick="editUser(${user.id}, '${user.username}', '${user.role}')" 
+                                    class="text-blue-600 hover:bg-blue-100 p-1.5 rounded transition-colors"
+                                    title="Edit user">
+                                <i class="fas fa-edit text-xs"></i>
+                            </button>
                             <button onclick="deleteUser(${user.id}, '${user.username}')" 
                                     class="text-red-600 hover:bg-red-100 p-1.5 rounded transition-colors"
                                     title="Delete user">
@@ -4339,6 +4344,70 @@ window.showAddUserModal = function() {
 // Close modal
 window.closeAddUserModal = function() {
     document.getElementById('addUserModal').classList.add('hidden');
+};
+
+// Show edit user modal
+window.editUser = function(userId, username, role) {
+    const modal = document.getElementById('editUserModal');
+    document.getElementById('editUserId').value = userId;
+    document.getElementById('editUsernameInput').value = username;
+    document.getElementById('editPasswordInput').value = '';
+    document.getElementById('editRoleSelect').value = role;
+    modal.classList.remove('hidden');
+};
+
+// Close edit modal
+window.closeEditUserModal = function() {
+    document.getElementById('editUserModal').classList.add('hidden');
+};
+
+// Update user
+window.updateUser = function() {
+    const userId = document.getElementById('editUserId').value;
+    const username = document.getElementById('editUsernameInput').value.trim();
+    const password = document.getElementById('editPasswordInput').value;
+    const role = document.getElementById('editRoleSelect').value;
+    
+    // Validation
+    if (!username || username.length < 3) {
+        showNotification('Username must be at least 3 characters', 'error');
+        return;
+    }
+    
+    if (password && password.length < 6) {
+        showNotification('Password must be at least 6 characters', 'error');
+        return;
+    }
+    
+    if (!['user', 'staff', 'admin'].includes(role)) {
+        showNotification('Please select a valid role', 'error');
+        return;
+    }
+    
+    const payload = { username, role };
+    if (password) {
+        payload.password = password;
+    }
+    
+    fetch(`/api/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showNotification('User updated successfully', 'success');
+            closeEditUserModal();
+            loadUsers();
+        } else {
+            showNotification(result.error || 'Error updating user', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating user:', error);
+        showNotification('Error updating user: ' + error.message, 'error');
+    });
 };
 
 // Add new user
@@ -4473,6 +4542,62 @@ document.addEventListener('DOMContentLoaded', function() {
             <button onclick="addUser()" 
                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 Add User
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div id="editUserModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-800">Edit User</h3>
+        </div>
+        <div class="p-6">
+            <input type="hidden" id="editUserId">
+            
+            <div class="mb-4">
+                <label for="editUsernameInput" class="block text-sm font-medium text-gray-700 mb-2">
+                    Username <span class="text-red-500">*</span>
+                </label>
+                <input type="text" 
+                       id="editUsernameInput" 
+                       autocomplete="off"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       placeholder="Enter username (min 3 chars)">
+            </div>
+            
+            <div class="mb-4">
+                <label for="editPasswordInput" class="block text-sm font-medium text-gray-700 mb-2">
+                    Password <span class="text-gray-400 text-xs">(Leave blank to keep current)</span>
+                </label>
+                <input type="password" 
+                       id="editPasswordInput" 
+                       autocomplete="new-password"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       placeholder="Enter new password (min 6 chars)">
+            </div>
+            
+            <div class="mb-4">
+                <label for="editRoleSelect" class="block text-sm font-medium text-gray-700 mb-2">
+                    Role <span class="text-red-500">*</span>
+                </label>
+                <select id="editRoleSelect" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="user">User</option>
+                    <option value="staff">Staff</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+        </div>
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+            <button onclick="closeEditUserModal()" 
+                    class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                Cancel
+            </button>
+            <button onclick="updateUser()" 
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                Update User
             </button>
         </div>
     </div>
