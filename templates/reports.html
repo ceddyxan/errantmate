@@ -4486,8 +4486,98 @@ window.refreshUsers = function() {
 document.addEventListener('DOMContentLoaded', function() {
     if ('{{ session.user_role }}' === 'admin') {
         loadUsers();
+        // Load shelf stats on page load
+        refreshShelfStats();
     }
 });
+
+// Refresh shelf statistics
+window.refreshShelfStats = function() {
+    const refreshBtn = document.getElementById('refreshBtn');
+    const availableElement = document.getElementById('availableShelvesCount');
+    const occupiedElement = document.getElementById('occupiedShelvesCount');
+    const maintenanceElement = document.getElementById('maintenanceShelvesCount');
+    const revenueElement = document.getElementById('monthlyRevenueDisplay');
+    
+    // Add loading animation
+    if (refreshBtn) {
+        refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        refreshBtn.disabled = true;
+    }
+    
+    [availableElement, occupiedElement, maintenanceElement, revenueElement].forEach(el => {
+        if (el) {
+            el.style.opacity = '0.5';
+            el.innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i>';
+        }
+    });
+    
+    fetch('/api/shelves', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(shelves => {
+        // Calculate real statistics
+        const available = shelves.filter(s => s.status === 'available').length;
+        const occupied = shelves.filter(s => s.status === 'occupied').length;
+        const maintenance = shelves.filter(s => s.status === 'maintenance').length;
+        const revenue = shelves.filter(s => s.status === 'occupied').reduce((sum, s) => sum + (s.price || 0), 0);
+        
+        // Update with real data and animations
+        setTimeout(() => {
+            if (availableElement) {
+                availableElement.style.opacity = '1';
+                availableElement.textContent = available;
+                availableElement.classList.add('animate-pulse');
+                setTimeout(() => availableElement.classList.remove('animate-pulse'), 1000);
+            }
+            if (occupiedElement) {
+                occupiedElement.style.opacity = '1';
+                occupiedElement.textContent = occupied;
+                occupiedElement.classList.add('animate-pulse');
+                setTimeout(() => occupiedElement.classList.remove('animate-pulse'), 1000);
+            }
+            if (maintenanceElement) {
+                maintenanceElement.style.opacity = '1';
+                maintenanceElement.textContent = maintenance;
+                maintenanceElement.classList.add('animate-pulse');
+                setTimeout(() => maintenanceElement.classList.remove('animate-pulse'), 1000);
+            }
+            if (revenueElement) {
+                revenueElement.style.opacity = '1';
+                revenueElement.textContent = 'KSh ' + revenue.toLocaleString();
+                revenueElement.classList.add('animate-pulse');
+                setTimeout(() => revenueElement.classList.remove('animate-pulse'), 1000);
+            }
+            
+            // Reset refresh button
+            if (refreshBtn) {
+                refreshBtn.innerHTML = '<i class="fas fa-sync-alt text-xs"></i>';
+                refreshBtn.disabled = false;
+            }
+        }, 500);
+    })
+    .catch(error => {
+        console.error('Error refreshing shelf stats:', error);
+        
+        // Reset elements on error
+        [availableElement, occupiedElement, maintenanceElement, revenueElement].forEach(el => {
+            if (el) {
+                el.style.opacity = '1';
+                el.textContent = 'Error';
+            }
+        });
+        
+        if (refreshBtn) {
+            refreshBtn.innerHTML = '<i class="fas fa-sync-alt text-xs"></i>';
+            refreshBtn.disabled = false;
+        }
+    });
+};
 
 // ==================== END USER MANAGEMENT SYSTEM ====================
 
