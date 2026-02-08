@@ -425,7 +425,79 @@
             </div>
         </div>
 
-        <!-- User Management Card (Admin Only) - NEW VERSION -->
+        <!-- User Management Card (Admin Only) -->
+        {% if session.user_role == 'admin' %}
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
+            <!-- Clean Header -->
+            <div class="px-4 py-3 border-b border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-users text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-800">User Management</h3>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button onclick="showUserManagementModal()" 
+                                class="text-gray-600 hover:text-gray-800 p-1.5 rounded hover:bg-gray-50 transition-colors"
+                                title="Manage users">
+                            <i class="fas fa-cog text-xs"></i>
+                        </button>
+                        <button onclick="refreshUsers()" 
+                                id="refreshUsersBtn"
+                                class="text-gray-600 hover:text-gray-800 p-1.5 rounded hover:bg-gray-50 transition-colors"
+                                title="Refresh users">
+                            <i class="fas fa-sync-alt text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Clean Statistics Grid -->
+            <div class="p-4">
+                <div class="grid grid-cols-3 gap-3">
+                    <!-- Total Users -->
+                    <div class="text-center p-3 bg-purple-50 rounded-lg border border-purple-100">
+                        <div class="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <i class="fas fa-users text-white text-xs"></i>
+                        </div>
+                        <div class="text-xl font-bold text-gray-800 mb-1" id="totalUsersCount">0</div>
+                        <div class="text-xs text-gray-600">Total Users</div>
+                    </div>
+                    
+                    <!-- Admin Users -->
+                    <div class="text-center p-3 bg-red-50 rounded-lg border border-red-100">
+                        <div class="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <i class="fas fa-user-shield text-white text-xs"></i>
+                        </div>
+                        <div class="text-xl font-bold text-gray-800 mb-1" id="adminUsersCount">0</div>
+                        <div class="text-xs text-gray-600">Admins</div>
+                    </div>
+                    
+                    <!-- Staff Users -->
+                    <div class="text-center p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <i class="fas fa-user-tie text-white text-xs"></i>
+                        </div>
+                        <div class="text-xl font-bold text-gray-800 mb-1" id="staffUsersCount">0</div>
+                        <div class="text-xs text-gray-600">Staff</div>
+                    </div>
+                </div>
+                
+                <!-- Users List -->
+                <div class="mt-4 border-t border-gray-200 pt-4">
+                    <div id="usersList" class="space-y-2 max-h-64 overflow-y-auto">
+                        <div class="text-center text-gray-500 text-sm py-4">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>Loading users...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Minimalistic Shelf Management Card (Admin Only) -->
         {% if session.user_role == 'admin' %}
         <div class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
@@ -3818,8 +3890,13 @@ window.toggleQuickActions = function() {
     }
 };
 
-// Load charts on page load
+// Load charts and users on page load
 document.addEventListener('DOMContentLoaded', function() {
+    // Load users if admin
+    if ('{{ session.user_role }}' === 'admin') {
+        loadUsers();
+    }
+    
     // Initialize charts
     initializeCharts();
 });
@@ -4231,7 +4308,150 @@ window.ensureRevenueMetricsVisible = function() {
 };
 
 
-// ==================== USER MANAGEMENT SYSTEM REMOVED ====================
+// ==================== USER MANAGEMENT SYSTEM ====================
+
+// Load users on page load
+window.loadUsers = function() {
+    console.log('Loading users...');
+    const refreshBtn = document.getElementById('refreshUsersBtn');
+    if (refreshBtn) {
+        refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    }
+    
+    fetch('/api/users/public')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Users data:', data);
+            
+            if (!data.success) {
+                document.getElementById('usersList').innerHTML = '<p class="text-red-500 text-sm text-center py-4">Error: ' + (data.error || 'Unknown error') + '</p>';
+                return;
+            }
+            
+            if (data.users.length === 0) {
+                document.getElementById('usersList').innerHTML = '<p class="text-gray-500 text-sm text-center py-4">No users found</p>';
+                updateUsersStats([]);
+                return;
+            }
+            
+            const usersHtml = data.users.map(user => {
+                return `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm font-bold">${user.username[0].toUpperCase()}</span>
+                        </div>
+                        <div>
+                            <div class="text-sm font-medium text-gray-800">${user.username}</div>
+                            <div class="text-xs text-gray-500">${user.role} • ${user.created_at}</div>
+                            ${user.show_password ? `
+                                <div class="text-xs text-gray-400 mt-1">
+                                    <span class="text-gray-600 font-medium">Password:</span>
+                                    <span class="font-mono bg-green-100 text-green-800 px-2 py-0.5 rounded border border-green-200 text-xs">
+                                        ${user.password_hash}
+                                    </span>
+                                    <button onclick="copyPassword('${user.password_hash}')" 
+                                            class="ml-2 text-green-600 hover:text-green-800 text-xs underline font-medium">
+                                        <i class="fas fa-copy mr-1"></i>Copy
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button onclick="editUser(${user.id}, '${user.username}', '${user.role}')" 
+                                class="text-blue-600 hover:bg-blue-100 p-1.5 rounded transition-colors"
+                                title="Edit">
+                            <i class="fas fa-edit text-xs"></i>
+                        </button>
+                        ${user.username !== 'admin' ? `
+                            <button onclick="deleteUser(${user.id}, '${user.username}')" 
+                                    class="text-red-600 hover:bg-red-100 p-1.5 rounded transition-colors"
+                                    title="Delete">
+                                <i class="fas fa-trash text-xs"></i>
+                            </button>
+                        ` : '<span class="text-xs text-gray-400 font-medium">Protected</span>'}
+                    </div>
+                </div>
+            `}).join('');
+            
+            document.getElementById('usersList').innerHTML = usersHtml;
+            updateUsersStats(data.users);
+        })
+        .catch(error => {
+            console.error('Error loading users:', error);
+            document.getElementById('usersList').innerHTML = `<p class="text-red-500 text-sm text-center py-4">Error loading users: ${error.message}</p>`;
+        })
+        .finally(() => {
+            if (refreshBtn) {
+                refreshBtn.innerHTML = '<i class="fas fa-sync-alt text-xs"></i>';
+            }
+        });
+};
+
+// Update user statistics
+window.updateUsersStats = function(users) {
+    const totalUsers = users.length;
+    const adminUsers = users.filter(u => u.role === 'admin').length;
+    const staffUsers = users.filter(u => u.role === 'staff').length;
+    
+    document.getElementById('totalUsersCount').textContent = totalUsers;
+    document.getElementById('adminUsersCount').textContent = adminUsers;
+    document.getElementById('staffUsersCount').textContent = staffUsers;
+};
+
+// Show user management modal
+window.showUserManagementModal = function() {
+    window.location.href = '/users';
+};
+
+// Edit user
+window.editUser = function(userId, username, role) {
+    window.location.href = `/users?edit=${userId}`;
+};
+
+// Delete user
+window.deleteUser = function(userId, username) {
+    if (confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
+        fetch(`/api/users/${userId}`, { method: 'DELETE' })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showNotification('User deleted successfully', 'success');
+                    loadUsers();
+                } else {
+                    showNotification(result.error || 'Error deleting user', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting user:', error);
+                showNotification('Error deleting user', 'error');
+            });
+    }
+};
+
+// Copy password to clipboard
+window.copyPassword = function(password) {
+    const textArea = document.createElement('textarea');
+    textArea.value = password;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    showNotification('Password copied to clipboard', 'success');
+};
+
+// Refresh users
+window.refreshUsers = function() {
+    loadUsers();
+};
+
+// ==================== USER MANAGEMENT SYSTEM ====================
 
 </script>
 
