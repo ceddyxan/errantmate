@@ -4309,7 +4309,7 @@ window.loadNewUsers = function() {
             console.log('Users with passwords:', data.users.filter(u => u.show_password));
             const usersList = document.getElementById('newUsersList');
             if (!data.success) {
-                usersList.innerHTML = `<p class="text-red-500 text-sm text-center py-4">Error: ${data.error || 'Unknown error'}</p>`;
+                usersList.innerHTML = '<p class="text-red-500 text-sm text-center py-4">Error: ' + (data.error || 'Unknown error') + '</p>';
                 return;
             }
             
