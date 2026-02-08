@@ -3859,9 +3859,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const userRole = document.body.dataset.userRole;
     console.log('User role detected:', userRole);
     
-    if (userRole === 'admin' || '{{ session.user_role }}' === 'admin') {
+    // Check if admin using multiple methods
+    const isAdmin = userRole === 'admin' || '{{ session.user_role }}' === 'admin';
+    console.log('Is admin check:', isAdmin);
+    
+    if (isAdmin) {
         console.log('Admin user detected, loading User Management...');
-        loadNewUsers();
+        // Add a small delay to ensure DOM is ready
+        setTimeout(function() {
+            loadNewUsers();
+        }, 100);
     } else {
         console.log('Non-admin user detected, User Management disabled');
         console.log('Session user role from template:', '{{ session.user_role }}');
@@ -3869,6 +3876,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize charts
     initializeCharts();
+});
+
+// Also add a backup call for admin users
+window.addEventListener('load', function() {
+    // Double-check if admin and users not loaded
+    if (document.body.dataset.userRole === 'admin' || '{{ session.user_role }}' === 'admin') {
+        const usersList = document.getElementById('newUsersList');
+        if (usersList && usersList.innerHTML.includes('Loading users...')) {
+            console.log('Backup: Loading users after window load');
+            loadNewUsers();
+        }
+    }
 });
 
 // Chart variables
