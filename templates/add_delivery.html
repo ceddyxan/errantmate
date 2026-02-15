@@ -240,7 +240,7 @@
         </div>
         
         <div id="quickActionsContent" class="p-6">
-            <div id="unassignedDeliveriesContainer" class="space-y-3">
+            <div id="unassignedDeliveriesContainer" class="space-y-2">
                 <div class="text-center py-8 text-gray-500">
                     <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
                     <p>Loading unassigned deliveries...</p>
@@ -476,41 +476,24 @@ window.loadUnassignedDeliveries = function() {
                         </div>
                     `;
                 } else {
-                    // Render unassigned deliveries
+                    // Render unassigned deliveries as minimalistic dropdown items
                     container.innerHTML = unassignedDeliveries.map(delivery => `
-                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200 cursor-pointer hover:border-orange-300 group"
+                        <div class="border border-gray-200 rounded-lg p-3 hover:shadow-md transition-all duration-200 cursor-pointer hover:border-orange-300 group"
                              onclick="assignDeliveryToMe('${delivery.id}', '${delivery.display_id}')">
                             <div class="flex items-center justify-between">
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-3 mb-2">
-                                        <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
-                                            ${delivery.display_id}
-                                        </span>
-                                        <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
-                                            Pending
-                                        </span>
-                                    </div>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                                        <div>
-                                            <span class="text-gray-500">From:</span>
-                                            <span class="font-medium ml-1">${delivery.sender_name}</span>
-                                        </div>
-                                        <div>
-                                            <span class="text-gray-500">To:</span>
-                                            <span class="font-medium ml-1">${delivery.recipient_name}</span>
-                                        </div>
-                                        <div class="md:col-span-2">
-                                            <span class="text-gray-500">Address:</span>
-                                            <span class="font-medium ml-1">${delivery.recipient_address}</span>
-                                        </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                                        ${delivery.display_id}
+                                    </span>
+                                    <div class="text-sm">
+                                        <div class="font-medium text-gray-900">${delivery.sender_name} → ${delivery.recipient_name}</div>
+                                        <div class="text-gray-500 text-xs mt-1">${delivery.recipient_address}</div>
                                     </div>
                                 </div>
-                                <div class="ml-4">
-                                    <button class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 group-hover:bg-orange-600 flex items-center gap-2">
-                                        <i class="fas fa-hand-paper"></i>
-                                        Assign to Me
-                                    </button>
-                                </div>
+                                <button class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200 group-hover:bg-orange-600 flex items-center gap-1">
+                                    <i class="fas fa-hand-paper text-xs"></i>
+                                    Assign
+                                </button>
                             </div>
                         </div>
                     `).join('');
@@ -537,7 +520,7 @@ window.loadUnassignedDeliveries = function() {
 
 // Assign delivery to current staff user
 window.assignDeliveryToMe = function(deliveryId, displayId) {
-    const currentUsername = '{{ session.username }}';
+    const currentUsername = '{{ session.username|escapejs }}';
     
     // Confirm assignment
     if (!confirm(`Are you sure you want to assign delivery ${displayId} to yourself and change status to "In Transit"?`)) {
@@ -568,16 +551,39 @@ window.assignDeliveryToMe = function(deliveryId, displayId) {
         if (result.success) {
             showNotification(`Delivery ${displayId} assigned to you and status changed to In Transit`, 'success');
             
-            // Refresh the unassigned deliveries list
-            loadUnassignedDeliveries();
-            
-            // Refresh the recent deliveries section to show the updated delivery
-            if (typeof fetchRecentDeliveriesWithFilter === 'function') {
-                fetchRecentDeliveriesWithFilter();
+            // IMMEDIATE UPDATE: Remove the assigned delivery from the list without refresh
+            const deliveryElement = document.querySelector(`[onclick*="${deliveryId}"]`);
+            if (deliveryElement) {
+                deliveryElement.style.transition = 'all 0.3s ease';
+                deliveryElement.style.opacity = '0';
+                deliveryElement.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    deliveryElement.remove();
+                    // Update count
+                    const countSpan = document.getElementById('unassignedCount');
+                    const currentCount = parseInt(countSpan.textContent) || 0;
+                    countSpan.textContent = Math.max(0, currentCount - 1);
+                    
+                    // Show empty state if no more deliveries
+                    const remainingDeliveries = document.querySelectorAll('#unassignedDeliveriesContainer > div');
+                    if (remainingDeliveries.length === 0) {
+                        container.innerHTML = `
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-check-circle text-3xl text-green-500 mb-3"></i>
+                                <p class="text-lg font-medium">No unassigned deliveries</p>
+                                <p class="text-sm text-gray-400 mt-1">All deliveries are currently assigned</p>
+                            </div>
+                        `;
+                    }
+                }, 300);
             }
+            
+            // IMMEDIATE UPDATE: Add the delivery to Recent Deliveries section
+            updateRecentDeliveriesWithNewAssignment(deliveryId, displayId, currentUsername);
+            
         } else {
             showNotification(result.error || 'Error assigning delivery', 'error');
-            // Refresh the list on error
+            // Refresh list on error
             loadUnassignedDeliveries();
         }
     })
@@ -587,6 +593,103 @@ window.assignDeliveryToMe = function(deliveryId, displayId) {
         // Refresh the list on error
         loadUnassignedDeliveries();
     });
+};
+
+// IMMEDIATE UPDATE: Function to update Recent Deliveries section without refresh
+window.updateRecentDeliveriesWithNewAssignment = function(deliveryId, displayId, assignedTo) {
+    // Find the Recent Deliveries table body
+    const recentDeliveriesBody = document.getElementById('recentDeliveriesBody');
+    if (!recentDeliveriesBody) return;
+    
+    // Check if the delivery is already in the table
+    const existingRow = document.querySelector(`#recentDeliveriesBody tr[data-delivery-id="${deliveryId}"]`);
+    if (existingRow) {
+        // Update existing row
+        const statusCell = existingRow.querySelector('td:nth-child(6)');
+        const deliveryPersonCell = existingRow.querySelector('td:nth-child(8)');
+        
+        if (statusCell) {
+            statusCell.innerHTML = '<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">In Transit</span>';
+        }
+        
+        // Update actions cell to show status dropdown for staff
+        if (deliveryPersonCell) {
+            deliveryPersonCell.innerHTML = `
+                <div class="relative inline-block">
+                    <button onclick="toggleStatusDropdown('${deliveryId}')" 
+                            class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <div id="status-dropdown-${deliveryId}" 
+                         class="hidden absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                        <button onclick="updateDeliveryStatus('${deliveryId}', 'Pending')" 
+                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-clock text-yellow-500 mr-2"></i>Pending
+                        </button>
+                        <button onclick="updateDeliveryStatus('${deliveryId}', 'Delivered')" 
+                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-check text-green-500 mr-2"></i>Delivered
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        // Add new row to the top of the table
+        const newRow = document.createElement('tr');
+        newRow.setAttribute('data-delivery-id', deliveryId);
+        newRow.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <span class="font-medium">${displayId}</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${displayId}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Loading...</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Loading...</td>
+            <td class="px-6 py-4 text-sm text-gray-900">Loading...</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">In Transit</span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Just now</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <div class="relative inline-block">
+                    <button onclick="toggleStatusDropdown('${deliveryId}')" 
+                            class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <div id="status-dropdown-${deliveryId}" 
+                         class="hidden absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                        <button onclick="updateDeliveryStatus('${deliveryId}', 'Pending')" 
+                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-clock text-yellow-500 mr-2"></i>Pending
+                        </button>
+                        <button onclick="updateDeliveryStatus('${deliveryId}', 'Delivered')" 
+                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <i class="fas fa-check text-green-500 mr-2"></i>Delivered
+                        </button>
+                    </div>
+                </div>
+            </td>
+        `;
+        
+        // Insert at the top of the table
+        recentDeliveriesBody.insertBefore(newRow, recentDeliveriesBody.firstChild);
+        
+        // Fetch full delivery details to populate the row
+        fetch(`/get_recent_deliveries?search=${displayId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.deliveries && data.deliveries.length > 0) {
+                    const delivery = data.deliveries[0];
+                    const cells = newRow.querySelectorAll('td');
+                    if (cells.length >= 5) {
+                        cells[2].textContent = delivery.sender_name || '';
+                        cells[3].textContent = delivery.recipient_name || '';
+                        cells[4].textContent = delivery.recipient_address || '';
+                    }
+                }
+            })
+            .catch(error => console.error('Error fetching delivery details:', error));
+    }
 };
 
 // Toggle Quick Actions section
