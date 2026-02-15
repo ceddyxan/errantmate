@@ -77,17 +77,25 @@ if not database_url:
     database_url = 'sqlite:///deliveries.db'
     print(f"Using SQLite for local development: {database_url}")
 else:
-    # Test PostgreSQL connection
-    try:
-        import psycopg2
-        # Test if we can connect to PostgreSQL
-        test_conn = psycopg2.connect(database_url)
-        test_conn.close()
-        print(f"PostgreSQL connection successful: {database_url.split('@')[1] if '@' in database_url else 'hidden'}")
-    except Exception as e:
-        print(f"PostgreSQL connection failed: {str(e)}")
-        print("Falling back to SQLite for development")
-        database_url = 'sqlite:///deliveries.db'
+    # For production mode, use PostgreSQL directly without any connection testing
+    if flask_env == 'production':
+        print(f"Production mode detected - using PostgreSQL database without connection test")
+        print(f"Database: {database_url.split('@')[1] if '@' in database_url else 'hidden'}")
+    else:
+        # Test PostgreSQL connection for development only
+        try:
+            import psycopg2
+            test_conn = psycopg2.connect(
+                database_url,
+                sslmode='allow',
+                connect_timeout=30
+            )
+            test_conn.close()
+            print(f"PostgreSQL connection successful: {database_url.split('@')[1] if '@' in database_url else 'hidden'}")
+        except Exception as e:
+            print(f"PostgreSQL connection failed: {str(e)}")
+            print("Falling back to SQLite for development")
+            database_url = 'sqlite:///deliveries.db'
 
 # For production, ensure PostgreSQL is used
 if flask_env == 'production' and not database_url.startswith('postgres'):
@@ -101,6 +109,16 @@ if flask_env == 'production' and not database_url.startswith('postgres'):
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Configure SSL for PostgreSQL in production
+if flask_env == 'production' and database_url.startswith('postgres'):
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'connect_args': {
+            'sslmode': 'require',
+            'connect_timeout': 30
+        }
+    }
+    print("SSL configuration applied for PostgreSQL production database")
 
 
 
