@@ -221,7 +221,8 @@
         <div class="bg-gradient-to-r from-orange-50 to-amber-50 px-6 py-4 border-b border-gray-200">
             <div class="flex justify-between items-center">
                 <button id="toggleQuickActions" 
-                        class="flex items-center text-orange-600 hover:text-orange-800 focus:outline-none transition-colors duration-200">
+                        class="flex items-center text-orange-600 hover:text-orange-800 focus:outline-none transition-colors duration-200"
+                        onclick="console.log('Quick Actions button clicked'); toggleQuickActions();">
                     <i class="fas fa-chevron-right mr-2 transition-transform duration-200" id="quickActionsToggleIcon"></i>
                     <span class="text-lg font-semibold flex items-center">
                         <i class="fas fa-bolt text-orange-500 mr-2"></i>
@@ -702,17 +703,24 @@ window.updateRecentDeliveriesWithNewAssignment = function(deliveryId, displayId,
 
 // Toggle Quick Actions section
 window.toggleQuickActions = function() {
+    console.log('toggleQuickActions function called');
     const content = document.getElementById('quickActionsContent');
     const icon = document.getElementById('quickActionsToggleIcon');
     
-    if (content.classList.contains('hidden')) {
+    console.log('Content element:', content);
+    console.log('Icon element:', icon);
+    console.log('Content classes:', content ? content.className : 'not found');
+    
+    if (content && content.classList.contains('hidden')) {
+        console.log('Opening Quick Actions');
         content.classList.remove('hidden');
         icon.classList.remove('fa-chevron-right');
         icon.classList.add('fa-chevron-down');
         // Load deliveries when section is opened
         loadUnassignedDeliveries();
     } else {
-        content.classList.add('hidden');
+        console.log('Closing Quick Actions');
+        if (content) content.classList.add('hidden');
         icon.classList.remove('fa-chevron-down');
         icon.classList.add('fa-chevron-right');
     }
