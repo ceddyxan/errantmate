@@ -520,7 +520,7 @@ window.loadUnassignedDeliveries = function() {
 
 // Assign delivery to current staff user
 window.assignDeliveryToMe = function(deliveryId, displayId) {
-    const currentUsername = '{{ session.username|escapejs }}';
+    const currentUsername = '{{ session.username }}';
     
     // Confirm assignment
     if (!confirm(`Are you sure you want to assign delivery ${displayId} to yourself and change status to "In Transit"?`)) {
