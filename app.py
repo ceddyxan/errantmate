@@ -7461,19 +7461,31 @@ def get_recent_deliveries():
 
 def get_user_recent_deliveries():
 
-    """Get recent deliveries for the current user (for add_delivery page)."""
+    """Get recent deliveries for the current user (for add_delivery page). Staff and admin see all deliveries."""
 
     try:
 
-        # Get current user ID from session
+        # Get current user from session
 
         current_user_id = session.get('user_id')
 
+        current_user_role = session.get('user_role', 'user')
+
         
 
-        # Get recent deliveries (last 10) created by the current user only
+        # For staff and admin roles, show all deliveries like admin
 
-        recent_deliveries = Delivery.query.filter_by(created_by=current_user_id).order_by(Delivery.created_at.desc()).limit(10).all()
+        if current_user_role in ['admin', 'staff']:
+
+            # Get recent deliveries (last 10) - all deliveries for staff/admin
+
+            recent_deliveries = Delivery.query.order_by(Delivery.created_at.desc()).limit(10).all()
+
+        else:
+
+            # For regular users, show only their own deliveries
+
+            recent_deliveries = Delivery.query.filter_by(created_by=current_user_id).order_by(Delivery.created_at.desc()).limit(10).all()
 
         
 
