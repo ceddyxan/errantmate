@@ -1848,18 +1848,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </button>
                     <div id="status-dropdown-${delivery.id}" 
                          class="hidden absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
-                        <button class="status-option" data-delivery-id="${delivery.id}" data-status="Pending"
-                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 whitespace-nowrap">
-                            <i class="fas fa-clock text-yellow-500 mr-2"></i>Pending
-                        </button>
-                        <button class="status-option" data-delivery-id="${delivery.id}" data-status="In Transit"
-                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 whitespace-nowrap">
-                            <i class="fas fa-truck text-blue-500 mr-2"></i>In Transit
-                        </button>
-                        <button class="status-option" data-delivery-id="${delivery.id}" data-status="Delivered"
-                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 whitespace-nowrap">
-                            <i class="fas fa-check text-green-500 mr-2"></i>Delivered
-                        </button>
+                        <div class="text-gray-400 text-sm">No actions available</span>
                     </div>
                 </div>
             `;
@@ -1909,52 +1898,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('FUNCTION DEBUG - toggleStatusDropdown type:', typeof window.toggleStatusDropdown);
     console.log('FUNCTION DEBUG - toggleStatusDropdown string:', window.toggleStatusDropdown.toString());
 
-    // Update delivery status
-    window.updateDeliveryStatus = function(deliveryId, newStatus) {
-        const isStaff = '{{ session.user_role }}' === 'staff';
-        const currentUsername = '{{ session.username }}';
-        
-        // Hide the dropdown
-        document.getElementById(`status-dropdown-${deliveryId}`).classList.add('hidden');
-        
-        // Prepare API call
-        const url = '/api/update_delivery_status';
-        let payload = {
-            delivery_id: deliveryId,
-            status: newStatus
-        };
-        
-        // Add delivery person assignment for staff users
-        if (isStaff) {
-            payload.delivery_person = currentUsername;
-        }
-        
-        // Make API call
-        fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                let message = `Status updated to ${newStatus}`;
-                if (isStaff && currentUsername) {
-                    message += ` and assigned to ${currentUsername}`;
-                }
-                showNotification(message, 'success');
-                
-                // Refresh the recent deliveries list
-                fetchRecentDeliveries();
-            } else {
-                showNotification(result.error || 'Error updating status', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error updating status:', error);
-            showNotification('Error updating status', 'error');
-        });
-    };
+    // Status update functionality removed for staff users
 
     // Show notification function
     window.showNotification = function(message, type = 'info') {
@@ -2053,11 +1997,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             
                             ${getStatusUpdateButtonForStaff(delivery)}
                             
-                            <button onclick="openUpdateDeliveryModal('${delivery.id}')" 
-                                    class="text-green-600 hover:text-green-800 transition-colors duration-200"
-                                    title="Update Delivery">
-                                <i class="fas fa-edit"></i>
-                            </button>
+                            // No status button for staff users
                         </div>
                     </td>
                 </tr>
