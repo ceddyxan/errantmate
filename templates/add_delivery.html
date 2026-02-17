@@ -624,27 +624,9 @@ window.updateRecentDeliveriesWithNewAssignment = function(deliveryId, displayId,
             statusCell.innerHTML = '<span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">In Transit</span>';
         }
         
-        // Update actions cell to show status dropdown for staff
+        // Update actions cell to show no actions for staff
         if (deliveryPersonCell) {
-            deliveryPersonCell.innerHTML = `
-                <div class="relative inline-block">
-                    <button onclick="toggleStatusDropdown('${deliveryId}')" 
-                            class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <div id="status-dropdown-${deliveryId}" 
-                         class="hidden absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                        <button onclick="updateDeliveryStatus('${deliveryId}', 'Pending')" 
-                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                            <i class="fas fa-clock text-yellow-500 mr-2"></i>Pending
-                        </button>
-                        <button onclick="updateDeliveryStatus('${deliveryId}', 'Delivered')" 
-                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                            <i class="fas fa-check text-green-500 mr-2"></i>Delivered
-                        </button>
-                    </div>
-                </div>
-            `;
+            deliveryPersonCell.innerHTML = `<span class="text-gray-400 text-sm">No actions available</span>`;
         }
     } else {
         // Add new row to the top of the table
@@ -663,23 +645,7 @@ window.updateRecentDeliveriesWithNewAssignment = function(deliveryId, displayId,
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Just now</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                <div class="relative inline-block">
-                    <button onclick="toggleStatusDropdown('${deliveryId}')" 
-                            class="text-blue-600 hover:text-blue-800 transition-colors duration-200">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <div id="status-dropdown-${deliveryId}" 
-                         class="hidden absolute right-0 mt-1 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                        <button onclick="updateDeliveryStatus('${deliveryId}', 'Pending')" 
-                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                            <i class="fas fa-clock text-yellow-500 mr-2"></i>Pending
-                        </button>
-                        <button onclick="updateDeliveryStatus('${deliveryId}', 'Delivered')" 
-                                class="block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                            <i class="fas fa-check text-green-500 mr-2"></i>Delivered
-                        </button>
-                    </div>
-                </div>
+                <span class="text-gray-400 text-sm">No actions available</span>
             </td>
         `;
         
