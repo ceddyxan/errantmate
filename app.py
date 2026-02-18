@@ -5072,31 +5072,9 @@ def rent_shelf():
 
 def staff_recent_deliveries():
 
-    """Render the staff recent deliveries page - Staff only."""
+    """Redirect to add_delivery page since Recent Deliveries is now integrated there."""
 
-    try:
-
-        # Log page view
-
-        log_page_view("Staff Recent Deliveries")
-
-        
-
-        # Get recent deliveries (last 10)
-
-        recent_deliveries = Delivery.query.order_by(Delivery.created_at.desc()).limit(10).all()
-
-        
-
-        return render_template('staff_recent_deliveries.html', recent_deliveries=recent_deliveries)
-
-    
-
-    except Exception as e:
-
-        app.logger.error(f"Error loading staff recent deliveries page: {str(e)}", exc_info=True)
-
-        return render_template('staff_recent_deliveries.html', recent_deliveries=[])
+    return redirect(url_for('add_delivery'))
 
 
 
