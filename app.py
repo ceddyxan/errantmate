@@ -3765,7 +3765,7 @@ def add_delivery():
 
 
 
-                delivery_person=session.get('username') if session.get('user_role') == 'staff' else None  # Auto-assign to staff users
+                delivery_person=session.get('username') if session.get('user_role') == 'admin' else None  # Auto-assign to admin users
 
 
 
@@ -3933,7 +3933,7 @@ def add_delivery():
 
 
 
-                        delivery_person=session.get('username') if session.get('user_role') == 'staff' else None  # Auto-assign to staff users
+                        delivery_person=session.get('username') if session.get('user_role') == 'admin' else None  # Auto-assign to admin users
 
 
 
@@ -4061,7 +4061,7 @@ def api_update_delivery_status():
 
 
 
-        if not user or not user.is_staff():
+        if not user or not user.is_admin():
 
 
 
@@ -4279,7 +4279,7 @@ def update_status(delivery_id, status):
 
 
 
-        if not user or not user.is_staff():
+        if not user or not user.is_admin():
 
 
 
@@ -4315,7 +4315,7 @@ def update_status(delivery_id, status):
 
 
 
-        if user.role == 'staff' and delivery.delivery_person and delivery.delivery_person != user.username:
+        if user.role == 'admin' and delivery.delivery_person and delivery.delivery_person != user.username:
 
 
 
@@ -5114,7 +5114,7 @@ def update_shelf_details_ultra():
 
         # Check permissions
 
-        if session.get('user_role') not in ['admin', 'staff']:
+        if session.get('user_role') != 'admin':
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
@@ -5290,7 +5290,7 @@ def complete_maintenance():
 
         # Check if user has permission
 
-        if session.get('user_role') not in ['admin', 'staff']:
+        if session.get('user_role') != 'admin':
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
@@ -5384,7 +5384,7 @@ def create_shelf_orm():
 
         # Check if user has permission
 
-        if session.get('user_role') not in ['admin', 'staff']:
+        if session.get('user_role') != 'admin':
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
@@ -5490,7 +5490,7 @@ def create_shelf():
 
         # Check if user has permission
 
-        if session.get('user_role') not in ['admin', 'staff']:
+        if session.get('user_role') != 'admin':
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
@@ -5588,7 +5588,7 @@ def update_shelf_info():
 
         # Check if user has permission
 
-        if session.get('user_role') not in ['admin', 'staff']:
+        if session.get('user_role') != 'admin':
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
@@ -5688,7 +5688,7 @@ def delete_shelf():
 
         # Check if user has permission
 
-        if session.get('user_role') not in ['admin', 'staff']:
+        if session.get('user_role') != 'admin':
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
@@ -5770,7 +5770,7 @@ def update_shelf_details():
 
         # Check if user has permission
 
-        if session.get('user_role') not in ['admin', 'staff']:
+        if session.get('user_role') != 'admin':
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
@@ -5904,7 +5904,7 @@ def end_shelf_rental_ultra():
 
         # Check permissions
 
-        if session.get('user_role') not in ['admin', 'staff']:
+        if session.get('user_role') != 'admin':
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
@@ -6020,7 +6020,7 @@ def end_shelf_rental_safe():
 
         # Check permissions
 
-        if session.get('user_role') not in ['admin', 'staff']:
+        if session.get('user_role') != 'admin':
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
@@ -6154,7 +6154,7 @@ def end_shelf_rental_simple():
 
         # Check if user has permission
 
-        if session.get('user_role') not in ['admin', 'staff']:
+        if session.get('user_role') != 'admin':
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
@@ -6386,7 +6386,7 @@ def end_shelf_rental():
 
         # Check if user has permission
 
-        if session.get('user_role') not in ['admin', 'staff']:
+        if session.get('user_role') != 'admin':
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
@@ -6746,11 +6746,7 @@ def get_shelf_stats():
 
 @app.route('/get_delivery_persons')
 
-
-
-@staff_required
-
-
+@login_required
 
 @database_required
 
@@ -6824,11 +6820,11 @@ def get_delivery_persons():
 
 
 
-        # Get all staff users (admin and staff roles)
+        # Get all admin users
 
 
 
-        staff_users = User.query.filter(User.role.in_(['admin', 'staff']), User.is_active == True).all()
+        staff_users = User.query.filter(User.role == 'admin', User.is_active == True).all()
 
 
 
@@ -9086,7 +9082,7 @@ def debug_create_peter():
 
 
 
-        role = data.get('role', 'staff')
+        role = data.get('role', 'user')
 
 
 
@@ -9718,7 +9714,7 @@ def api_get_users_public():
 
 
 
-            if is_admin and user.role in ['user', 'staff']:
+            if is_admin and user.role == 'user':
 
 
 
@@ -10294,7 +10290,7 @@ def api_create_user():
 
 
 
-        if role not in ['admin', 'user', 'staff']:
+        if role not in ['admin', 'user']:
 
 
 
@@ -10490,7 +10486,7 @@ def api_update_user(user_id):
 
 
 
-        if role not in ['admin', 'user', 'staff']:
+        if role not in ['admin', 'user']:
 
 
 
@@ -11579,7 +11575,7 @@ def create_user():
 
 
 
-        if role not in ['admin', 'user', 'staff']:
+        if role not in ['admin', 'user']:
 
 
 
@@ -11587,7 +11583,7 @@ def create_user():
 
 
 
-            return jsonify({'error': 'Role must be admin, user, or staff'}), 400
+            return jsonify({'error': 'Role must be admin or user'}), 400
 
 
 
@@ -11835,11 +11831,11 @@ def update_user(user_id):
 
 
 
-        if role not in ['admin', 'user', 'staff']:
+        if role not in ['admin', 'user']:
 
 
 
-            return jsonify({'error': 'Role must be admin, user, or staff'}), 400
+            return jsonify({'error': 'Role must be admin or user'}), 400
 
 
 
@@ -14755,7 +14751,7 @@ def get_recent_deliveries():
 
 def get_user_recent_deliveries():
 
-    """Get recent deliveries for the current user (for add_delivery page). Staff and admin see all deliveries."""
+    """Get recent deliveries for the current user (for add_delivery page). Admin sees all deliveries."""
 
     
 
@@ -14863,18 +14859,20 @@ def get_user_recent_deliveries():
 
                 )
 
-            )
+            # For admin role, show all deliveries with pagination
+            if current_user_role == 'admin':
 
-        
+                # Get total count for pagination info
 
-        # For staff and admin roles, show all deliveries with pagination
+                total_count = query.count()
 
-        if current_user_role in ['admin', 'staff']:
+                # Get deliveries for current page
 
-            # Get total count for pagination info
+                recent_deliveries = query.order_by(Delivery.created_at.desc()).offset(offset).limit(per_page).all()
 
-            total_count = query.count()
+            else:
 
+                # For regular users, show only their own deliveries (last 10)
             
 
             # Get deliveries for current page
@@ -14937,9 +14935,8 @@ def get_user_recent_deliveries():
 
         
 
-        # Return paginated response for staff/admin, simple response for regular users
-
-        if current_user_role in ['admin', 'staff']:
+        # Return paginated response for admin, simple response for regular users
+        if current_user_role == 'admin':
 
             return jsonify({
 
