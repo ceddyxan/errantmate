@@ -451,7 +451,6 @@
 
 <script>
 // Quick Actions for Staff Users - Unassigned Deliveries
-{% if session.user_role == 'staff' %}
 window.loadUnassignedDeliveries = function() {
     const container = document.getElementById('unassignedDeliveriesContainer');
     const countSpan = document.getElementById('unassignedCount');
@@ -605,8 +604,8 @@ window.assignDeliveryToMe = function(deliveryId, displayId) {
         loadUnassignedDeliveries();
     });
 };
-
-// IMMEDIATE UPDATE: Function to update Recent Deliveries section without refresh
+{% endif %}
+IMMEDIATE UPDATE: Function to update Recent Deliveries section without refresh
 window.updateRecentDeliveriesWithNewAssignment = function(deliveryId, displayId, assignedTo) {
     // Find the Recent Deliveries table body
     const recentDeliveriesBody = document.getElementById('recentDeliveriesBody');
