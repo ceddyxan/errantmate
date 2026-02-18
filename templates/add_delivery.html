@@ -604,8 +604,11 @@ window.assignDeliveryToMe = function(deliveryId, displayId) {
         loadUnassignedDeliveries();
     });
 };
+</script>
 {% endif %}
-IMMEDIATE UPDATE: Function to update Recent Deliveries section without refresh
+
+<script>
+// IMMEDIATE UPDATE: Function to update Recent Deliveries section without refresh
 window.updateRecentDeliveriesWithNewAssignment = function(deliveryId, displayId, assignedTo) {
     // Find the Recent Deliveries table body
     const recentDeliveriesBody = document.getElementById('recentDeliveriesBody');
@@ -692,19 +695,21 @@ window.toggleQuickActions = function() {
         icon.classList.add('fa-chevron-right');
     }
 };
-
-
+</script>
 {% endif %}
 
+{% if session.user_role == 'staff' %}
 <script>
 // Initialize Quick Actions on page load
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize count to 0 for staff users (don't auto-load deliveries)
-    {% if session.user_role == 'staff' %}
     const countSpan = document.getElementById('unassignedCount');
     if (countSpan) {
-        countSpan.textContent = '0'};
-    {% endif %}
+        countSpan.textContent = '0';
+    }
+});
+</script>
+{% endif %}
 </script>
 
 <script>
