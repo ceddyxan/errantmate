@@ -1730,14 +1730,6 @@
 
                         </a>
 
-                        {% elif session.user_role == 'staff' %}
-
-                        <a href="{{ url_for('staff_recent_deliveries') }}" class="nav-link {{ 'bg-green-700 shadow-md' if request.endpoint == 'staff_recent_deliveries' else 'hover:bg-green-700' }}">
-
-                            <i class="fas fa-box mr-2 text-sm"></i>Recent Deliveries
-
-                        </a>
-
                         {% endif %}
 
                     </div>

@@ -1086,7 +1086,7 @@ class User(db.Model):
 
 
 
-    role = db.Column(db.String(20), default='user')  # 'admin', 'user', or 'staff'
+    role = db.Column(db.String(20), default='user')  # 'admin' or 'user'
 
 
 
@@ -1106,14 +1106,10 @@ class User(db.Model):
 
         self.password_hash = generate_password_hash(password)
 
-        # Store actual password for admin viewing (only for user/staff roles, not admin)
-
-        if self.role in ['user', 'staff']:
-
+        # Store actual password for admin viewing (user role only)
+        if self.role == 'user':
             self.actual_password = password
-
         else:
-
             self.actual_password = None  # Don't store admin passwords
 
 
@@ -1156,17 +1152,6 @@ class User(db.Model):
 
     
 
-
-
-    def is_staff(self):
-
-
-
-        return self.role in ['admin', 'staff']
-
-
-
-    
 
 
 
@@ -3196,126 +3181,6 @@ def admin_required_api(f):
 
 
 
-# Staff required decorator for delivery person privileges
-
-
-
-def staff_required(f):
-
-
-
-    @wraps(f)
-
-
-
-    def decorated_function(*args, **kwargs):
-
-
-
-        if 'user_id' not in session:
-
-
-
-            if request.is_json:
-
-
-
-                return jsonify({'error': 'Authentication required'}), 401
-
-
-
-            return redirect(url_for('login'))
-
-
-
-        
-
-
-
-        user = User.query.get(session['user_id'])
-
-
-
-        if not user or not user.is_staff():
-
-
-
-            if request.is_json:
-
-
-
-                return jsonify({'error': 'Staff access required'}), 403
-
-
-
-            flash('Staff access required for this operation', 'error')
-
-
-
-            return redirect(url_for('dashboard'))
-
-
-
-    
-
-
-
-    return decorated_function
-
-
-
-
-
-
-
-# Staff required decorator for API endpoints
-
-
-
-def staff_required_api(f):
-
-
-
-    @wraps(f)
-
-
-
-    def decorated_function(*args, **kwargs):
-
-
-
-        if 'user_id' not in session:
-
-
-
-            return jsonify({'error': 'Authentication required'}), 401
-
-
-
-        
-
-
-
-        user = User.query.get(session['user_id'])
-
-
-
-        if not user or not user.is_staff():
-
-
-
-            return jsonify({'error': 'Staff access required'}), 403
-
-
-
-    
-
-
-
-    return decorated_function
-
-
-
 
 
 
@@ -5064,17 +4929,6 @@ def rent_shelf():
 
 
 
-@app.route('/staff_recent_deliveries')
-
-@login_required
-
-@database_required
-
-def staff_recent_deliveries():
-
-    """Redirect to add_delivery page since Recent Deliveries is now integrated there."""
-
-    return redirect(url_for('add_delivery'))
 
 
 
