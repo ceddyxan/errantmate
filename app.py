@@ -10835,15 +10835,10 @@ def api_get_senders():
 
 
         senders = db.session.query(Delivery.sender_name, Delivery.sender_phone)\
-
             .filter(Delivery.sender_name.ilike(f'%{query}%'))\
-
             .distinct()\
-
             .order_by(Delivery.sender_name)\
-
             .limit(10)\
-
             .all()
 
 
