@@ -452,7 +452,6 @@
 <script>
 // Quick Actions for Staff Users - Unassigned Deliveries
 {% if session.user_role == 'staff' %}
-// Load unassigned deliveries for Quick Actions
 window.loadUnassignedDeliveries = function() {
     const container = document.getElementById('unassignedDeliveriesContainer');
     const countSpan = document.getElementById('unassignedCount');
@@ -698,18 +697,18 @@ window.toggleQuickActions = function() {
 
 {% endif %}
 
-
+<script>
 // Initialize Quick Actions on page load
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize count to 0 for staff users (don't auto-load deliveries)
     {% if session.user_role == 'staff' %}
     const countSpan = document.getElementById('unassignedCount');
     if (countSpan) {
-        countSpan.textContent = '0';
-    }
+        countSpan.textContent = '0'};
     {% endif %}
-});
+</script>
 
+<script>
 // Format local date time function (shows full date and time)
 function formatLocalDateTime(dateString) {
     if (!dateString) return "Unknown";
