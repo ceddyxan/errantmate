@@ -14858,6 +14858,7 @@ def get_user_recent_deliveries():
                     Delivery.payment_by.ilike(search_term)
 
                 )
+            )
         
         # For admin role, show all deliveries with pagination
         if current_user_role == 'admin':
