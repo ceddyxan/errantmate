@@ -14858,33 +14858,16 @@ def get_user_recent_deliveries():
                     Delivery.payment_by.ilike(search_term)
 
                 )
-
-            # For admin role, show all deliveries with pagination
-            if current_user_role == 'admin':
-
-                # Get total count for pagination info
-
-                total_count = query.count()
-
-                # Get deliveries for current page
-
-                recent_deliveries = query.order_by(Delivery.created_at.desc()).offset(offset).limit(per_page).all()
-
-            else:
-
-                # For regular users, show only their own deliveries (last 10)
-            
-
+        
+        # For admin role, show all deliveries with pagination
+        if current_user_role == 'admin':
+            # Get total count for pagination info
+            total_count = query.count()
             # Get deliveries for current page
-
             recent_deliveries = query.order_by(Delivery.created_at.desc()).offset(offset).limit(per_page).all()
-
         else:
-
             # For regular users, show only their own deliveries (last 10)
-
             recent_deliveries = Delivery.query.filter_by(created_by=current_user_id).order_by(Delivery.created_at.desc()).limit(10).all()
-
             total_count = len(recent_deliveries)
 
         
