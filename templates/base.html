@@ -1876,16 +1876,6 @@
 
             </a>
 
-            {% elif session.user_role == 'staff' %}
-
-            <a href="{{ url_for('staff_recent_deliveries') }}" class="flex flex-col items-center p-2 text-white {{ 'text-green-200' if request.endpoint == 'staff_recent_deliveries' else '' }}">
-
-                <i class="fas fa-box text-base"></i>
-
-                <span class="text-xs mt-1">Deliveries</span>
-
-            </a>
-
             {% endif %}
 
         </div>
