@@ -16092,14 +16092,12 @@ def create_default_admin():
 
             admin_user = User(username='admin', role='admin')
 
-
-
+            # Set password for admin (actual_password will be None for admin)
             admin_user.set_password('ErrantMate@24!')
 
 
 
             db.session.add(admin_user)
-
 
 
             db.session.commit()
