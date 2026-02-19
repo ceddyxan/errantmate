@@ -3646,25 +3646,12 @@ def add_delivery():
 
 
     """Handle adding a new delivery."""
-
-
-
     if request.method == 'GET':
-
-
-
         # Log page view
-
-
-
         log_page_view("Add Delivery")
-
-
+        return render_template('add_delivery.html')
 
     if request.method == 'POST':
-
-
-
         try:
 
 
@@ -4001,20 +3988,9 @@ def add_delivery():
 
 
 
-                flash('Error adding delivery. Please check the form and try again.', 'danger')
-
-
-
-    return render_template('add_delivery.html')
-
-
-
-
-
-
+                flash('Error adding delivery. Please check form and try again.', 'danger')
 
 @app.route('/api/update_delivery_status', methods=['POST'])
-
 
 
 @login_required_api
@@ -4058,19 +4034,8 @@ def api_update_delivery_status():
 
 
         user = User.query.get(user_id)
-
-
-
         if not user or not user.is_admin():
-
-
-
-            return jsonify({'success': False, 'error': 'Staff or admin access required'}), 403
-
-
-
-        
-
+            return jsonify({'success': False, 'error': 'Admin access required'}), 403
 
 
         data = request.get_json()
@@ -4125,9 +4090,8 @@ def api_update_delivery_status():
 
 
 
-        # Additional validation: Staff users can now update any delivery (no restrictions)
-
-        # Removed previous restriction that limited staff to only their assigned deliveries
+        # Additional validation: Admin users can update any delivery (no restrictions)
+        # Removed previous restrictions that limited access to assigned deliveries
 
 
 
@@ -4143,7 +4107,7 @@ def api_update_delivery_status():
 
 
 
-        # Only assign delivery person if it's provided (for staff users)
+        # Only assign delivery person if it's provided (for admin users)
 
 
 
@@ -4247,7 +4211,7 @@ def update_status(delivery_id, status):
 
 
 
-        # Check if user is staff or admin
+        # Check if user is admin
 
 
 
@@ -4287,11 +4251,11 @@ def update_status(delivery_id, status):
 
 
 
-                return jsonify({'success': False, 'error': 'Staff or admin access required'}), 403
+                return jsonify({'success': False, 'error': 'Admin access required'}), 403
 
 
 
-            flash('Staff or admin access required', 'error')
+            flash('Admin access required', 'error')
 
 
 
@@ -4306,21 +4270,10 @@ def update_status(delivery_id, status):
         delivery = Delivery.query.get_or_404(delivery_id)
 
 
-
         
-
-
-
-        # Additional validation: Staff users can only update their own assigned deliveries
-
-
-
-        if user.role == 'admin' and delivery.delivery_person and delivery.delivery_person != user.username:
-
-
-
+        # Additional validation: Users can only update their own assigned deliveries
+        if user.role == 'user' and delivery.delivery_person and delivery.delivery_person != user.username:
             if request.is_json:
-
 
 
                 return jsonify({
