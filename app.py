@@ -1086,7 +1086,7 @@ class User(db.Model):
 
 
 
-    role = db.Column(db.String(20), default='user')  # 'admin' or 'user'
+    role = db.Column(db.String(20), default='user')  # 'admin', 'staff', or 'user'
 
 
 
@@ -1106,8 +1106,8 @@ class User(db.Model):
 
         self.password_hash = generate_password_hash(password)
 
-        # Store actual password for admin viewing (user role only)
-        if self.role == 'user':
+        # Store actual password for admin viewing (user/staff only)
+        if self.role in ['user', 'staff']:
             self.actual_password = password
         else:
             self.actual_password = None  # Don't store admin passwords
@@ -1138,20 +1138,15 @@ class User(db.Model):
 
 
 
-    
+    def is_staff(self):
 
 
 
-    def __repr__(self):
-
-
-
-        return f'<User {self.username} ({self.role})>'
+        return self.role == 'staff'
 
 
 
     
-
 
 
 
@@ -1160,6 +1155,18 @@ class User(db.Model):
 
 
         return self.role == 'admin'
+    
+    def can_view_audit_logs(self):
+        return self.role == 'admin'
+    
+    def can_view_system_health(self):
+        return self.role == 'admin'
+    
+    def can_delete_delivery(self):
+        return self.role in ['admin', 'staff']
+    
+    def can_manage_deliveries(self):
+        return self.role in ['admin', 'staff']
 
 
 
@@ -14813,8 +14820,8 @@ def get_user_recent_deliveries():
                 )
             )
         
-        # For admin role, show all deliveries with pagination
-        if current_user_role == 'admin':
+        # For admin and staff roles, show all deliveries with pagination
+        if current_user_role in ['admin', 'staff']:
             # Get total count for pagination info
             total_count = query.count()
             # Get deliveries for current page
