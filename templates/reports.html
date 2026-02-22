@@ -523,7 +523,7 @@
                     <div class="flex items-center gap-2">
                         <h3 class="text-sm font-semibold text-gray-800">User Management</h3>
                         <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full font-medium">
-                            <i class="fas fa-users mr-1"></i>Admin Panel
+                            <i class="fas fa-users mr-1"></i><span id="userCount">0</span> Users
                         </span>
                     </div>
                     <div class="flex items-center gap-2">
@@ -3751,6 +3751,13 @@ window.loadUsers = function() {
         .then(response => response.json())
         .then(users => {
             const usersList = document.getElementById('usersList');
+            const userCount = document.getElementById('userCount');
+            
+            // Update user count
+            if (userCount) {
+                userCount.textContent = users.length;
+            }
+            
             if (users.length === 0) {
                 usersList.innerHTML = '<p class="text-gray-500 text-sm">No users found</p>';
                 return;
@@ -3764,10 +3771,19 @@ window.loadUsers = function() {
                         </div>
                         <div>
                             <div class="text-xs font-medium text-gray-800">${user.username}</div>
-                            <div class="text-xs text-gray-500">${user.role}</div>
+                            <div class="flex items-center gap-1">
+                                <span class="text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                                    user.role === 'admin' ? 'bg-red-100 text-red-700' :
+                                    user.role === 'staff' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-green-100 text-green-700'
+                                }">
+                                    ${user.role}
+                                </span>
+                                <span class="text-xs text-gray-400">• ${user.created_at}</span>
+                            </div>
                         </div>
                     </div>
-                    ${user.username !== 'Admin' ? `
+                    ${user.username !== 'admin' ? `
                         <div class="flex items-center gap-1">
                             <button onclick="editNewUser(${user.id}, '${user.username}', '${user.role}')" 
                                     class="text-blue-600 hover:bg-blue-100 p-1 rounded transition-colors"
