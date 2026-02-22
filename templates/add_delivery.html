@@ -1588,7 +1588,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function fetchRecentDeliveries() {
         fetch('/get_user_recent_deliveries')
             .then(response => response.json())
-            .then(data => displayRecentDeliveries(data))
+            .then(data => displayRecentDeliveries(data.deliveries))
             .catch(error => {
                 console.error('Error fetching recent deliveries:', error);
                 displayRecentDeliveriesError();
