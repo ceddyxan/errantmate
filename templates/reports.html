@@ -3747,11 +3747,20 @@ window.showNotification = function(message, type = 'info') {
 
 // User Management Functions
 window.loadUsers = function() {
-    fetch('/get_users')
+    // Add timestamp to prevent caching
+    const timestamp = new Date().getTime();
+    fetch(`/get_users?t=${timestamp}`)
         .then(response => response.json())
         .then(users => {
             const usersList = document.getElementById('usersList');
             const userCount = document.getElementById('userCount');
+            
+            // Debug: Log what users are loaded
+            console.log('=== DEBUG: Users loaded from API ===');
+            console.log('Number of users:', users.length);
+            users.forEach((user, index) => {
+                console.log(`User ${index + 1}:`, user);
+            });
             
             // Update user count
             if (userCount) {
