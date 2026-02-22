@@ -2045,21 +2045,10 @@ document.addEventListener('DOMContentLoaded', function() {
         modalContent.classList.add('scale-95', 'opacity-0');
         
         // Hide modal after animation
-        });
-            notification.classList.add('translate-x-0');
-        }, 100);
-        
-        // Remove after 3 seconds
         setTimeout(() => {
-            notification.classList.remove('translate-x-0');
-            notification.classList.add('translate-x-full');
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        }, 3000);
-    }
+            modal.classList.add('hidden');
+        }, 300);
+    };
 
     // Close modal when clicking outside
     document.addEventListener('click', function(event) {
