@@ -1482,84 +1482,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('recentDeliveriesFilter').classList.add('hidden');
             }
         }
-    }
-
-    // Helper function to get status update button for staff users
-    window.getStatusUpdateButtonForStaff = function(delivery) {
-        const isStaff = '{{ session.user_role }}' === 'staff';
-        const currentUsername = '{{ session.username }}';
-        
-        // Debug logging
-        console.log('getStatusUpdateButtonForStaff called:', {
-            isStaff: isStaff,
-            currentUsername: currentUsername,
-            deliveryPerson: delivery.delivery_person,
-            deliveryId: delivery.id
-        });
-        
-        if (isStaff && delivery.delivery_person === currentUsername) {
-            // Staff: Show Status Dropdown only for their own deliveries
-            console.log('Showing status dropdown for delivery:', delivery.id);
-            return `
-                <div class="relative inline-block">
-                    <button class="status-update-btn text-green-600 hover:text-green-800 transition-colors duration-200" 
-                            data-delivery-id="${delivery.id}"
-                            title="Update Status">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
-                    <div id="status-dropdown-${delivery.id}" 
-                         class="hidden absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
-                        <div class="text-gray-400 text-sm">No actions available</span>
-                    </div>
-                </div>
-            `;
-        } else {
-            // No status button for other users' deliveries or non-staff users
-            console.log('No status button for delivery:', delivery.id);
-            return '';
-        }
     };
-
-    // Simple test function to verify function calling works
-    window.testFunction = function() {
-        console.log('=== TEST FUNCTION CALLED ===');
-    };
-
-    // Toggle status dropdown - Simple version like reports page
-    window.toggleStatusDropdown = function(deliveryId) {
-        console.log('=== TOGGLE STATUS DROPDOWN START ===');
-        console.log('toggleStatusDropdown called with deliveryId:', deliveryId);
-        
-        try {
-            const dropdown = document.getElementById(`status-dropdown-${deliveryId}`);
-            console.log('Dropdown element found:', dropdown);
-            
-            // Close all other dropdowns
-            document.querySelectorAll('[id^="status-dropdown-"]').forEach(d => {
-                if (d.id !== `status-dropdown-${deliveryId}`) {
-                    d.classList.add('hidden');
-                }
-            });
-            
-            // Toggle current dropdown
-            if (dropdown) {
-                dropdown.classList.toggle('hidden');
-                console.log('Dropdown toggled, visible:', !dropdown.classList.contains('hidden'));
-            } else {
-                console.error('Dropdown not found:', `status-dropdown-${deliveryId}`);
-            }
-            console.log('=== TOGGLE STATUS DROPDOWN END ===');
-        } catch (error) {
-            console.error('Error in toggleStatusDropdown:', error);
-            console.log('=== TOGGLE STATUS DROPDOWN ERROR ===');
-        }
-    };
-
-    // Debug: Check if function is properly defined
-    console.log('FUNCTION DEBUG - toggleStatusDropdown type:', typeof window.toggleStatusDropdown);
-    console.log('FUNCTION DEBUG - toggleStatusDropdown string:', window.toggleStatusDropdown.toString());
-
-    // Status update functionality removed for staff users
 
     // Show notification function
     window.showNotification = function(message, type = 'info') {
@@ -1655,10 +1578,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                     title="View Details">
                                 <i class="fas fa-eye"></i>
                             </button>
-                            
-                            ${getStatusUpdateButtonForStaff(delivery)}
-                            
-                            // No status button for staff users
                         </div>
                     </td>
                 </tr>
@@ -1666,55 +1585,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         tbody.innerHTML = html;
-        
-        // Add event listeners for status update buttons and dropdown options
-        setTimeout(() => {
-            // Add click listeners to status update buttons
-            document.querySelectorAll('.status-update-btn').forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const deliveryId = this.getAttribute('data-delivery-id');
-                    console.log('Status update button clicked for delivery:', deliveryId);
-                    console.log('window.toggleStatusDropdown exists:', typeof window.toggleStatusDropdown);
-                    console.log('window.toggleStatusDropdown is function:', typeof window.toggleStatusDropdown === 'function');
-                    
-                    if (typeof window.toggleStatusDropdown === 'function') {
-                        console.log('Calling toggleStatusDropdown...');
-                        // Test if simple function call works
-                        console.log('Testing simple function call...');
-                        window.testFunction();
-                        console.log('Simple function call completed.');
-                        
-                        console.log('About to call toggleStatusDropdown directly...');
-                        try {
-                            window.toggleStatusDropdown(deliveryId);
-                            console.log('Direct call completed successfully.');
-                        } catch (error) {
-                            console.error('Error during direct call:', error);
-                        }
-                        
-                        // Also try with a simple alert test
-                        console.log('Testing with simple alert...');
-                        alert('Test alert - button click working!');
-                        
-                        console.log('All tests completed.');
-                    } else {
-                        console.error('toggleStatusDropdown is not a function!');
-                    }
-                });
-            });
-            
-            // Add click listeners to status option buttons
-            document.querySelectorAll('.status-option').forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const deliveryId = this.getAttribute('data-delivery-id');
-                    const status = this.getAttribute('data-status');
-                    console.log('Status option clicked:', deliveryId, status);
-                    window.updateDeliveryStatus(deliveryId, status);
-                });
-            });
-        }, 100);
     }
 
     function displayRecentDeliveriesError() {
@@ -2175,123 +2045,7 @@ document.addEventListener('DOMContentLoaded', function() {
         modalContent.classList.add('scale-95', 'opacity-0');
         
         // Hide modal after animation
-        setTimeout(() => {
-            modal.classList.add('hidden');
-        }, 300);
-    };
-
-    window.toggleStatusDropdown = function(deliveryId) {
-        const dropdown = document.getElementById(`status-dropdown-${deliveryId}`);
-        
-        // Close all other dropdowns
-        document.querySelectorAll('[id^="status-dropdown-"]').forEach(dd => {
-            if (dd.id !== `status-dropdown-${deliveryId}`) {
-                dd.classList.add('hidden');
-            }
         });
-        
-        // Toggle current dropdown
-        dropdown.classList.toggle('hidden');
-    };
-
-    window.updateDeliveryStatus = function(deliveryId, newStatus) {
-        
-        // Close dropdown
-        const dropdown = document.getElementById(`status-dropdown-${deliveryId}`);
-        if (dropdown) {
-            dropdown.classList.add('hidden');
-        } else {
-            return;
-        }
-        
-        // Find the status cell using a more reliable method
-        const row = dropdown.closest('tr');
-        if (!row) {
-            return;
-        }
-        
-        const statusCell = row.querySelector('td:nth-child(5) span');
-        if (!statusCell) {
-            return;
-        }
-        
-        // Show loading state on the status badge
-        const originalContent = statusCell.innerHTML;
-        statusCell.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        
-        // Update status via API
-        const url = `/update_status/${deliveryId}/${encodeURIComponent(newStatus)}`;
-        
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json'
-            }
-        })
-            .then(response => {
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    
-                    // Show temporary success notification
-                    showNotification('Status updated successfully!', 'success');
-                    
-                    // Refresh the recent deliveries data
-                    fetchRecentDeliveries();
-                } else {
-                    console.error('Error updating status:', data.error);
-                    
-                    // Restore original status badge content
-                    statusCell.innerHTML = originalContent;
-                    
-                    // Show error notification
-                    showNotification('Error updating status. Please try again.', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error updating status:', error);
-                
-                // Restore original status badge content
-                statusCell.innerHTML = originalContent;
-                
-                // Show error notification
-                showNotification('Network error. Please check your connection.', 'error');
-            });
-    };
-
-    // Notification system
-    function showNotification(message, type) {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full`;
-        
-        // Style based on type
-        if (type === 'success') {
-            notification.className += ' bg-green-500 text-white';
-            notification.innerHTML = `
-                <div class="flex items-center">
-                    <i class="fas fa-check-circle mr-2"></i>
-                    <span>${message}</span>
-                </div>
-            `;
-        } else if (type === 'error') {
-            notification.className += ' bg-red-500 text-white';
-            notification.innerHTML = `
-                <div class="flex items-center">
-                    <i class="fas fa-exclamation-circle mr-2"></i>
-                    <span>${message}</span>
-                </div>
-            `;
-        }
-        
-        // Add to page
-        document.body.appendChild(notification);
-        
-        // Animate in
-        setTimeout(() => {
-            notification.classList.remove('translate-x-full');
             notification.classList.add('translate-x-0');
         }, 100);
         
@@ -2306,15 +2060,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 300);
         }, 3000);
     }
-
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function(event) {
-        if (!event.target.matches('.text-amber-600') && !event.target.closest('[id^="status-dropdown-"]')) {
-            document.querySelectorAll('[id^="status-dropdown-"]').forEach(dropdown => {
-                dropdown.classList.add('hidden');
-            });
-        }
-    });
 
     // Close modal when clicking outside
     document.addEventListener('click', function(event) {
