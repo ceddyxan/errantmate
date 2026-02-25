@@ -11,6 +11,9 @@ import os
 # Load environment variables from .env file
 load_dotenv()
 
+# Production deployment version - 2026-02-25 20:47:00
+PRODUCTION_VERSION = "v2.1.0-fix-user-management"
+
 
 
 from datetime import datetime, timedelta, timezone
