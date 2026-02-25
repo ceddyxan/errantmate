@@ -134,6 +134,9 @@ if not secret_key:
 
 app.secret_key = secret_key
 
+# Force production deployment - 2026-02-25 21:01:00
+app.config['DEPLOYMENT_VERSION'] = 'v2.1.1-critical-fix'
+
 
 
 
