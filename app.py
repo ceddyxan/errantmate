@@ -1,12 +1,15 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, make_response
 
-
-
 from flask_sqlalchemy import SQLAlchemy
 
-
-
 from sqlalchemy import inspect, text
+
+from dotenv import load_dotenv
+
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 
