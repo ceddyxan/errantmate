@@ -4294,69 +4294,6 @@ window.ensureRevenueMetricsVisible = function() {
 
 // ==================== USER MANAGEMENT SYSTEM ====================
 
-// Load users on page load
-window.loadUsers = function() {
-    console.log('Loading users...');
-    
-    fetch('/api/users/public')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Users data:', data);
-            const usersList = document.getElementById('usersList');
-            
-            if (!data.success) {
-                usersList.innerHTML = '<p class="text-red-500 text-sm text-center py-4">Error: ' + (data.error || 'Unknown error') + '</p>';
-                return;
-            }
-            
-            if (data.users.length === 0) {
-                usersList.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">No users found</p>';
-                return;
-            }
-            
-            const usersHtml = data.users.map(user => {
-                return `
-                <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                            <span class="text-white text-sm font-bold">${user.username[0].toUpperCase()}</span>
-                        </div>
-                        <div>
-                            <div class="text-sm font-medium text-gray-800">${user.username}</div>
-                            <div class="text-xs text-gray-500">${user.role} • ${user.created_at}</div>
-                        </div>
-                    </div>
-                    ${user.username !== 'admin' ? `
-                        <div class="flex items-center gap-1">
-                            <button onclick="editUser(${user.id}, '${user.username}', '${user.role}')" 
-                                    class="text-blue-600 hover:bg-blue-100 p-1.5 rounded transition-colors"
-                                    title="Edit user">
-                                <i class="fas fa-edit text-xs"></i>
-                            </button>
-                            <button onclick="deleteUser(${user.id}, '${user.username}')" 
-                                    class="text-red-600 hover:bg-red-100 p-1.5 rounded transition-colors"
-                                    title="Delete user">
-                                <i class="fas fa-trash text-xs"></i>
-                            </button>
-                        </div>
-                    ` : '<span class="text-xs text-gray-400 font-medium">Protected</span>'}
-                </div>
-            `}).join('');
-            
-            usersList.innerHTML = usersHtml;
-        })
-        .catch(error => {
-            console.error('Error loading users:', error);
-            const usersList = document.getElementById('usersList');
-            usersList.innerHTML = '<p class="text-red-500 text-sm text-center py-4">Error loading users: ' + error.message + '</p>';
-        });
-};
-
 // Show add user modal
 window.showAddUserModal = function() {
     const modal = document.getElementById('addUserModal');
