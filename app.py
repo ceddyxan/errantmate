@@ -9601,7 +9601,7 @@ def api_health():
 
 
 
-@app.route('/api/users', methods=['GET'])
+@app.route('/api/users/<int:user_id>', methods=['PUT'])
 
 
 
@@ -9613,11 +9613,11 @@ def api_health():
 
 
 
-def api_get_users():
+def api_update_user(user_id):
 
 
 
-    """Get all users - NEW CLEAN VERSION"""
+    """Update user - NEW CLEAN VERSION"""
 
 
 
@@ -9625,99 +9625,27 @@ def api_get_users():
 
 
 
-        users = User.query.filter_by(is_active=True).all()
+        user = User.query.get_or_404(user_id)
 
 
 
-        return jsonify({
+        
 
 
 
-            'success': True,
+        # Protect admin user
 
 
 
-            'users': [
+        if user.username == 'admin':
 
 
 
-                {
+            return jsonify({'success': False, 'error': 'Cannot modify admin user'}), 403
 
 
 
-                    'id': user.id,
-
-
-
-                    'username': user.username,
-
-
-
-                    'role': user.role,
-
-
-
-                    'created_at': user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else None,
-
-
-
-                    'is_admin': user.is_admin(),
-
-
-
-                    'can_edit': user.username != 'admin'
-
-
-
-                }
-
-
-
-                for user in users
-
-
-
-            ]
-
-
-
-        })
-
-
-
-    except Exception as e:
-
-
-
-        app.logger.error(f"Error getting users: {str(e)}")
-
-
-
-        return jsonify({'success': False, 'error': 'Failed to load users'}), 500
-
-
-
-
-
-
-
-@app.route('/api/users/public', methods=['POST'])
-
-
-
-@database_required
-
-
-
-def api_create_user_public():
-
-
-
-    """Create new user - PUBLIC VERSION FOR TESTING"""
-
-
-
-    try:
+        
 
 
 
@@ -9725,23 +9653,7 @@ def api_create_user_public():
 
 
 
-        
-
-
-
-        # Basic validation
-
-
-
         username = data.get('username', '').strip()
-
-
-
-        email = data.get('email', '').strip()
-
-
-
-        phone_number = data.get('phone_number', '').strip()
 
 
 
@@ -9749,15 +9661,7 @@ def api_create_user_public():
 
 
 
-        role = 'user'  # Force role to 'user' for security - ignore any role from request
-
-
-
-        
-
-
-
-        app.logger.info(f"Creating user - Username: {username}, Email: {email}, Phone: {phone_number}, Role: '{role}', Password length: {len(password)}")
+        role = data.get('role', user.role)
 
 
 
@@ -9789,16 +9693,6 @@ def api_create_user_public():
 
 
 
-        if email and not re.match(email_regex, email):
-
-
-
-            return jsonify({'success': False, 'error': 'Please enter a valid email address', 'field': 'signupEmail'}), 400
-
-
-
-        
-
 
 
         # Phone validation
@@ -9809,16 +9703,6 @@ def api_create_user_public():
 
 
 
-        if phone_number and not re.match(phone_regex, phone_number.replace(' ', '')):
-
-
-
-            return jsonify({'success': False, 'error': 'Please enter a valid phone number (10-15 digits)', 'field': 'signupPhone'}), 400
-
-
-
-        
-
 
 
         # Password validation with regex for complexity
@@ -9828,16 +9712,6 @@ def api_create_user_public():
         password_regex = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{6,}$'
 
 
-
-        if not password or not re.match(password_regex, password):
-
-
-
-            return jsonify({'success': False, 'error': 'Password must contain: 6+ characters, uppercase, lowercase, number, and symbol', 'field': 'signupPassword'}), 400
-
-
-
-        
 
 
 
@@ -10040,173 +9914,8 @@ def api_create_user_public():
         return jsonify({'success': False, 'error': f'Failed to create user: {str(e)}'}), 500
 
 
-
-
-
-
-
-@app.route('/api/users', methods=['POST'])
-
-
-
 @admin_required_api
-
-
-
 @database_required
-
-
-
-def api_create_user():
-
-
-
-    """Create new user - NEW CLEAN VERSION"""
-
-
-
-    try:
-
-
-
-        data = request.get_json()
-
-
-
-        
-
-
-
-        # Basic validation
-
-
-
-        username = data.get('username', '').strip()
-
-
-
-        password = data.get('password', '')
-
-
-
-        role = data.get('role', 'user')
-
-
-
-        
-
-
-
-        if not username or len(username) < 3:
-
-
-
-            return jsonify({'success': False, 'error': 'Username must be at least 3 characters'}), 400
-
-
-
-        
-
-
-
-        if not password or len(password) < 6:
-
-
-
-            return jsonify({'success': False, 'error': 'Password must be at least 6 characters'}), 400
-
-
-
-        
-
-
-
-        if role not in ['admin', 'user']:
-
-
-
-            return jsonify({'success': False, 'error': 'Invalid role'}), 400
-
-
-
-        
-
-
-
-        # Check if user exists
-
-
-
-        if User.query.filter_by(username=username).first():
-
-
-
-            return jsonify({'success': False, 'error': 'Username already exists'}), 400
-
-
-
-        
-
-
-
-        # Create user
-
-
-
-        new_user = User(username=username, role=role)
-
-
-
-        new_user.set_password(password)
-
-
-
-        db.session.add(new_user)
-
-
-
-        db.session.commit()
-
-
-
-        
-
-
-
-        return jsonify({
-
-
-
-            'success': True,
-
-
-
-            'message': 'User created successfully',
-
-
-
-            'user': {
-
-
-
-                'id': new_user.id,
-
-
-
-                'username': new_user.username,
-
-
-
-                'role': new_user.role,
-
-
-
-                'created_at': new_user.created_at.strftime('%Y-%m-%d %H:%M') if new_user.created_at else None
-
-
-
-            }
-
 
 
         })
