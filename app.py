@@ -235,12 +235,11 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 if flask_env == 'production' and database_url.startswith('postgres'):
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'connect_args': {
-            'sslmode': 'prefer',
-            'connect_timeout': 30,
-            'sslcert': None,
-            'sslkey': None,
-            'sslrootcert': None
-        }
+            'sslmode': 'require',
+            'connect_timeout': 30
+        },
+        'pool_pre_ping': True,
+        'pool_recycle': 300
     }
     print("SSL configuration applied for PostgreSQL production database")
 
