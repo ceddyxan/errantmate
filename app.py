@@ -232,21 +232,16 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 
 # Configure SSL for PostgreSQL in production
-
 if flask_env == 'production' and database_url.startswith('postgres'):
-
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-
         'connect_args': {
-
-            'sslmode': 'require',
-
-            'connect_timeout': 30
-
+            'sslmode': 'prefer',
+            'connect_timeout': 30,
+            'sslcert': None,
+            'sslkey': None,
+            'sslrootcert': None
         }
-
     }
-
     print("SSL configuration applied for PostgreSQL production database")
 
 
@@ -8541,6 +8536,31 @@ def get_unassigned_deliveries():
 
 
 
+
+
+@app.route('/public_check_users')
+def public_check_users():
+    """Public endpoint to check users for debugging - no auth required"""
+    try:
+        users = User.query.order_by(User.is_active.desc(), User.username).all()
+        
+        users_data = []
+        for user in users:
+            users_data.append({
+                'id': user.id,
+                'username': user.username,
+                'role': user.role,
+                'is_active': user.is_active,
+                'created_at': user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else None
+            })
+        
+        return jsonify({
+            'total_users': len(users_data),
+            'active_users': len([u for u in users_data if u['is_active']]),
+            'users': users_data
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/get_users')
