@@ -1981,6 +1981,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const modal = document.getElementById('deliveryDetailsModal');
         const content = document.getElementById('deliveryDetailsContent');
         
+        if (!modal || !content) {
+            console.error('Modal elements not found:', { modal, content });
+            alert('Error: Delivery details modal not found. Please refresh the page and try again.');
+            return;
+        }
+        
         content.innerHTML = `
             <div class="text-center py-8">
                 <i class="fas fa-spinner fa-spin text-blue-600 text-2xl mb-3"></i>
@@ -2135,14 +2141,24 @@ document.addEventListener('DOMContentLoaded', function() {
         const modal = document.getElementById('deliveryDetailsModal');
         const modalContent = document.getElementById('modalContent');
         
-        // Add closing animation
-        modalContent.classList.remove('scale-100', 'opacity-100');
-        modalContent.classList.add('scale-95', 'opacity-0');
+        if (!modal) {
+            console.error('Delivery details modal not found');
+            return;
+        }
         
-        // Hide modal after animation
-        setTimeout(() => {
+        if (modalContent) {
+            // Add closing animation
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            
+            // Hide modal after animation
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        } else {
+            // Hide modal immediately if no content element
             modal.classList.add('hidden');
-        }, 300);
+        }
     };
 
     // Close modal when clicking outside
@@ -2304,7 +2320,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.closeUpdateDeliveryModal = function() {
         const modal = document.getElementById('updateDeliveryModal');
-        modal.classList.add('hidden');
+        if (modal) {
+            modal.classList.add('hidden');
+        } else {
+            console.error('Update delivery modal not found');
+        }
     };
 
     window.submitUpdateDelivery = function() {
@@ -2550,6 +2570,11 @@ window.refreshUnassignedDeliveries = function() {
 window.toggleQuickActions = function() {
     const content = document.getElementById('quickActionsContent');
     const icon = document.getElementById('quickActionsToggleIcon');
+    
+    if (!content || !icon) {
+        console.error('Quick actions elements not found:', { content, icon });
+        return;
+    }
     
     if (content.classList.contains('hidden')) {
         // Show content
