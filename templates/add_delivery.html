@@ -418,7 +418,7 @@
 
     <!-- Delivery Details Modal -->
     <div id="deliveryDetailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-2 sm:p-4">
-        <div class="relative w-full max-w-2xl mx-auto bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden max-h-[95vh] flex flex-col">
+        <div class="relative w-full max-w-2xl mx-auto bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden max-h-[95vh] flex flex-col scale-95 opacity-0 transition-all duration-300">
             <!-- Header -->
             <div class="bg-gradient-to-r from-blue-500 to-indigo-600 px-4 py-3 sm:px-6 sm:py-4">
                 <div class="flex justify-between items-center">
@@ -2119,9 +2119,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
                 
                 // Add animation to modal
-                const modalContent = document.getElementById('modalContent');
-                modalContent.classList.remove('scale-95', 'opacity-0');
-                modalContent.classList.add('scale-100', 'opacity-100');
+                const modalContainer = modal.querySelector('.relative.w-full.max-w-2xl');
+                if (modalContainer) {
+                    modalContainer.classList.remove('scale-95', 'opacity-0');
+                    modalContainer.classList.add('scale-100', 'opacity-100');
+                }
             })
             .catch(error => {
                 content.innerHTML = `
@@ -2139,24 +2141,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.closeDeliveryDetailsModal = function() {
         const modal = document.getElementById('deliveryDetailsModal');
-        const modalContent = document.getElementById('modalContent');
+        const modalContainer = modal ? modal.querySelector('.relative.w-full.max-w-2xl') : null;
         
         if (!modal) {
             console.error('Delivery details modal not found');
             return;
         }
         
-        if (modalContent) {
+        if (modalContainer) {
             // Add closing animation
-            modalContent.classList.remove('scale-100', 'opacity-100');
-            modalContent.classList.add('scale-95', 'opacity-0');
+            modalContainer.classList.remove('scale-100', 'opacity-100');
+            modalContainer.classList.add('scale-95', 'opacity-0');
             
             // Hide modal after animation
             setTimeout(() => {
                 modal.classList.add('hidden');
             }, 300);
         } else {
-            // Hide modal immediately if no content element
+            // Hide modal immediately if no container element
             modal.classList.add('hidden');
         }
     };
