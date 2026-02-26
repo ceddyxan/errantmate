@@ -219,10 +219,14 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-lg mt-6">
         <div class="bg-gradient-to-r from-orange-50 to-amber-50 px-6 py-4 border-b border-gray-200">
             <div class="flex items-center justify-between">
-                <h2 class="text-lg font-semibold text-orange-800 flex items-center">
-                    <i class="fas fa-bolt text-orange-600 mr-2"></i>
-                    Quick Actions - Unassigned Deliveries
-                </h2>
+                <button onclick="toggleQuickActions()" 
+                        class="flex items-center text-orange-800 hover:text-orange-600 focus:outline-none transition-colors duration-200">
+                    <i class="fas fa-chevron-down mr-2 transition-transform duration-200" id="quickActionsToggleIcon"></i>
+                    <h2 class="text-lg font-semibold flex items-center">
+                        <i class="fas fa-bolt text-orange-600 mr-2"></i>
+                        Quick Actions - Unassigned Deliveries
+                    </h2>
+                </button>
                 <button onclick="refreshUnassignedDeliveries()" 
                         class="text-orange-600 hover:text-orange-800 p-2 rounded-full hover:bg-orange-100 transition-colors"
                         title="Refresh unassigned deliveries">
@@ -230,33 +234,37 @@
                 </button>
             </div>
         </div>
-        <div class="p-6">
-            <!-- Quick Stats Summary -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                <div class="bg-orange-50 rounded-lg p-3 text-center border border-orange-200">
-                    <div class="text-2xl font-bold text-orange-600" id="unassignedCount">0</div>
-                    <div class="text-xs text-orange-700 font-medium">Unassigned</div>
+        
+        <!-- Collapsible Quick Actions Content -->
+        <div id="quickActionsContent" class="hidden transition-all duration-300">
+            <div class="p-6">
+                <!-- Quick Stats Summary -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-orange-50 rounded-lg p-3 text-center border border-orange-200">
+                        <div class="text-2xl font-bold text-orange-600" id="unassignedCount">0</div>
+                        <div class="text-xs text-orange-700 font-medium">Unassigned</div>
+                    </div>
+                    <div class="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
+                        <div class="text-2xl font-bold text-blue-600" id="myAssignedCount">0</div>
+                        <div class="text-xs text-blue-700 font-medium">My Assigned</div>
+                    </div>
+                    <div class="bg-green-50 rounded-lg p-3 text-center border border-green-200">
+                        <div class="text-2xl font-bold text-green-600" id="inTransitCount">0</div>
+                        <div class="text-xs text-green-700 font-medium">In Transit</div>
+                    </div>
                 </div>
-                <div class="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
-                    <div class="text-2xl font-bold text-blue-600" id="myAssignedCount">0</div>
-                    <div class="text-xs text-blue-700 font-medium">My Assigned</div>
-                </div>
-                <div class="bg-green-50 rounded-lg p-3 text-center border border-green-200">
-                    <div class="text-2xl font-bold text-green-600" id="inTransitCount">0</div>
-                    <div class="text-xs text-green-700 font-medium">In Transit</div>
-                </div>
-            </div>
-            
-            <!-- Unassigned Deliveries Cards -->
-            <div class="border-t border-gray-200 pt-4">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                    <i class="fas fa-bolt text-orange-500 mr-2"></i>
-                    Click any delivery to assign it to yourself
-                </h3>
-                <div id="unassignedDeliveriesCards" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6 gap-3">
-                    <!-- Delivery cards will be loaded here -->
-                    <div class="col-span-full text-center text-gray-500 py-8">
-                        <i class="fas fa-spinner fa-spin mr-2"></i>Loading unassigned deliveries...
+                
+                <!-- Unassigned Deliveries Cards -->
+                <div class="border-t border-gray-200 pt-4">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                        <i class="fas fa-bolt text-orange-500 mr-2"></i>
+                        Click any delivery to assign it to yourself
+                    </h3>
+                    <div id="unassignedDeliveriesCards" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6 gap-3">
+                        <!-- Delivery cards will be loaded here -->
+                        <div class="col-span-full text-center text-gray-500 py-8">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>Loading unassigned deliveries...
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2499,6 +2507,29 @@ window.refreshUnassignedDeliveries = function() {
     }
     if (typeof loadUnassignedDeliveryCards === 'function') {
         loadUnassignedDeliveryCards();
+    }
+};
+
+window.toggleQuickActions = function() {
+    const content = document.getElementById('quickActionsContent');
+    const icon = document.getElementById('quickActionsToggleIcon');
+    
+    if (content.classList.contains('hidden')) {
+        // Show content
+        content.classList.remove('hidden');
+        icon.style.transform = 'rotate(180deg)';
+        
+        // Load data if not already loaded
+        if (typeof loadStaffStats === 'function') {
+            loadStaffStats();
+        }
+        if (typeof loadUnassignedDeliveryCards === 'function') {
+            loadUnassignedDeliveryCards();
+        }
+    } else {
+        // Hide content
+        content.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
     }
 };
 
