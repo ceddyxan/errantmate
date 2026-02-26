@@ -592,7 +592,7 @@ function createDeliveryPopup(delivery) {
                 <!-- Delivery ID -->
                 <div class="flex justify-between items-center py-2 border-b border-gray-100">
                     <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">ID</span>
-                    <span class="text-sm font-bold text-gray-900 bg-gray-50 px-2 py-1 rounded">${delivery.display_id}</span>
+                    <span id="deliveryPopupId" class="text-sm font-bold text-gray-900 bg-gray-50 px-2 py-1 rounded">${delivery.display_id}</span>
                 </div>
                 
                 <!-- Sender Information -->
@@ -680,9 +680,15 @@ function payPackage() {
     if (popup) {
         console.log('Delivery popup found:', popup);
         // Extract delivery ID from popup content
-        const deliveryIdElement = popup.querySelector('.bg-gray-50.px-2.py-1.rounded');
+        const deliveryIdElement = popup.querySelector('#deliveryPopupId');
         const deliveryId = deliveryIdElement ? deliveryIdElement.textContent : '';
         console.log('Delivery ID extracted:', deliveryId);
+        
+        if (!deliveryId) {
+            console.error('Delivery ID not found in popup');
+            alert('Error: Unable to extract delivery ID. Please try again.');
+            return;
+        }
         
         // Close current popup
         closeDeliveryPopup();
@@ -745,6 +751,9 @@ function payPackage() {
         
         // Add payment popup to page
         document.body.appendChild(paymentPopup);
+    } else {
+        console.error('Delivery popup not found');
+        alert('Error: Delivery details popup not found. Please try again.');
     }
 }
 
@@ -1056,7 +1065,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <!-- Delivery ID -->
                         <div class="flex justify-between items-center py-2 border-b border-gray-100">
                             <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">ID</span>
-                            <span class="text-sm font-bold text-gray-900 bg-gray-50 px-2 py-1 rounded">${delivery.display_id}</span>
+                            <span id="deliveryPopupId" class="text-sm font-bold text-gray-900 bg-gray-50 px-2 py-1 rounded">${delivery.display_id}</span>
                         </div>
                         
                         <!-- Sender Information -->
