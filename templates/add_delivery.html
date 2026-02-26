@@ -253,7 +253,7 @@
                     <i class="fas fa-bolt text-orange-500 mr-2"></i>
                     Click any delivery to assign it to yourself
                 </h3>
-                <div id="unassignedDeliveriesCards" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                <div id="unassignedDeliveriesCards" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6 gap-3">
                     <!-- Delivery cards will be loaded here -->
                     <div class="col-span-full text-center text-gray-500 py-8">
                         <i class="fas fa-spinner fa-spin mr-2"></i>Loading unassigned deliveries...
@@ -2730,36 +2730,41 @@ window.loadUnassignedDeliveryCards = function() {
                     container.innerHTML = data.deliveries.map(delivery => `
                         <div data-delivery-id="${delivery.id}" 
                              onclick="quickAssignDelivery(${delivery.id})"
-                             class="bg-white border border-gray-200 rounded-lg p-2 cursor-pointer hover:border-orange-300 hover:shadow-md transition-all duration-200 group">
-                            <div class="flex items-start justify-between mb-1">
+                             class="bg-white border border-gray-200 rounded-lg p-3 cursor-pointer hover:border-orange-300 hover:shadow-md transition-all duration-200 group min-h-[140px] flex flex-col">
+                            <div class="flex items-start justify-between mb-2 flex-shrink-0">
                                 <div class="flex-1 min-w-0">
-                                    <div class="font-semibold text-gray-900 group-hover:text-orange-600 text-xs truncate">
+                                    <div class="font-bold text-gray-900 group-hover:text-orange-600 text-sm leading-tight">
                                         ${delivery.display_id}
                                     </div>
-                                    <div class="text-xs text-gray-500 truncate">
-                                        ${delivery.sender_name} → ${delivery.recipient_name}
+                                    <div class="text-xs text-gray-600 leading-tight mt-1">
+                                        ${delivery.sender_name}
+                                    </div>
+                                    <div class="text-xs text-gray-500 leading-tight">
+                                        → ${delivery.recipient_name}
                                     </div>
                                 </div>
-                                <div class="ml-1 flex-shrink-0">
-                                    <i class="fas fa-arrow-right text-orange-400 group-hover:text-orange-600 text-xs"></i>
+                                <div class="ml-2 flex-shrink-0">
+                                    <i class="fas fa-arrow-right text-orange-400 group-hover:text-orange-600"></i>
                                 </div>
                             </div>
-                            <div class="flex items-center justify-between text-xs text-gray-400">
+                            
+                            <div class="flex items-center justify-between text-xs text-gray-500 mb-2 flex-shrink-0">
                                 <div class="flex items-center gap-2">
-                                    <span class="flex items-center text-xs">
-                                        <i class="fas fa-box mr-1 text-xs"></i>${delivery.goods_type}
+                                    <span class="flex items-center font-medium">
+                                        <i class="fas fa-box mr-1 text-blue-400"></i>${delivery.goods_type}
                                     </span>
-                                    <span class="flex items-center text-xs">
-                                        <i class="fas fa-cubes mr-1 text-xs"></i>${delivery.quantity}
+                                    <span class="flex items-center font-medium">
+                                        <i class="fas fa-cubes mr-1 text-green-400"></i>${delivery.quantity}
                                     </span>
-                                </div>
-                                <div class="font-medium text-orange-600 text-xs">
-                                    K${delivery.amount}
                                 </div>
                             </div>
-                            <div class="mt-1 pt-1 border-t border-gray-100">
+                            
+                            <div class="mt-auto pt-2 border-t border-gray-100 flex items-center justify-between">
                                 <div class="text-xs text-gray-400">
-                                    <i class="fas fa-clock mr-1 text-xs"></i>${delivery.created_at}
+                                    <i class="fas fa-clock mr-1"></i>${delivery.created_at}
+                                </div>
+                                <div class="font-bold text-orange-600 text-sm">
+                                    K${delivery.amount}
                                 </div>
                             </div>
                         </div>
