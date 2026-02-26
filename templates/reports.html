@@ -3726,10 +3726,13 @@ window.loadUnassignedDeliveries = function() {
     
     fetch('/get_unassigned_deliveries')
         .then(response => response.json())
-        .then(deliveries => {
+        .then(data => {
             select.innerHTML = '<option value="">Select unassigned delivery...</option>';
             
-            if (!Array.isArray(deliveries) || deliveries.length === 0) {
+            // Handle new API response format
+            const deliveries = data.deliveries || data; // fallback for old format
+            
+            if (!data.success || !Array.isArray(deliveries) || deliveries.length === 0) {
                 select.innerHTML += '<option value="" disabled>No unassigned deliveries found</option>';
                 return;
             }
