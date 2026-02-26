@@ -253,7 +253,7 @@
                     <i class="fas fa-bolt text-orange-500 mr-2"></i>
                     Click any delivery to assign it to yourself
                 </h3>
-                <div id="unassignedDeliveriesCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div id="unassignedDeliveriesCards" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                     <!-- Delivery cards will be loaded here -->
                     <div class="col-span-full text-center text-gray-500 py-8">
                         <i class="fas fa-spinner fa-spin mr-2"></i>Loading unassigned deliveries...
@@ -2494,149 +2494,12 @@ document.addEventListener('DOMContentLoaded', function() {
 {% if session.user_role == 'staff' %}
 <script>
 window.refreshUnassignedDeliveries = function() {
-    loadStaffStats();
-    loadUnassignedDeliveryCards();
-};
-
-window.quickAssignDelivery = function(deliveryId) {
-    // Show loading state on specific card
-    const card = document.querySelector(`[data-delivery-id="${deliveryId}"]`);
-    if (card) {
-        const originalContent = card.innerHTML;
-        card.innerHTML = `
-            <div class="text-center py-8">
-                <i class="fas fa-spinner fa-spin text-orange-500 text-2xl"></i>
-                <div class="text-sm text-orange-600 mt-2">Assigning...</div>
-            </div>
-        `;
-        
-        // Send quick assign request
-        fetch(`/quick_assign_delivery/${deliveryId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Show success message
-                showNotification(data.message, 'success');
-                
-                // Remove the assigned card with animation
-                card.style.transition = 'opacity 0.3s, transform 0.3s';
-                card.style.opacity = '0';
-                card.style.transform = 'scale(0.9)';
-                
-                setTimeout(() => {
-                    card.remove();
-                    // Update stats
-                    loadStaffStats();
-                }, 300);
-                
-                // Refresh recent deliveries if visible
-                if (typeof refreshRecentDeliveries === 'function') {
-                    refreshRecentDeliveries();
-                }
-            } else {
-                // Restore card and show error
-                card.innerHTML = originalContent;
-                showNotification(data.error || 'Failed to assign delivery', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error quick assigning delivery:', error);
-            card.innerHTML = originalContent;
-            showNotification('Failed to assign delivery', 'error');
-        });
+    if (typeof loadStaffStats === 'function') {
+        loadStaffStats();
     }
-};
-
-window.loadUnassignedDeliveryCards = function() {
-    const container = document.getElementById('unassignedDeliveriesCards');
-    
-    // Show loading state
-    container.innerHTML = `
-        <div class="col-span-full text-center text-gray-500 py-8">
-            <i class="fas fa-spinner fa-spin mr-2"></i>Loading unassigned deliveries...
-        </div>
-    `;
-    
-    // Fetch unassigned deliveries
-    fetch('/get_unassigned_deliveries')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Update unassigned count
-                document.getElementById('unassignedCount').textContent = data.count || 0;
-                
-                if (data.deliveries.length === 0) {
-                    container.innerHTML = `
-                        <div class="col-span-full text-center text-gray-500 py-8">
-                            <i class="fas fa-check-circle text-green-500 text-2xl mb-2"></i>
-                            <div class="text-sm">No unassigned deliveries available</div>
-                            <div class="text-xs text-gray-400 mt-1">All deliveries have been assigned!</div>
-                        </div>
-                    `;
-                } else {
-                    container.innerHTML = data.deliveries.map(delivery => `
-                        <div data-delivery-id="${delivery.id}" 
-                             onclick="quickAssignDelivery(${delivery.id})"
-                             class="bg-white border border-gray-200 rounded-lg p-3 cursor-pointer hover:border-orange-300 hover:shadow-md transition-all duration-200 group">
-                            <div class="flex items-start justify-between mb-2">
-                                <div class="flex-1 min-w-0">
-                                    <div class="font-semibold text-gray-900 group-hover:text-orange-600 text-sm">
-                                        ${delivery.display_id}
-                                    </div>
-                                    <div class="text-xs text-gray-500 truncate">
-                                        ${delivery.sender_name} → ${delivery.recipient_name}
-                                    </div>
-                                </div>
-                                <div class="ml-2 flex-shrink-0">
-                                    <i class="fas fa-arrow-right text-orange-400 group-hover:text-orange-600"></i>
-                                </div>
-                            </div>
-                            <div class="flex items-center justify-between text-xs text-gray-400">
-                                <div class="flex items-center gap-3">
-                                    <span class="flex items-center">
-                                        <i class="fas fa-box mr-1"></i>${delivery.goods_type}
-                                    </span>
-                                    <span class="flex items-center">
-                                        <i class="fas fa-cubes mr-1"></i>${delivery.quantity}
-                                    </span>
-                                </div>
-                                <div class="font-medium text-orange-600">
-                                    K${delivery.amount}
-                                </div>
-                            </div>
-                            <div class="mt-2 pt-2 border-t border-gray-100">
-                                <div class="text-xs text-gray-400">
-                                    <i class="fas fa-clock mr-1"></i>${delivery.created_at}
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-            } else {
-                container.innerHTML = `
-                    <div class="col-span-full text-center text-red-500 py-8">
-                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
-                        <div class="text-sm">Error loading deliveries</div>
-                        <div class="text-xs text-red-400 mt-1">Please try refreshing</div>
-                    </div>
-                `;
-            }
-        })
-        .catch(error => {
-            console.error('Error loading unassigned deliveries:', error);
-            container.innerHTML = `
-                <div class="col-span-full text-center text-red-500 py-8">
-                    <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
-                    <div class="text-sm">Failed to load deliveries</div>
-                    <div class="text-xs text-red-400 mt-1">Check your connection</div>
-                </div>
-            `;
-        });
+    if (typeof loadUnassignedDeliveryCards === 'function') {
+        loadUnassignedDeliveryCards();
+    }
 };
 
 window.loadStaffStats = function() {
@@ -2703,7 +2566,229 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof loadUnassignedDeliveryCards === 'function') {
         loadUnassignedDeliveryCards();
     }
+    
+    // Start automatic real-time updates
+    startRealTimeUpdates();
 });
+
+// Real-time updates using polling
+window.startRealTimeUpdates = function() {
+    // Update every 10 seconds for near real-time experience
+    const updateInterval = 10000;
+    
+    // Initial load
+    if (typeof loadStaffStats === 'function') {
+        loadStaffStats();
+    }
+    if (typeof loadUnassignedDeliveryCards === 'function') {
+        loadUnassignedDeliveryCards();
+    }
+    
+    // Set up automatic polling
+    setInterval(() => {
+        if (typeof loadStaffStats === 'function') {
+            loadStaffStats();
+        }
+        if (typeof loadUnassignedDeliveryCards === 'function') {
+            loadUnassignedDeliveryCards();
+        }
+    }, updateInterval);
+    
+    // Also update when page becomes visible again (tab switching)
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            if (typeof loadStaffStats === 'function') {
+                loadStaffStats();
+            }
+            if (typeof loadUnassignedDeliveryCards === 'function') {
+                loadUnassignedDeliveryCards();
+            }
+        }
+    });
+    
+    // Update when window gains focus
+    window.addEventListener('focus', function() {
+        if (typeof loadStaffStats === 'function') {
+            loadStaffStats();
+        }
+        if (typeof loadUnassignedDeliveryCards === 'function') {
+            loadUnassignedDeliveryCards();
+        }
+    });
+};
+
+// Enhanced quickAssignDelivery with immediate updates
+window.quickAssignDelivery = function(deliveryId) {
+    // Show loading state on specific card
+    const card = document.querySelector(`[data-delivery-id="${deliveryId}"]`);
+    if (card) {
+        const originalContent = card.innerHTML;
+        card.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-spinner fa-spin text-orange-500 text-xl"></i>
+                <div class="text-xs text-orange-600 mt-1">Assigning...</div>
+            </div>
+        `;
+        
+        // Disable card during assignment
+        card.style.pointerEvents = 'none';
+        card.style.opacity = '0.7';
+        
+        // Send quick assign request
+        fetch(`/quick_assign_delivery/${deliveryId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                showNotification(data.message, 'success');
+                
+                // Remove the assigned card with animation
+                card.style.transition = 'all 0.5s ease-out';
+                card.style.transform = 'scale(0.8) rotate(-5deg)';
+                card.style.opacity = '0';
+                
+                setTimeout(() => {
+                    card.remove();
+                    
+                    // Immediate refresh of all data
+                    if (typeof loadStaffStats === 'function') {
+                        loadStaffStats();
+                    }
+                    if (typeof loadUnassignedDeliveryCards === 'function') {
+                        loadUnassignedDeliveryCards();
+                    }
+                }, 500);
+                
+                // Refresh recent deliveries if visible
+                if (typeof refreshRecentDeliveries === 'function') {
+                    refreshRecentDeliveries();
+                }
+            } else {
+                // Restore card and show error
+                card.innerHTML = originalContent;
+                card.style.pointerEvents = 'auto';
+                card.style.opacity = '1';
+                showNotification(data.error || 'Failed to assign delivery', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error quick assigning delivery:', error);
+            card.innerHTML = originalContent;
+            card.style.pointerEvents = 'auto';
+            card.style.opacity = '1';
+            showNotification('Failed to assign delivery', 'error');
+        });
+    }
+};
+
+// Enhanced loadUnassignedDeliveryCards with immediate updates
+window.loadUnassignedDeliveryCards = function() {
+    const container = document.getElementById('unassignedDeliveriesCards');
+    
+    // Skip if container is being updated
+    if (container.dataset.updating === 'true') {
+        return;
+    }
+    
+    container.dataset.updating = 'true';
+    
+    // Show loading state only if container is empty
+    if (container.children.length === 0 || 
+        (container.children.length === 1 && container.children[0].textContent.includes('Loading'))) {
+        container.innerHTML = `
+            <div class="col-span-full text-center text-gray-500 py-4">
+                <i class="fas fa-spinner fa-spin mr-2"></i>Loading unassigned deliveries...
+            </div>
+        `;
+    }
+    
+    // Fetch unassigned deliveries
+    fetch('/get_unassigned_deliveries')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update unassigned count immediately
+                const unassignedCountElement = document.getElementById('unassignedCount');
+                if (unassignedCountElement) {
+                    unassignedCountElement.textContent = data.count || 0;
+                }
+                
+                if (data.deliveries.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center text-gray-500 py-4">
+                            <i class="fas fa-check-circle text-green-500 text-xl mb-1"></i>
+                            <div class="text-xs">No unassigned deliveries available</div>
+                            <div class="text-xs text-gray-400">All deliveries have been assigned!</div>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = data.deliveries.map(delivery => `
+                        <div data-delivery-id="${delivery.id}" 
+                             onclick="quickAssignDelivery(${delivery.id})"
+                             class="bg-white border border-gray-200 rounded-lg p-2 cursor-pointer hover:border-orange-300 hover:shadow-md transition-all duration-200 group">
+                            <div class="flex items-start justify-between mb-1">
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-semibold text-gray-900 group-hover:text-orange-600 text-xs truncate">
+                                        ${delivery.display_id}
+                                    </div>
+                                    <div class="text-xs text-gray-500 truncate">
+                                        ${delivery.sender_name} → ${delivery.recipient_name}
+                                    </div>
+                                </div>
+                                <div class="ml-1 flex-shrink-0">
+                                    <i class="fas fa-arrow-right text-orange-400 group-hover:text-orange-600 text-xs"></i>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between text-xs text-gray-400">
+                                <div class="flex items-center gap-2">
+                                    <span class="flex items-center text-xs">
+                                        <i class="fas fa-box mr-1 text-xs"></i>${delivery.goods_type}
+                                    </span>
+                                    <span class="flex items-center text-xs">
+                                        <i class="fas fa-cubes mr-1 text-xs"></i>${delivery.quantity}
+                                    </span>
+                                </div>
+                                <div class="font-medium text-orange-600 text-xs">
+                                    K${delivery.amount}
+                                </div>
+                            </div>
+                            <div class="mt-1 pt-1 border-t border-gray-100">
+                                <div class="text-xs text-gray-400">
+                                    <i class="fas fa-clock mr-1 text-xs"></i>${delivery.created_at}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } else {
+                container.innerHTML = `
+                    <div class="col-span-full text-center text-red-500 py-4">
+                        <i class="fas fa-exclamation-triangle text-xl mb-1"></i>
+                        <div class="text-xs">Error loading deliveries</div>
+                        <div class="text-xs text-red-400">Please try refreshing</div>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading unassigned deliveries:', error);
+            container.innerHTML = `
+                <div class="col-span-full text-center text-red-500 py-4">
+                    <i class="fas fa-exclamation-triangle text-xl mb-1"></i>
+                    <div class="text-xs">Failed to load deliveries</div>
+                    <div class="text-xs text-red-400">Check your connection</div>
+                </div>
+            `;
+        })
+        .finally(() => {
+            container.dataset.updating = 'false';
+        });
+};
 </script>
 {% endif %}
 {% endblock %}
