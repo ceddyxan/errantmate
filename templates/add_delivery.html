@@ -231,36 +231,23 @@
             </div>
         </div>
         <div class="p-6">
-            <!-- Quick Actions Dropdown -->
-            <div class="relative">
-                <button onclick="toggleQuickActionsDropdown()" 
-                        class="w-full bg-orange-600 text-white px-4 py-3 font-medium rounded-lg hover:bg-orange-700 flex items-center justify-center gap-2 transition-colors duration-200">
-                    <i class="fas fa-bolt"></i>
-                    Show Unassigned Deliveries
-                    <i class="fas fa-chevron-down text-xs"></i>
-                </button>
-                <div id="quickActionsDropdown" 
-                     class="hidden absolute top-full left-0 right-0 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-80 overflow-y-auto">
-                    <!-- Unassigned deliveries will be loaded here -->
-                    <div class="px-4 py-3 text-sm text-gray-500 border-b">
-                        <i class="fas fa-spinner fa-spin mr-2"></i>Loading unassigned deliveries...
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Quick Stats -->
-            <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="bg-orange-50 rounded-lg p-3 text-center">
+            <!-- Quick Stats Cards (Clickable like admin reports) -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div onclick="quickAssignNextUnassigned()" 
+                     class="bg-orange-50 rounded-lg p-4 text-center cursor-pointer hover:bg-orange-100 transition-colors duration-200 border border-orange-200 hover:shadow-md">
                     <div class="text-2xl font-bold text-orange-600" id="unassignedCount">0</div>
-                    <div class="text-xs text-orange-700">Unassigned</div>
+                    <div class="text-xs text-orange-700 font-medium">Unassigned</div>
+                    <div class="text-xs text-orange-500 mt-1">Click to assign next</div>
                 </div>
-                <div class="bg-blue-50 rounded-lg p-3 text-center">
+                <div class="bg-blue-50 rounded-lg p-4 text-center border border-blue-200">
                     <div class="text-2xl font-bold text-blue-600" id="myAssignedCount">0</div>
-                    <div class="text-xs text-blue-700">My Assigned</div>
+                    <div class="text-xs text-blue-700 font-medium">My Assigned</div>
+                    <div class="text-xs text-blue-500 mt-1">Total assigned to me</div>
                 </div>
-                <div class="bg-green-50 rounded-lg p-3 text-center">
+                <div class="bg-green-50 rounded-lg p-4 text-center border border-green-200">
                     <div class="text-2xl font-bold text-green-600" id="inTransitCount">0</div>
-                    <div class="text-xs text-green-700">In Transit</div>
+                    <div class="text-xs text-green-700 font-medium">In Transit</div>
+                    <div class="text-xs text-green-500 mt-1">Currently delivering</div>
                 </div>
             </div>
         </div>
@@ -2497,156 +2484,63 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- Staff Quick Actions Script (only for staff role) -->
 {% if session.user_role == 'staff' %}
 <script>
-window.toggleQuickActionsDropdown = function() {
-    const dropdown = document.getElementById('quickActionsDropdown');
-    dropdown.classList.toggle('hidden');
-    
-    // Load unassigned deliveries when opening dropdown
-    if (!dropdown.classList.contains('hidden')) {
-        loadUnassignedDeliveries();
-        
-        // Close dropdown when clicking outside
-        setTimeout(() => {
-            document.addEventListener('click', closeQuickActionsDropdown);
-        }, 100);
-    }
+window.refreshUnassignedDeliveries = function() {
+    loadStaffStats();
 };
 
-window.closeQuickActionsDropdown = function(e) {
-    const dropdown = document.getElementById('quickActionsDropdown');
-    const button = dropdown.previousElementSibling;
-    
-    if (!dropdown.contains(e.target) && !button.contains(e.target)) {
-        dropdown.classList.add('hidden');
-        document.removeEventListener('click', closeQuickActionsDropdown);
-    }
-};
-
-window.loadUnassignedDeliveries = function() {
-    const dropdown = document.getElementById('quickActionsDropdown');
-    
-    // Show loading state
-    dropdown.innerHTML = `
-        <div class="px-4 py-3 text-sm text-gray-500 border-b">
-            <i class="fas fa-spinner fa-spin mr-2"></i>Loading unassigned deliveries...
+window.quickAssignNextUnassigned = function() {
+    // Show loading state on the unassigned card
+    const unassignedCard = document.getElementById('unassignedCount').parentElement;
+    const originalContent = unassignedCard.innerHTML;
+    unassignedCard.innerHTML = `
+        <div class="text-2xl font-bold text-orange-600">
+            <i class="fas fa-spinner fa-spin"></i>
         </div>
+        <div class="text-xs text-orange-700 font-medium">Assigning...</div>
+        <div class="text-xs text-orange-500 mt-1">Please wait</div>
     `;
     
-    // Fetch unassigned deliveries
+    // Get the next unassigned delivery
     fetch('/get_unassigned_deliveries')
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                // Update stats
-                document.getElementById('unassignedCount').textContent = data.count;
-                
-                if (data.deliveries.length === 0) {
-                    dropdown.innerHTML = `
-                        <div class="px-4 py-3 text-sm text-gray-500 border-b">
-                            <i class="fas fa-check-circle text-green-500 mr-2"></i>No unassigned deliveries
-                        </div>
-                    `;
-                } else {
-                    dropdown.innerHTML = `
-                        <div class="px-4 py-2 text-sm font-medium text-gray-700 border-b bg-gray-50">
-                            <i class="fas fa-bolt text-orange-500 mr-2"></i>Quick Assign (${data.count} available)
-                        </div>
-                        ${data.deliveries.map(delivery => `
-                            <div class="border-b hover:bg-gray-50">
-                                <button onclick="quickAssignDelivery(${delivery.id})" 
-                                        class="w-full text-left px-4 py-3 text-sm group">
-                                    <div class="flex items-start justify-between">
-                                        <div class="flex-1 min-w-0">
-                                            <div class="font-medium text-gray-900 group-hover:text-orange-600">
-                                                ${delivery.display_id}
-                                            </div>
-                                            <div class="text-xs text-gray-500 truncate">
-                                                ${delivery.sender_name} → ${delivery.recipient_name}
-                                            </div>
-                                            <div class="text-xs text-gray-400">
-                                                ${delivery.goods_type} • ${delivery.quantity} items • K${delivery.amount}
-                                            </div>
-                                        </div>
-                                        <div class="ml-2 flex-shrink-0">
-                                            <i class="fas fa-arrow-right text-orange-500 group-hover:text-orange-600"></i>
-                                        </div>
-                                    </div>
-                                </button>
-                            </div>
-                        `).join('')}
-                    `;
-                }
-                
-                // Load other stats
-                loadStaffStats();
+            if (data.success && data.deliveries.length > 0) {
+                // Assign the first unassigned delivery
+                return fetch(`/quick_assign_delivery/${data.deliveries[0].id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
             } else {
-                dropdown.innerHTML = `
-                    <div class="px-4 py-3 text-sm text-red-500 border-b">
-                        <i class="fas fa-exclamation-triangle mr-2"></i>Error loading deliveries
-                    </div>
-                `;
+                throw new Error(data.deliveries.length === 0 ? 'No unassigned deliveries available' : 'Failed to load deliveries');
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                showNotification(data.message, 'success');
+                
+                // Refresh stats
+                loadStaffStats();
+                
+                // Refresh recent deliveries if visible
+                if (typeof refreshRecentDeliveries === 'function') {
+                    refreshRecentDeliveries();
+                }
+            } else {
+                showNotification(data.error || 'Failed to assign delivery', 'error');
             }
         })
         .catch(error => {
-            console.error('Error loading unassigned deliveries:', error);
-            dropdown.innerHTML = `
-                <div class="px-4 py-3 text-sm text-red-500 border-b">
-                    <i class="fas fa-exclamation-triangle mr-2"></i>Failed to load deliveries
-                </div>
-            `;
+            console.error('Error quick assigning delivery:', error);
+            showNotification(error.message || 'Failed to assign delivery', 'error');
+        })
+        .finally(() => {
+            // Restore card content (will be updated by loadStaffStats)
+            loadStaffStats();
         });
-};
-
-window.quickAssignDelivery = function(deliveryId) {
-    // Close dropdown
-    const dropdown = document.getElementById('quickActionsDropdown');
-    dropdown.classList.add('hidden');
-    document.removeEventListener('click', closeQuickActionsDropdown);
-    
-    // Show loading state
-    const button = dropdown.previousElementSibling;
-    const originalText = button.innerHTML;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Assigning...';
-    button.disabled = true;
-    
-    // Send quick assign request
-    fetch(`/quick_assign_delivery/${deliveryId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Show success message
-            showNotification(data.message, 'success');
-            
-            // Refresh the unassigned deliveries list
-            loadUnassignedDeliveries();
-            
-            // Refresh recent deliveries if visible
-            if (typeof refreshRecentDeliveries === 'function') {
-                refreshRecentDeliveries();
-            }
-        } else {
-            showNotification(data.error || 'Failed to assign delivery', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error quick assigning delivery:', error);
-        showNotification('Failed to assign delivery', 'error');
-    })
-    .finally(() => {
-        // Restore button state
-        button.innerHTML = originalText;
-        button.disabled = false;
-    });
-};
-
-window.refreshUnassignedDeliveries = function() {
-    loadUnassignedDeliveries();
-    loadStaffStats();
 };
 
 window.loadStaffStats = function() {
@@ -2657,6 +2551,15 @@ window.loadStaffStats = function() {
             if (data.success) {
                 document.getElementById('myAssignedCount').textContent = data.my_assigned || 0;
                 document.getElementById('inTransitCount').textContent = data.in_transit || 0;
+                
+                // Get unassigned count separately
+                return fetch('/get_unassigned_deliveries');
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('unassignedCount').textContent = data.count || 0;
             }
         })
         .catch(error => {
