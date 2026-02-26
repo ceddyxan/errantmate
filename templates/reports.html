@@ -375,6 +375,23 @@
                             <!-- Buttons -->
                             <div class="flex gap-2 mb-3">
                                 {% if session.user_role == 'staff' %}
+                                <!-- Staff: Show Quick Actions for Unassigned Deliveries -->
+                                <div class="flex-1 relative">
+                                    <button onclick="toggleQuickActionsDropdown()" 
+                                            class="w-full bg-orange-600 text-white px-3 py-2 text-sm font-medium rounded hover:bg-orange-700 flex items-center justify-center gap-2">
+                                        <i class="fas fa-bolt"></i>
+                                        Quick Actions
+                                        <i class="fas fa-chevron-down text-xs"></i>
+                                    </button>
+                                    <div id="quickActionsDropdown" 
+                                         class="hidden absolute top-full left-0 right-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+                                        <!-- Unassigned deliveries will be loaded here -->
+                                        <div class="px-3 py-2 text-sm text-gray-500 border-b">
+                                            <i class="fas fa-spinner fa-spin mr-2"></i>Loading unassigned deliveries...
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <!-- Staff: Show Status Actions -->
                                 <div class="flex-1 relative">
                                     <button onclick="toggleQuickStatusDropdown()" 
@@ -2232,6 +2249,147 @@ window.quickUpdateStatus = function(newStatus) {
     
     // Use the existing updateDeliveryStatus function
     updateDeliveryStatus(deliveryId, newStatus);
+};
+
+// Staff Quick Actions Functions
+window.toggleQuickActionsDropdown = function() {
+    const dropdown = document.getElementById('quickActionsDropdown');
+    dropdown.classList.toggle('hidden');
+    
+    // Load unassigned deliveries when opening dropdown
+    if (!dropdown.classList.contains('hidden')) {
+        loadUnassignedDeliveries();
+        
+        // Close dropdown when clicking outside
+        setTimeout(() => {
+            document.addEventListener('click', closeQuickActionsDropdown);
+        }, 100);
+    }
+};
+
+window.closeQuickActionsDropdown = function(e) {
+    const dropdown = document.getElementById('quickActionsDropdown');
+    const button = dropdown.previousElementSibling;
+    
+    if (!dropdown.contains(e.target) && !button.contains(e.target)) {
+        dropdown.classList.add('hidden');
+        document.removeEventListener('click', closeQuickActionsDropdown);
+    }
+};
+
+window.loadUnassignedDeliveries = function() {
+    const dropdown = document.getElementById('quickActionsDropdown');
+    
+    // Show loading state
+    dropdown.innerHTML = `
+        <div class="px-3 py-2 text-sm text-gray-500 border-b">
+            <i class="fas fa-spinner fa-spin mr-2"></i>Loading unassigned deliveries...
+        </div>
+    `;
+    
+    // Fetch unassigned deliveries
+    fetch('/get_unassigned_deliveries')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (data.deliveries.length === 0) {
+                    dropdown.innerHTML = `
+                        <div class="px-3 py-2 text-sm text-gray-500 border-b">
+                            <i class="fas fa-check-circle text-green-500 mr-2"></i>No unassigned deliveries
+                        </div>
+                    `;
+                } else {
+                    dropdown.innerHTML = `
+                        <div class="px-3 py-2 text-sm font-medium text-gray-700 border-b bg-gray-50">
+                            <i class="fas fa-bolt text-orange-500 mr-2"></i>Quick Assign (${data.count} available)
+                        </div>
+                        ${data.deliveries.map(delivery => `
+                            <div class="border-b hover:bg-gray-50">
+                                <button onclick="quickAssignDelivery(${delivery.id})" 
+                                        class="w-full text-left px-3 py-2 text-sm group">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="font-medium text-gray-900 group-hover:text-orange-600">
+                                                ${delivery.display_id}
+                                            </div>
+                                            <div class="text-xs text-gray-500 truncate">
+                                                ${delivery.sender_name} → ${delivery.recipient_name}
+                                            </div>
+                                            <div class="text-xs text-gray-400">
+                                                ${delivery.goods_type} • ${delivery.quantity} items
+                                            </div>
+                                        </div>
+                                        <div class="ml-2 flex-shrink-0">
+                                            <i class="fas fa-arrow-right text-orange-500 group-hover:text-orange-600"></i>
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
+                        `).join('')}
+                    `;
+                }
+            } else {
+                dropdown.innerHTML = `
+                    <div class="px-3 py-2 text-sm text-red-500 border-b">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Error loading deliveries
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading unassigned deliveries:', error);
+            dropdown.innerHTML = `
+                <div class="px-3 py-2 text-sm text-red-500 border-b">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>Failed to load deliveries
+                </div>
+            `;
+        });
+};
+
+window.quickAssignDelivery = function(deliveryId) {
+    // Close dropdown
+    const dropdown = document.getElementById('quickActionsDropdown');
+    dropdown.classList.add('hidden');
+    document.removeEventListener('click', closeQuickActionsDropdown);
+    
+    // Show loading state
+    const button = dropdown.previousElementSibling;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Assigning...';
+    button.disabled = true;
+    
+    // Send quick assign request
+    fetch(`/quick_assign_delivery/${deliveryId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showNotification(data.message, 'success');
+            
+            // Refresh the deliveries list to show updated assignment
+            refreshCurrentView();
+            
+            // Update delivery persons dropdown
+            refreshDeliveryPersonsData();
+        } else {
+            showNotification(data.error || 'Failed to assign delivery', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error quick assigning delivery:', error);
+        showNotification('Failed to assign delivery', 'error');
+    })
+    .finally(() => {
+        // Restore button state
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
 };
 
 window.refreshCurrentView = function() {

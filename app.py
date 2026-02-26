@@ -8537,6 +8537,148 @@ def get_unassigned_deliveries():
 
 
 
+@app.route('/get_unassigned_deliveries')
+@login_required
+@database_required
+def get_unassigned_deliveries():
+    """Get unassigned deliveries for staff quick assignment"""
+    try:
+        # Get deliveries with no delivery person assigned and status is 'Pending'
+        unassigned_deliveries = Delivery.query.filter(
+            Delivery.delivery_person.is_(None),
+            Delivery.status == 'Pending'
+        ).order_by(Delivery.created_at.desc()).limit(10).all()
+        
+        deliveries_data = []
+        for delivery in unassigned_deliveries:
+            deliveries_data.append({
+                'id': delivery.id,
+                'display_id': delivery.display_id,
+                'sender_name': delivery.sender_name,
+                'recipient_name': delivery.recipient_name,
+                'recipient_address': delivery.recipient_address,
+                'goods_type': delivery.goods_type,
+                'quantity': delivery.quantity,
+                'amount': delivery.amount,
+                'created_at': delivery.created_at.strftime('%Y-%m-%d %H:%M') if delivery.created_at else None
+            })
+        
+        return jsonify({
+            'success': True,
+            'count': len(deliveries_data),
+            'deliveries': deliveries_data
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error getting unassigned deliveries: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to get unassigned deliveries'}), 500
+
+
+@app.route('/quick_assign_delivery/<int:delivery_id>', methods=['POST'])
+@login_required
+@database_required
+def quick_assign_delivery(delivery_id):
+    """Quick assign delivery to current staff user and change status to In Transit"""
+    try:
+        # Get the delivery
+        delivery = Delivery.query.get_or_404(delivery_id)
+        
+        # Check if delivery is unassigned and pending
+        if delivery.delivery_person or delivery.status != 'Pending':
+            return jsonify({
+                'success': False, 
+                'error': 'Delivery is already assigned or not in Pending status'
+            }), 400
+        
+        # Get current user
+        current_username = session.get('username')
+        if not current_username:
+            return jsonify({'success': False, 'error': 'User not logged in'}), 401
+        
+        # Assign to current user and change status
+        delivery.delivery_person = current_username
+        delivery.status = 'In Transit'
+        delivery.updated_at = get_current_time()
+        
+        db.session.commit()
+        
+        # Create audit log
+        try:
+            audit_log = AuditLog(
+                action='QUICK_ASSIGN',
+                table_name='delivery',
+                record_id=delivery.id,
+                old_values={
+                    'delivery_person': None,
+                    'status': 'Pending'
+                },
+                new_values={
+                    'delivery_person': current_username,
+                    'status': 'In Transit'
+                },
+                performed_by=current_username
+            )
+            db.session.add(audit_log)
+            db.session.commit()
+        except Exception as audit_error:
+            app.logger.error(f"Error creating audit log: {str(audit_error)}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Delivery {delivery.display_id} assigned to {current_username} and marked as In Transit',
+            'delivery': {
+                'id': delivery.id,
+                'display_id': delivery.display_id,
+                'delivery_person': delivery.delivery_person,
+                'status': delivery.status
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error quick assigning delivery: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to assign delivery'}), 500
+
+
+@app.route('/get_staff_stats')
+@login_required
+@database_required
+def get_staff_stats():
+    """Get staff statistics for quick actions dashboard"""
+    try:
+        current_username = session.get('username')
+        if not current_username:
+            return jsonify({'success': False, 'error': 'User not logged in'}), 401
+        
+        # Get deliveries assigned to current user
+        my_assigned = Delivery.query.filter(
+            Delivery.delivery_person == current_username
+        ).count()
+        
+        # Get deliveries in transit assigned to current user
+        in_transit = Delivery.query.filter(
+            Delivery.delivery_person == current_username,
+            Delivery.status == 'In Transit'
+        ).count()
+        
+        # Get completed deliveries for current user
+        completed = Delivery.query.filter(
+            Delivery.delivery_person == current_username,
+            Delivery.status == 'Delivered'
+        ).count()
+        
+        return jsonify({
+            'success': True,
+            'my_assigned': my_assigned,
+            'in_transit': in_transit,
+            'completed': completed
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error getting staff stats: {str(e)}")
+        return jsonify({'success': False, 'error': 'Failed to get staff stats'}), 500
+
+
 @app.route('/public_check_users')
 def public_check_users():
     """Public endpoint to check users for debugging - no auth required"""
