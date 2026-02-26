@@ -1636,6 +1636,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                     title="View Details">
                                 <i class="fas fa-eye"></i>
                             </button>
+                            {% if session.user_role == 'staff' %}
+                            <button onclick="openUpdateDeliveryModal('${delivery.id}')" 
+                                    class="text-green-600 hover:text-green-800 transition-colors duration-200"
+                                    title="Update Delivery">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
