@@ -231,23 +231,33 @@
             </div>
         </div>
         <div class="p-6">
-            <!-- Quick Stats Cards (Clickable like admin reports) -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div onclick="quickAssignNextUnassigned()" 
-                     class="bg-orange-50 rounded-lg p-4 text-center cursor-pointer hover:bg-orange-100 transition-colors duration-200 border border-orange-200 hover:shadow-md">
+            <!-- Quick Stats Summary -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div class="bg-orange-50 rounded-lg p-3 text-center border border-orange-200">
                     <div class="text-2xl font-bold text-orange-600" id="unassignedCount">0</div>
                     <div class="text-xs text-orange-700 font-medium">Unassigned</div>
-                    <div class="text-xs text-orange-500 mt-1">Click to assign next</div>
                 </div>
-                <div class="bg-blue-50 rounded-lg p-4 text-center border border-blue-200">
+                <div class="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
                     <div class="text-2xl font-bold text-blue-600" id="myAssignedCount">0</div>
                     <div class="text-xs text-blue-700 font-medium">My Assigned</div>
-                    <div class="text-xs text-blue-500 mt-1">Total assigned to me</div>
                 </div>
-                <div class="bg-green-50 rounded-lg p-4 text-center border border-green-200">
+                <div class="bg-green-50 rounded-lg p-3 text-center border border-green-200">
                     <div class="text-2xl font-bold text-green-600" id="inTransitCount">0</div>
                     <div class="text-xs text-green-700 font-medium">In Transit</div>
-                    <div class="text-xs text-green-500 mt-1">Currently delivering</div>
+                </div>
+            </div>
+            
+            <!-- Unassigned Deliveries Cards -->
+            <div class="border-t border-gray-200 pt-4">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                    <i class="fas fa-bolt text-orange-500 mr-2"></i>
+                    Click any delivery to assign it to yourself
+                </h3>
+                <div id="unassignedDeliveriesCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <!-- Delivery cards will be loaded here -->
+                    <div class="col-span-full text-center text-gray-500 py-8">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>Loading unassigned deliveries...
+                    </div>
                 </div>
             </div>
         </div>
@@ -2481,39 +2491,30 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<!-- Staff Quick Actions Script (only for staff role) -->
 {% if session.user_role == 'staff' %}
 <script>
 window.refreshUnassignedDeliveries = function() {
     loadStaffStats();
+    loadUnassignedDeliveryCards();
 };
 
-window.quickAssignNextUnassigned = function() {
-    // Show loading state on the unassigned card
-    const unassignedCard = document.getElementById('unassignedCount').parentElement;
-    const originalContent = unassignedCard.innerHTML;
-    unassignedCard.innerHTML = `
-        <div class="text-2xl font-bold text-orange-600">
-            <i class="fas fa-spinner fa-spin"></i>
-        </div>
-        <div class="text-xs text-orange-700 font-medium">Assigning...</div>
-        <div class="text-xs text-orange-500 mt-1">Please wait</div>
-    `;
-    
-    // Get the next unassigned delivery
-    fetch('/get_unassigned_deliveries')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.deliveries.length > 0) {
-                // Assign the first unassigned delivery
-                return fetch(`/quick_assign_delivery/${data.deliveries[0].id}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-            } else {
-                throw new Error(data.deliveries.length === 0 ? 'No unassigned deliveries available' : 'Failed to load deliveries');
+window.quickAssignDelivery = function(deliveryId) {
+    // Show loading state on specific card
+    const card = document.querySelector(`[data-delivery-id="${deliveryId}"]`);
+    if (card) {
+        const originalContent = card.innerHTML;
+        card.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-spinner fa-spin text-orange-500 text-2xl"></i>
+                <div class="text-sm text-orange-600 mt-2">Assigning...</div>
+            </div>
+        `;
+        
+        // Send quick assign request
+        fetch(`/quick_assign_delivery/${deliveryId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
             }
         })
         .then(response => response.json())
@@ -2522,24 +2523,119 @@ window.quickAssignNextUnassigned = function() {
                 // Show success message
                 showNotification(data.message, 'success');
                 
-                // Refresh stats
-                loadStaffStats();
+                // Remove the assigned card with animation
+                card.style.transition = 'opacity 0.3s, transform 0.3s';
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.9)';
+                
+                setTimeout(() => {
+                    card.remove();
+                    // Update stats
+                    loadStaffStats();
+                }, 300);
                 
                 // Refresh recent deliveries if visible
                 if (typeof refreshRecentDeliveries === 'function') {
                     refreshRecentDeliveries();
                 }
             } else {
+                // Restore card and show error
+                card.innerHTML = originalContent;
                 showNotification(data.error || 'Failed to assign delivery', 'error');
             }
         })
         .catch(error => {
             console.error('Error quick assigning delivery:', error);
-            showNotification(error.message || 'Failed to assign delivery', 'error');
+            card.innerHTML = originalContent;
+            showNotification('Failed to assign delivery', 'error');
+        });
+    }
+};
+
+window.loadUnassignedDeliveryCards = function() {
+    const container = document.getElementById('unassignedDeliveriesCards');
+    
+    // Show loading state
+    container.innerHTML = `
+        <div class="col-span-full text-center text-gray-500 py-8">
+            <i class="fas fa-spinner fa-spin mr-2"></i>Loading unassigned deliveries...
+        </div>
+    `;
+    
+    // Fetch unassigned deliveries
+    fetch('/get_unassigned_deliveries')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update unassigned count
+                document.getElementById('unassignedCount').textContent = data.count || 0;
+                
+                if (data.deliveries.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-full text-center text-gray-500 py-8">
+                            <i class="fas fa-check-circle text-green-500 text-2xl mb-2"></i>
+                            <div class="text-sm">No unassigned deliveries available</div>
+                            <div class="text-xs text-gray-400 mt-1">All deliveries have been assigned!</div>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = data.deliveries.map(delivery => `
+                        <div data-delivery-id="${delivery.id}" 
+                             onclick="quickAssignDelivery(${delivery.id})"
+                             class="bg-white border border-gray-200 rounded-lg p-3 cursor-pointer hover:border-orange-300 hover:shadow-md transition-all duration-200 group">
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-semibold text-gray-900 group-hover:text-orange-600 text-sm">
+                                        ${delivery.display_id}
+                                    </div>
+                                    <div class="text-xs text-gray-500 truncate">
+                                        ${delivery.sender_name} → ${delivery.recipient_name}
+                                    </div>
+                                </div>
+                                <div class="ml-2 flex-shrink-0">
+                                    <i class="fas fa-arrow-right text-orange-400 group-hover:text-orange-600"></i>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between text-xs text-gray-400">
+                                <div class="flex items-center gap-3">
+                                    <span class="flex items-center">
+                                        <i class="fas fa-box mr-1"></i>${delivery.goods_type}
+                                    </span>
+                                    <span class="flex items-center">
+                                        <i class="fas fa-cubes mr-1"></i>${delivery.quantity}
+                                    </span>
+                                </div>
+                                <div class="font-medium text-orange-600">
+                                    K${delivery.amount}
+                                </div>
+                            </div>
+                            <div class="mt-2 pt-2 border-t border-gray-100">
+                                <div class="text-xs text-gray-400">
+                                    <i class="fas fa-clock mr-1"></i>${delivery.created_at}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } else {
+                container.innerHTML = `
+                    <div class="col-span-full text-center text-red-500 py-8">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                        <div class="text-sm">Error loading deliveries</div>
+                        <div class="text-xs text-red-400 mt-1">Please try refreshing</div>
+                    </div>
+                `;
+            }
         })
-        .finally(() => {
-            // Restore card content (will be updated by loadStaffStats)
-            loadStaffStats();
+        .catch(error => {
+            console.error('Error loading unassigned deliveries:', error);
+            container.innerHTML = `
+                <div class="col-span-full text-center text-red-500 py-8">
+                    <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                    <div class="text-sm">Failed to load deliveries</div>
+                    <div class="text-xs text-red-400 mt-1">Check your connection</div>
+                </div>
+            `;
         });
 };
 
@@ -2599,10 +2695,13 @@ window.showNotification = function(message, type = 'info') {
     }, 3000);
 };
 
-// Load stats on page load
+// Load stats and cards on page load
 document.addEventListener('DOMContentLoaded', function() {
     if (typeof loadStaffStats === 'function') {
         loadStaffStats();
+    }
+    if (typeof loadUnassignedDeliveryCards === 'function') {
+        loadUnassignedDeliveryCards();
     }
 });
 </script>
