@@ -3981,26 +3981,6 @@ window.loadUsers = function() {
 };
 
 
-window.deleteUser = function(userId, username) {
-    if (confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
-        fetch(`/delete_user/${userId}`, { method: 'DELETE' })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    showNotification('User deleted successfully', 'success');
-                    loadUsers();
-                } else {
-                    showNotification(result.error || 'Error deleting user', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error deleting user:', error);
-                showNotification('Error deleting user', 'error');
-            });
-    }
-};
-
-
 
 window.toggleUsersList = function() {
     const container = document.getElementById('usersListContainer');
@@ -4583,8 +4563,20 @@ window.addUser = function() {
 // Delete user
 window.deleteUser = function(userId, username) {
     if (confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
-        fetch(`/api/users/${userId}`, { method: 'DELETE' })
-            .then(response => response.json())
+        fetch(`/delete_user/${userId}`, { method: 'DELETE' })
+            .then(response => {
+                if (!response.ok) {
+                    // If response is not OK, check if it's HTML (error page)
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('text/html')) {
+                        throw new Error('Server returned an error page. Please check server logs.');
+                    }
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Server error');
+                    });
+                }
+                return response.json();
+            })
             .then(result => {
                 if (result.success) {
                     showNotification('User deleted successfully', 'success');
