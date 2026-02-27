@@ -1041,6 +1041,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const status = document.querySelector('.status-filter-btn.bg-blue-600')?.dataset.status || 'all';
             const search = document.getElementById('searchInput').value || '';
             
+            console.log('Fetching deliveries with filters:', { period, status, search });
+            
             // Show loading state
             const tbody = document.getElementById('recentDeliveriesBody');
             tbody.innerHTML = `
@@ -1057,16 +1059,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 period: period,
                 status: status,
                 search: search,
-                per_page: 10000  // Large number to get all results
+                per_page: 10000,  // Large number to get all results
+                _t: Date.now()  // Cache-busting parameter
             });
+            
+            console.log('Fetching from:', `/get_recent_deliveries?${params}`);
             
             fetch(`/get_recent_deliveries?${params}`)
                 .then(response => response.json())
                 .then(data => {
+                    console.log('Received data:', data);
                     if (data.deliveries && Array.isArray(data.deliveries)) {
+                        console.log('Displaying', data.deliveries.length, 'deliveries');
                         displayDeliveries(data.deliveries);
                         updateActiveFiltersSummary(period, status, search);
                     } else {
+                        console.error('Invalid data format:', data);
                         tbody.innerHTML = `
                             <tr>
                                 <td colspan="8" class="px-6 py-8 text-center text-gray-500">
