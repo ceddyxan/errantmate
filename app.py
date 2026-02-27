@@ -12666,9 +12666,13 @@ def get_user_recent_deliveries():
             # Get deliveries for current page
             recent_deliveries = query.order_by(Delivery.created_at.desc()).offset(offset).limit(per_page).all()
         else:
-            # For regular users, show only their own deliveries (last 10)
-            recent_deliveries = Delivery.query.filter_by(created_by=current_user_id).order_by(Delivery.created_at.desc()).limit(10).all()
-            total_count = len(recent_deliveries)
+            # For regular users, show only their own deliveries with pagination support
+            # Apply user filter to the existing query (which already has period/status/search filters)
+            query = query.filter(Delivery.created_by == current_user_id)
+            # Get total count for pagination info
+            total_count = query.count()
+            # Get deliveries for current page
+            recent_deliveries = query.order_by(Delivery.created_at.desc()).offset(offset).limit(per_page).all()
 
         
 
