@@ -1713,7 +1713,7 @@ fetchSummaryData();
 
 // Global variables for pagination state
 let currentPage = 1;
-let deliveriesPerPage = 20;
+let deliveriesPerPage = 10000;  // Large number to get all results for search/filter
 let isLoadingMore = false;
 let hasMoreData = true;
 
@@ -4199,7 +4199,9 @@ window.updateRevenueAnalytics = function() {
                 
                 // Also update delivery costs if available
                 const expensesElement = document.getElementById('expenses');
-                if (expensesElement) expensesElement.textContent = `KSh ${data.summary.total_expenses.toLocaleString()}`;
+                if (expensesElement && data.summary && data.summary.total_expenses !== undefined) {
+                    expensesElement.textContent = `KSh ${data.summary.total_expenses.toLocaleString()}`;
+                }
             } catch (error) {
                 console.error('Error updating revenue metrics:', error);
             }
