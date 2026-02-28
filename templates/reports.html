@@ -1743,7 +1743,7 @@ window.fetchRecentDeliveries = function(append = false) {
             });
             
             // Process and display deliveries
-            displayDeliveries(data.deliveries || [], append);
+            displayRecentDeliveries(data.deliveries || [], append);
             updatePagination(data.pagination || {});
             updateSummaryStats(data.summary || {});
             
@@ -3051,10 +3051,15 @@ function applyCombinedFilters() {
         
         // Check date filter
         if (startDate && endDate) {
-            const dateText = row.querySelector('td:nth-child(8)').textContent.trim();
-            const rowDate = new Date(dateText);
-            if (rowDate < startDate || rowDate > endDate) {
-                shouldShow = false;
+            const dateElement = row.querySelector('td:nth-child(8)');
+            if (dateElement && dateElement.textContent) {
+                const dateText = dateElement.textContent.trim();
+                const rowDate = new Date(dateText);
+                if (rowDate < startDate || rowDate > endDate) {
+                    shouldShow = false;
+                }
+            } else {
+                shouldShow = false; // Hide rows without date
             }
         }
         
