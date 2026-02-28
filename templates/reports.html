@@ -1718,7 +1718,7 @@ let isLoadingMore = false;
 let hasMoreData = true;
 
 window.fetchRecentDeliveries = function(append = false) {
-    console.log('fetchRecentDeliveries called - append:', append, 'currentPage:', currentPage);
+    console.log('🔍 fetchRecentDeliveries called - append:', append, 'currentPage:', currentPage);
     if (isLoadingMore) return;
     
     isLoadingMore = true;
@@ -1727,40 +1727,55 @@ window.fetchRecentDeliveries = function(append = false) {
     
     const page = append ? currentPage : 1;
     const url = `/get_recent_deliveries?page=${page}&per_page=${deliveriesPerPage}`;
-    console.log('Fetching URL:', url);
+    console.log('🌐 Fetching URL:', url);
     
     fetch(url)
         .then(response => {
-            if (!response.ok) {
-                if (response.status === 401 || response.status === 403) {
-                    window.location.href = '/login';
-                    throw new Error('Authentication required');
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            console.log('📡 Response status:', response.status);
             return response.json();
         })
         .then(data => {
-            if (data.deliveries && data.pagination) {
-                displayRecentDeliveries(data.deliveries, append);
-                updatePagination(data.pagination);
-                // Update load more button visibility
-                hasMoreData = data.pagination.has_next;
-                currentPage = data.pagination.page;
-                updateLoadMoreButton();
-            } else {
-                console.error('Unexpected data format:', data);
-                displayRecentDeliveriesError();
-            }
+            console.log('📊 Received data:', {
+                totalDeliveries: data.deliveries ? data.deliveries.length : 0,
+                totalCount: data.total_count || 'N/A',
+                currentPage: page,
+                perPage: deliveriesPerPage
+            });
+            
+            // Process and display deliveries
+            displayDeliveries(data.deliveries || [], append);
+            updatePagination(data.pagination || {});
+            updateSummaryStats(data.summary || {});
+            
+            // Update active filters display
+            updateActiveFiltersDisplay();
         })
         .catch(error => {
-            console.error('Error fetching recent deliveries:', error);
-            displayRecentDeliveriesError();
+            console.error('🚨 Error fetching deliveries:', error);
+            const tbody = document.getElementById('deliveriesTableBody');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="px-6 py-8 text-center text-red-500">
+                            <i class="fas fa-exclamation-triangle text-2xl mb-3"></i>
+                            <p class="text-red-500">Error loading deliveries</p>
+                            <div class="text-xs text-gray-400 mt-2">${error.message}</div>
+                        </td>
+                    </tr>
+                `;
+            }
         })
         .finally(() => {
             isLoadingMore = false;
+            const loadingIndicator = document.getElementById('loadingIndicator');
             if (loadingIndicator) loadingIndicator.classList.add('hidden');
         });
+    };
+
+// Function to refresh deliveries with current filters
+window.refreshDeliveries = function() {
+    currentPage = 1;
+    fetchRecentDeliveries(false);
 };
 
 window.updateActiveFilters = function() {

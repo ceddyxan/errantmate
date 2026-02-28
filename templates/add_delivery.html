@@ -1041,7 +1041,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const status = document.querySelector('.status-filter-btn.bg-blue-600')?.dataset.status || 'all';
             const search = document.getElementById('searchInput').value || '';
             
-            console.log('Fetching deliveries with filters:', { period, status, search });
+            console.log('🔍 Fetching deliveries with combined filters:', { 
+                period, 
+                status, 
+                search,
+                userRole: 'Regular User (will only see own deliveries)'
+            });
             
             // Show loading state
             const tbody = document.getElementById('recentDeliveriesBody');
@@ -1050,6 +1055,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td colspan="8" class="px-6 py-8 text-center text-gray-500">
                         <i class="fas fa-spinner fa-spin text-2xl mb-3"></i>
                         <p>Loading filtered deliveries...</p>
+                        <div class="text-xs text-gray-400 mt-2">Applying: ${period !== 'all' ? period + ' period' : 'all time'} | ${status !== 'all' ? status + ' status' : 'all statuses'} | ${search ? 'search: "' + search + '"' : 'no search'}</div>
                     </td>
                 </tr>
             `;
@@ -1063,35 +1069,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 _t: Date.now()  // Cache-busting parameter
             });
             
-            console.log('Fetching from:', `/get_recent_deliveries?${params}`);
+            const fetchUrl = `/get_recent_deliveries?${params}`;
+            console.log('🌐 Fetching from:', fetchUrl);
             
-            fetch(`/get_recent_deliveries?${params}`)
-                .then(response => response.json())
+            fetch(fetchUrl)
+                .then(response => {
+                    console.log('📡 Response status:', response.status);
+                    return response.json();
+                })
                 .then(data => {
-                    console.log('Received data:', data);
+                    console.log('📊 Received data:', {
+                        totalDeliveries: data.deliveries ? data.deliveries.length : 0,
+                        totalCount: data.total_count || 'N/A',
+                        filters: { period, status, search }
+                    });
+                    
                     if (data.deliveries && Array.isArray(data.deliveries)) {
-                        console.log('Displaying', data.deliveries.length, 'deliveries');
+                        console.log('✅ Displaying', data.deliveries.length, 'deliveries out of', data.total_count || 'unknown', 'total');
                         displayDeliveries(data.deliveries);
                         updateActiveFiltersSummary(period, status, search);
                     } else {
-                        console.error('Invalid data format:', data);
+                        console.error('❌ Invalid data format:', data);
                         tbody.innerHTML = `
                             <tr>
                                 <td colspan="8" class="px-6 py-8 text-center text-gray-500">
                                     <i class="fas fa-exclamation-triangle text-red-400 text-2xl mb-3"></i>
                                     <p class="text-red-500">Error loading deliveries</p>
+                                    <div class="text-xs text-gray-400 mt-2">Check console for details</div>
                                 </td>
                             </tr>
                         `;
                     }
                 })
                 .catch(error => {
-                    console.error('Error fetching filtered deliveries:', error);
+                    console.error('🚨 Error fetching filtered deliveries:', error);
                     tbody.innerHTML = `
                         <tr>
                             <td colspan="8" class="px-6 py-8 text-center text-gray-500">
                                 <i class="fas fa-exclamation-triangle text-red-400 text-2xl mb-3"></i>
                                 <p class="text-red-500">Error loading deliveries</p>
+                                <div class="text-xs text-gray-400 mt-2">${error.message}</div>
                             </td>
                         </tr>
                     `;
