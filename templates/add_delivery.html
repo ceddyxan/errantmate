@@ -1045,26 +1045,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     btn.className = 'status-filter-btn px-4 py-2 text-sm bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700 transition-all duration-200';
                 }
             });
-            
-            // Fetch filtered data from server
-            fetchDeliveriesWithFilters();
-        };
-
-        function fetchDeliveriesWithFilters() {
-            const period = document.querySelector('.recent-filter-btn.bg-blue-600')?.dataset.period || 'month';
-            const status = document.querySelector('.status-filter-btn.bg-blue-600')?.dataset.status || 'all';
-            const search = document.getElementById('searchInput').value || '';
-            
-            console.log('🔍 Fetching deliveries with combined filters:', { 
-                period, 
-                status, 
-                search,
-                userRole: 'Regular User (will only see own deliveries)'
-            });
-            
-            // Show loading state
-            const tbody = document.getElementById('recentDeliveriesBody');
-            tbody.innerHTML = `
                 <tr>
                     <td colspan="8" class="px-6 py-8 text-center text-gray-500">
                         <i class="fas fa-spinner fa-spin text-2xl mb-3"></i>
