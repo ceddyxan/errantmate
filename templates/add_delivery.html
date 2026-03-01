@@ -388,13 +388,27 @@
                 <table class="min-w-full">
                     <thead class="bg-gray-50 border-b border-gray-200">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ref #</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Display ID</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sender</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recipient</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Delivery Address</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortDeliveries('index')">
+                                Ref # <i class="fas fa-sort text-gray-400 ml-1"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortDeliveries('display_id')">
+                                Display ID <i class="fas fa-sort text-gray-400 ml-1"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortDeliveries('sender_name')">
+                                Sender <i class="fas fa-sort text-gray-400 ml-1"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortDeliveries('recipient_name')">
+                                Recipient <i class="fas fa-sort text-gray-400 ml-1"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortDeliveries('recipient_address')">
+                                Delivery Address <i class="fas fa-sort text-gray-400 ml-1"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortDeliveries('status')">
+                                Status <i class="fas fa-sort text-gray-400 ml-1"></i>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortDeliveries('created_at')">
+                                Date <i class="fas fa-sort text-gray-400 ml-1"></i>
+                            </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
@@ -1208,6 +1222,101 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('searchInput').value = '';
             filterRecentDeliveriesBySearch('');
         };
+
+        // Global sorting state
+        let currentSortField = null;
+        let currentSortDirection = 'asc';
+
+        // Sorting function
+        window.sortDeliveries = function(field) {
+            const tbody = document.getElementById('recentDeliveriesBody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Toggle sort direction if same field
+            if (currentSortField === field) {
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortField = field;
+                currentSortDirection = 'asc';
+            }
+            
+            // Update sort icons
+            updateSortIcons(field, currentSortDirection);
+            
+            // Sort rows
+            rows.sort((a, b) => {
+                let aValue, bValue;
+                
+                switch(field) {
+                    case 'index':
+                        aValue = parseInt(a.querySelector('td:nth-child(1)').textContent);
+                        bValue = parseInt(b.querySelector('td:nth-child(1)').textContent);
+                        break;
+                    case 'display_id':
+                        aValue = a.querySelector('td:nth-child(2)').textContent.trim();
+                        bValue = b.querySelector('td:nth-child(2)').textContent.trim();
+                        break;
+                    case 'sender_name':
+                        aValue = a.querySelector('td:nth-child(3)').textContent.trim();
+                        bValue = b.querySelector('td:nth-child(3)').textContent.trim();
+                        break;
+                    case 'recipient_name':
+                        aValue = a.querySelector('td:nth-child(4)').textContent.trim();
+                        bValue = b.querySelector('td:nth-child(4)').textContent.trim();
+                        break;
+                    case 'recipient_address':
+                        aValue = a.querySelector('td:nth-child(5)').textContent.trim();
+                        bValue = b.querySelector('td:nth-child(5)').textContent.trim();
+                        break;
+                    case 'status':
+                        aValue = a.querySelector('td:nth-child(6) span').textContent.trim();
+                        bValue = b.querySelector('td:nth-child(6) span').textContent.trim();
+                        break;
+                    case 'created_at':
+                        aValue = a.querySelector('td:nth-child(7)').textContent.trim();
+                        bValue = b.querySelector('td:nth-child(7)').textContent.trim();
+                        break;
+                    default:
+                        return 0;
+                }
+                
+                // Handle different data types
+                if (field === 'index' || field === 'created_at') {
+                    // Numeric/date sorting
+                    if (currentSortDirection === 'asc') {
+                        return aValue > bValue ? 1 : -1;
+                    } else {
+                        return aValue < bValue ? 1 : -1;
+                    }
+                } else {
+                    // String sorting
+                    if (currentSortDirection === 'asc') {
+                        return aValue.localeCompare(bValue);
+                    } else {
+                        return bValue.localeCompare(aValue);
+                    }
+                }
+            });
+            
+            // Re-append sorted rows
+            rows.forEach(row => tbody.appendChild(row));
+        };
+
+        // Update sort icons
+        function updateSortIcons(field, direction) {
+            // Reset all icons
+            document.querySelectorAll('th i.fa-sort').forEach(icon => {
+                icon.className = 'fas fa-sort text-gray-400 ml-1';
+            });
+            
+            // Set active icon
+            const activeHeader = document.querySelector(`th[onclick*="${field}"] i`);
+            if (activeHeader) {
+                activeHeader.className = direction === 'asc' ? 
+                    'fas fa-sort-up text-blue-600 ml-1' : 
+                    'fas fa-sort-down text-blue-600 ml-1';
+            }
+        }
 
         // Load initial deliveries when page loads
         function loadInitialDeliveries() {
