@@ -8623,6 +8623,94 @@ def get_users():
 
 
 
+@app.route('/api/users')
+
+
+
+@admin_required_api
+
+
+
+@database_required
+
+
+
+def api_get_users():
+
+
+
+    """API endpoint for getting users data."""
+
+
+
+    try:
+
+
+
+        # Get all users (both active and inactive)
+
+
+
+        users = User.query.order_by(User.is_active.desc(), User.username).all()
+
+
+
+        users_data = []
+
+
+
+        for user in users:
+
+
+
+            users_data.append({
+
+
+
+                'id': user.id,
+
+
+
+                'username': user.username,
+
+
+
+                'role': user.role,
+
+
+
+                'created_at': user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else None,
+
+
+
+                'is_active': user.is_active,
+
+
+
+                'is_admin': user.is_admin()
+
+
+
+            })
+
+
+
+        return jsonify(users_data)
+
+
+
+    except Exception as e:
+
+
+
+        app.logger.error(f"Error getting users via API: {str(e)}")
+
+
+
+        return jsonify({'error': 'Failed to load users'}), 500
+
+
+
 
 
 
