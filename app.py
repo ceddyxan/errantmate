@@ -164,9 +164,19 @@ if not database_url:
     print(f"Using SQLite for local development: {database_url}")
 
 else:
-
     # For production mode, use PostgreSQL directly without any connection testing
-
+    
+    # Fix Render PostgreSQL hostname by adding full domain if missing
+    if 'dpg-' in database_url and '.oregon-postgres.render.com' not in database_url:
+        # Extract the hostname part and add the full domain
+        import re
+        database_url = re.sub(
+            r'@(dpg-[^/]+)',
+            r'@\1.oregon-postgres.render.com',
+            database_url
+        )
+        print(f"Updated database URL with full domain: {database_url.split('@')[1] if '@' in database_url else 'hidden'}")
+    
     if flask_env == 'production':
 
         print(f"Production mode detected - using PostgreSQL database without connection test")
