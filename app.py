@@ -235,7 +235,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 if flask_env == 'production' and database_url.startswith('postgres'):
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'connect_args': {
-            'sslmode': 'require',
+            'sslmode': 'allow',
             'connect_timeout': 30
         },
         'pool_pre_ping': True,
