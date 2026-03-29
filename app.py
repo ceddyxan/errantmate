@@ -195,7 +195,7 @@ else:
 
                 database_url,
 
-                sslmode='allow',
+                sslmode='prefer',
 
                 connect_timeout=30
 
@@ -245,7 +245,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 if flask_env == 'production' and database_url.startswith('postgres'):
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'connect_args': {
-            'sslmode': 'allow',
+            'sslmode': 'prefer',
             'connect_timeout': 30
         },
         'pool_pre_ping': True,
