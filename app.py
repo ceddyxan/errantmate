@@ -8535,27 +8535,23 @@ def get_staff_stats():
         return jsonify({'success': False, 'error': 'Failed to get staff stats'}), 500
 
 
-@app.route('/get_users')
-
-
+@app.route('/api/users', methods=['GET', 'POST'])
 
 @admin_required_api
-
-
 
 @database_required
 
 
 
-def get_users():
+def api_users():
 
 
 
-    """Get all users for admin management."""
+    """API endpoint for getting and creating users."""
 
 
 
-    try:
+    if request.method == 'GET':
 
 
 
@@ -8563,43 +8559,227 @@ def get_users():
 
 
 
-        users = User.query.order_by(User.is_active.desc(), User.username).all()
+        try:
 
 
 
-        users_data = []
+            users = User.query.order_by(User.is_active.desc(), User.username).all()
 
 
 
-        for user in users:
+            users_data = []
 
 
 
-            users_data.append({
+            for user in users:
 
 
 
-                'id': user.id,
+                users_data.append({
 
 
 
-                'username': user.username,
+                    'id': user.id,
 
 
 
-                'role': user.role,
+                    'username': user.username,
 
 
 
-                'created_at': user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else None,
+                    'role': user.role,
 
 
 
-                'is_active': user.is_active,
+                    'created_at': user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else None,
 
 
 
-                'is_admin': user.is_admin()
+                    'is_active': user.is_active,
+
+
+
+                    'is_admin': user.is_admin()
+
+
+
+                })
+
+
+
+            return jsonify(users_data)
+
+
+
+        except Exception as e:
+
+
+
+            app.logger.error(f"Error getting users via API: {str(e)}")
+
+
+
+            return jsonify({'error': 'Failed to load users'}), 500
+
+
+
+    elif request.method == 'POST':
+
+
+
+        # Create new user
+
+
+
+        try:
+
+
+
+            data = request.get_json()
+
+
+
+            if not data:
+
+
+
+                return jsonify({'error': 'No data provided'}), 400
+
+
+
+            
+
+
+
+            username = data.get('username', '').strip()
+
+
+
+            password = data.get('password', '').strip()
+
+
+
+            role = data.get('role', 'staff')
+
+
+
+            
+
+
+
+            if not username or not password:
+
+
+
+                return jsonify({'error': 'Username and password are required'}), 400
+
+
+
+            
+
+
+
+            # Check if user already exists
+
+
+
+            existing_user = User.query.filter_by(username=username).first()
+
+
+
+            if existing_user:
+
+
+
+                return jsonify({'error': 'Username already exists'}), 400
+
+
+
+            
+
+
+
+            # Create new user
+
+
+
+            new_user = User(
+
+
+
+                username=username,
+
+
+
+                role=role,
+
+
+
+                is_active=True
+
+
+
+            )
+
+
+
+            new_user.set_password(password)
+
+
+
+            
+
+
+
+            db.session.add(new_user)
+
+
+
+            db.session.commit()
+
+
+
+            
+
+
+
+            return jsonify({
+
+
+
+                'success': True,
+
+
+
+                'message': 'User created successfully',
+
+
+
+                'user': {
+
+
+
+                    'id': new_user.id,
+
+
+
+                    'username': new_user.username,
+
+
+
+                    'role': new_user.role,
+
+
+
+                    'is_active': new_user.is_active,
+
+
+
+                    'is_admin': new_user.is_admin()
+
+
+
+                }
 
 
 
@@ -8607,107 +8787,15 @@ def get_users():
 
 
 
-        return jsonify(users_data)
+        except Exception as e:
 
 
 
-    except Exception as e:
+            app.logger.error(f"Error creating user via API: {str(e)}")
 
 
 
-        app.logger.error(f"Error getting users: {str(e)}")
-
-
-
-        return jsonify({'error': 'Failed to load users'}), 500
-
-
-
-@app.route('/api/users')
-
-
-
-@admin_required_api
-
-
-
-@database_required
-
-
-
-def api_get_users():
-
-
-
-    """API endpoint for getting users data."""
-
-
-
-    try:
-
-
-
-        # Get all users (both active and inactive)
-
-
-
-        users = User.query.order_by(User.is_active.desc(), User.username).all()
-
-
-
-        users_data = []
-
-
-
-        for user in users:
-
-
-
-            users_data.append({
-
-
-
-                'id': user.id,
-
-
-
-                'username': user.username,
-
-
-
-                'role': user.role,
-
-
-
-                'created_at': user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else None,
-
-
-
-                'is_active': user.is_active,
-
-
-
-                'is_admin': user.is_admin()
-
-
-
-            })
-
-
-
-        return jsonify(users_data)
-
-
-
-    except Exception as e:
-
-
-
-        app.logger.error(f"Error getting users via API: {str(e)}")
-
-
-
-        return jsonify({'error': 'Failed to load users'}), 500
+            return jsonify({'error': 'Failed to create user'}), 500
 
 
 
