@@ -543,7 +543,7 @@ function getTimeAgo(dateString) {
 // Global popup functions - must be outside DOMContentLoaded for onclick handlers to work
 function showDeliveryDetailsPopup() {
     // Get the most recent delivery details
-    fetch('/get_recent_deliveries?limit=1')
+    fetch('/get_user_recent_deliveries?limit=1')
         .then(response => response.json())
         .then(data => {
             let deliveries = [];
@@ -1064,9 +1064,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 _t: Date.now()  // Cache-busting parameter
             });
             
-            console.log('Fetching from:', `/get_recent_deliveries?${params}`);
+            console.log('Fetching from:', `/get_user_recent_deliveries?${params}`);
             
-            fetch(`/get_recent_deliveries?${params}`)
+            fetch(`/get_user_recent_deliveries?${params}`)
                 .then(response => response.json())
                 .then(data => {
                     console.log('Received data:', data);
