@@ -3912,7 +3912,7 @@ window.showNotification = function(message, type = 'info') {
 window.loadUsers = function() {
     // Add timestamp to prevent caching
     const timestamp = new Date().getTime();
-    fetch(`/get_users?t=${timestamp}`)
+    fetch(`/api/users?t=${timestamp}`)
         .then(response => response.json())
         .then(users => {
             const usersList = document.getElementById('usersList');
