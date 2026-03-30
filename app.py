@@ -8536,9 +8536,7 @@ def get_staff_stats():
 
 
 @app.route('/api/users', methods=['GET', 'POST'])
-
-@admin_required_api
-
+@login_required
 @database_required
 
 
@@ -8552,25 +8550,20 @@ def api_users():
 
 
     if request.method == 'GET':
-
-
-
-        # Get all users (both active and inactive)
-
-
-
+        # Get all users (both active and inactive) - only admins can see all users
         try:
+            # Check if current user is admin
+            current_username = session.get('username')
+            current_user = User.query.filter_by(username=current_username).first()
 
 
 
+            if not current_user or not current_user.is_admin():
+                return jsonify({'error': 'Admin access required to view all users'}), 403
+            
             users = User.query.order_by(User.is_active.desc(), User.username).all()
-
-
-
+            
             users_data = []
-
-
-
             for user in users:
 
 
@@ -8621,23 +8614,17 @@ def api_users():
 
             return jsonify({'error': 'Failed to load users'}), 500
 
-
-
     elif request.method == 'POST':
-
-
-
-        # Create new user
-
-
-
+        # Create new user - only admins can create users
         try:
-
-
-
+            # Check if current user is admin
+            current_username = session.get('username')
+            current_user = User.query.filter_by(username=current_username).first()
+            
+            if not current_user or not current_user.is_admin():
+                return jsonify({'error': 'Admin access required to create users'}), 403
+            
             data = request.get_json()
-
-
 
             if not data:
 
