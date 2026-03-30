@@ -8535,7 +8535,7 @@ def get_staff_stats():
         return jsonify({'success': False, 'error': 'Failed to get staff stats'}), 500
 
 
-@app.route('/api/users', methods=['GET', 'POST'])
+@app.route('/api/users', methods=['GET', 'POST', 'PUT'])
 @login_required
 @database_required
 
@@ -8783,6 +8783,65 @@ def api_users():
 
 
             return jsonify({'error': 'Failed to create user'}), 500
+
+    elif request.method == 'PUT':
+        # Update existing user - only admins can update users
+        try:
+            # Check if current user is admin
+            current_username = session.get('username')
+            current_user = User.query.filter_by(username=current_username).first()
+            
+            if not current_user or not current_user.is_admin():
+                return jsonify({'error': 'Admin access required to update users'}), 403
+            
+            data = request.get_json()
+            if not data:
+                return jsonify({'error': 'No data provided'}), 400
+            
+            user_id = data.get('id')
+            if not user_id:
+                return jsonify({'error': 'User ID is required'}), 400
+            
+            user = User.query.get(user_id)
+            if not user:
+                return jsonify({'error': 'User not found'}), 404
+            
+            # Update user fields
+            username = data.get('username', '').strip()
+            password = data.get('password', '').strip()
+            role = data.get('role', user.role)
+            
+            if username and username != user.username:
+                # Check if username already exists
+                existing_user = User.query.filter_by(username=username).first()
+                if existing_user:
+                    return jsonify({'error': 'Username already exists'}), 400
+                user.username = username
+            
+            if password:
+                user.set_password(password)
+            
+            if role in ['admin', 'staff']:
+                user.role = role
+            
+            user.updated_at = get_current_time()
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': 'User updated successfully',
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'role': user.role,
+                    'is_active': user.is_active,
+                    'is_admin': user.is_admin()
+                }
+            })
+            
+        except Exception as e:
+            app.logger.error(f"Error updating user via API: {str(e)}")
+            return jsonify({'error': 'Failed to update user'}), 500
 
 
 
