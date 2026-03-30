@@ -1,18 +1,36 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, make_response
 
+
+
 from flask_sqlalchemy import SQLAlchemy
+
+
 
 from sqlalchemy import inspect, text
 
+
+
 from dotenv import load_dotenv
+
+
 
 import os
 
+
+
 # Load environment variables from .env file
+
 load_dotenv()
 
+
+
 # Production deployment version - 2026-02-25 20:47:00
+
 PRODUCTION_VERSION = "v2.1.0-fix-user-management"
+
+
+
+
 
 
 
@@ -20,7 +38,15 @@ from datetime import datetime, timedelta, timezone
 
 
 
+
+
+
+
 from werkzeug.security import generate_password_hash, check_password_hash
+
+
+
+
 
 
 
@@ -28,7 +54,15 @@ from functools import wraps
 
 
 
+
+
+
+
 from collections import defaultdict
+
+
+
+
 
 
 
@@ -40,7 +74,19 @@ from logging.handlers import RotatingFileHandler
 
 
 
+
+
+
+
+
+
+
+
 import csv
+
+
+
+
 
 
 
@@ -48,7 +94,15 @@ import io
 
 
 
+
+
+
+
 import os
+
+
+
+
 
 
 
@@ -56,11 +110,23 @@ import platform
 
 
 
+
+
+
+
 import secrets
 
 
 
+
+
+
+
 import logging
+
+
+
+
 
 
 
@@ -72,7 +138,19 @@ import time
 
 
 
+
+
+
+
+
+
+
+
 # Initialize Flask app
+
+
+
+
 
 
 
@@ -84,7 +162,19 @@ app = Flask(__name__)
 
 
 
+
+
+
+
+
+
+
+
 # Secure secret key configuration
+
+
+
+
 
 
 
@@ -92,7 +182,15 @@ secret_key = os.environ.get('SECRET_KEY')
 
 
 
+
+
+
+
 flask_env = os.environ.get('FLASK_ENV', 'development')
+
+
+
+
 
 
 
@@ -104,7 +202,19 @@ debug_mode = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 
 
+
+
+
+
+
+
+
+
 if not secret_key:
+
+
+
+
 
 
 
@@ -112,7 +222,15 @@ if not secret_key:
 
 
 
+
+
+
+
         # Generate a secure random key for development
+
+
+
+
 
 
 
@@ -120,7 +238,15 @@ if not secret_key:
 
 
 
+
+
+
+
         print(f"Generated development secret key: {secret_key[:16]}...")
+
+
+
+
 
 
 
@@ -128,14 +254,33 @@ if not secret_key:
 
 
 
+
+
+
+
         raise ValueError("SECRET_KEY environment variable is required in production")
+
+
+
+
 
 
 
 app.secret_key = secret_key
 
+
+
 # Force production deployment - 2026-02-25 21:01:00
+
 app.config['DEPLOYMENT_VERSION'] = 'v2.2.0-EMERGENCY-FIX'
+
+
+
+
+
+
+
+
 
 
 
@@ -147,7 +292,15 @@ app.config['DEPLOYMENT_VERSION'] = 'v2.2.0-EMERGENCY-FIX'
 
 
 
+
+
+
+
 database_url = os.environ.get('DATABASE_URL')
+
+
+
+
 
 
 
@@ -155,79 +308,161 @@ flask_env = os.environ.get('FLASK_ENV', 'development')
 
 
 
+
+
+
+
 if not database_url:
+
+
 
     # Default to SQLite for local development
 
+
+
     database_url = 'sqlite:///deliveries.db'
+
+
 
     print(f"Using SQLite for local development: {database_url}")
 
+
+
 else:
+
     # For production mode, use PostgreSQL directly without any connection testing
+
     
+
     # Fix Render PostgreSQL hostname by adding full domain if missing
+
     if 'dpg-' in database_url and '.oregon-postgres.render.com' not in database_url:
+
         # Extract the hostname part and add the full domain
+
         import re
+
         database_url = re.sub(
+
             r'@(dpg-[^/]+)',
+
             r'@\1.oregon-postgres.render.com',
+
             database_url
+
         )
+
         print(f"Updated database URL with full domain: {database_url.split('@')[1] if '@' in database_url else 'hidden'}")
+
     
+
     if flask_env == 'production':
+
+
 
         print(f"Production mode detected - using PostgreSQL database without connection test")
 
+
+
         print(f"Database: {database_url.split('@')[1] if '@' in database_url else 'hidden'}")
+
+
 
     else:
 
+
+
         # Test PostgreSQL connection for development only
+
+
 
         try:
 
+
+
             import psycopg2
+
+
 
             test_conn = psycopg2.connect(
 
+
+
                 database_url,
+
+
 
                 sslmode='prefer',
 
+
+
                 connect_timeout=30
+
+
 
             )
 
+
+
             test_conn.close()
+
+
 
             print(f"PostgreSQL connection successful: {database_url.split('@')[1] if '@' in database_url else 'hidden'}")
 
+
+
         except Exception as e:
+
+
 
             print(f"PostgreSQL connection failed: {str(e)}")
 
+
+
             print("Falling back to SQLite for development")
+
+
 
             database_url = 'sqlite:///deliveries.db'
 
 
 
+
+
+
+
 # For production, ensure PostgreSQL is used
+
+
 
 if flask_env == 'production' and not database_url.startswith('postgres'):
 
+
+
     print("WARNING: Production mode detected but no PostgreSQL DATABASE_URL provided")
+
+
 
     print("For production deployment, set DATABASE_URL to your PostgreSQL connection string")
 
+
+
     print("Falling back to SQLite for now - this should be changed in actual production")
+
+
 
     # Don't raise error for local production testing, but log warning
 
+
+
     # raise ValueError("DATABASE_URL must be a PostgreSQL connection string in production")
+
+
+
+
+
+
 
 
 
@@ -237,21 +472,47 @@ app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 
 
 
+
+
+
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 
 
+
+
+
+
 # Configure SSL for PostgreSQL in production
+
 if flask_env == 'production' and database_url.startswith('postgres'):
+
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+
         'connect_args': {
+
             'sslmode': 'prefer',
+
             'connect_timeout': 30
+
         },
+
         'pool_pre_ping': True,
+
         'pool_recycle': 300
+
     }
+
     print("SSL configuration applied for PostgreSQL production database")
+
+
+
+
+
+
+
+
 
 
 
@@ -263,7 +524,19 @@ if flask_env == 'production' and database_url.startswith('postgres'):
 
 
 
+
+
+
+
 db = SQLAlchemy(app)
+
+
+
+
+
+
+
+
 
 
 
@@ -275,7 +548,15 @@ db = SQLAlchemy(app)
 
 
 
+
+
+
+
 def ensure_database_schema():
+
+
+
+
 
 
 
@@ -283,7 +564,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
     with app.app_context():
+
+
+
+
 
 
 
@@ -291,7 +580,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
             # Log database connection info
+
+
+
+
 
 
 
@@ -299,11 +596,23 @@ def ensure_database_schema():
 
 
 
+
+
+
+
             app.logger.info(f"Flask Environment: {flask_env}")
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -311,7 +620,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
             existing_tables = inspector.get_table_names()
+
+
+
+
 
 
 
@@ -319,7 +636,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -327,11 +652,23 @@ def ensure_database_schema():
 
 
 
+
+
+
+
             required_tables = ['users', 'delivery', 'audit_log', 'shelf']
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -339,7 +676,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -347,11 +692,23 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                 app.logger.info(f"Creating missing tables: {missing_tables}")
 
 
 
+
+
+
+
                 
+
+
+
+
 
 
 
@@ -359,7 +716,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                 for table_name in missing_tables:
+
+
+
+
 
 
 
@@ -367,7 +732,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                         if table_name == 'users':
+
+
+
+
 
 
 
@@ -375,11 +748,23 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                             from sqlalchemy import text
 
 
 
+
+
+
+
                             
+
+
+
+
 
 
 
@@ -387,7 +772,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                             if database_url.startswith('postgres'):
+
+
+
+
 
 
 
@@ -395,7 +788,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                                     CREATE TABLE IF NOT EXISTS users (
+
+
+
+
 
 
 
@@ -403,7 +804,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                                         username VARCHAR(80) UNIQUE NOT NULL,
+
+
+
+
 
 
 
@@ -411,7 +820,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                                         phone_number VARCHAR(20) UNIQUE,
+
+
+
+
 
 
 
@@ -419,11 +836,23 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                                         actual_password VARCHAR(255),
 
 
 
+
+
+
+
                                         role VARCHAR(20) DEFAULT 'user',
+
+
+
+
 
 
 
@@ -431,7 +860,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                                         is_active BOOLEAN DEFAULT TRUE
+
+
+
+
 
 
 
@@ -439,7 +876,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                                 """))
+
+
+
+
 
 
 
@@ -447,7 +892,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                                 # SQLite syntax
+
+
+
+
 
 
 
@@ -455,7 +908,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                                     CREATE TABLE IF NOT EXISTS users (
+
+
+
+
 
 
 
@@ -463,7 +924,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                                         username VARCHAR(80) UNIQUE NOT NULL,
+
+
+
+
 
 
 
@@ -471,7 +940,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                                         phone_number VARCHAR(20) UNIQUE,
+
+
+
+
 
 
 
@@ -479,7 +956,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                                         actual_password VARCHAR(255),
+
+
+
+
 
 
 
@@ -487,7 +972,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+
+
+
 
 
 
@@ -495,7 +988,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                                     )
+
+
+
+
 
 
 
@@ -503,7 +1004,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                             
+
+
+
+
 
 
 
@@ -511,7 +1020,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                             app.logger.info(f"Successfully created users table")
+
+
+
+
 
 
 
@@ -519,7 +1036,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                             # For other tables, use SQLAlchemy's create_all
+
+
+
+
 
 
 
@@ -527,7 +1052,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                             app.logger.info(f"Successfully created {table_name} table")
+
+
+
+
 
 
 
@@ -535,7 +1068,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                         app.logger.error(f"Failed to create {table_name} table: {str(table_error)}")
+
+
+
+
 
 
 
@@ -543,7 +1084,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                 
+
+
+
+
 
 
 
@@ -551,7 +1100,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                 inspector = inspect(db.engine)
+
+
+
+
 
 
 
@@ -559,11 +1116,23 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                 created_tables = [table for table in missing_tables if table in new_tables]
 
 
 
+
+
+
+
                 
+
+
+
+
 
 
 
@@ -571,7 +1140,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                     app.logger.info(f"Successfully created tables: {created_tables}")
+
+
+
+
 
 
 
@@ -579,7 +1156,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                     app.logger.error(f"Failed to create tables: {missing_tables}")
+
+
+
+
 
 
 
@@ -587,7 +1172,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                     if flask_env == 'production':
+
+
+
+
 
 
 
@@ -595,7 +1188,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
             else:
+
+
+
+
 
 
 
@@ -603,7 +1204,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                 
+
+
+
+
 
 
 
@@ -611,7 +1220,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
             app.logger.error(f"Database migration error: {str(e)}")
+
+
+
+
 
 
 
@@ -619,7 +1236,15 @@ def ensure_database_schema():
 
 
 
+
+
+
+
                 # In production, log error but continue (don't crash the app)
+
+
+
+
 
 
 
@@ -627,11 +1252,23 @@ def ensure_database_schema():
 
 
 
+
+
+
+
             else:
 
 
 
+
+
+
+
                 # In development, log the error but continue
+
+
+
+
 
 
 
@@ -643,7 +1280,19 @@ def ensure_database_schema():
 
 
 
+
+
+
+
+
+
+
+
 # Run automatic migration on startup
+
+
+
+
 
 
 
@@ -659,7 +1308,23 @@ ensure_database_schema()
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 # Configure logging
+
+
+
+
 
 
 
@@ -667,7 +1332,15 @@ if not app.debug:
 
 
 
+
+
+
+
     # Production logging configuration
+
+
+
+
 
 
 
@@ -675,11 +1348,23 @@ if not app.debug:
 
 
 
+
+
+
+
         os.mkdir('logs')
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -687,7 +1372,15 @@ if not app.debug:
 
 
 
+
+
+
+
     file_handler.setFormatter(logging.Formatter(
+
+
+
+
 
 
 
@@ -695,7 +1388,15 @@ if not app.debug:
 
 
 
+
+
+
+
     ))
+
+
+
+
 
 
 
@@ -703,7 +1404,15 @@ if not app.debug:
 
 
 
+
+
+
+
     app.logger.addHandler(file_handler)
+
+
+
+
 
 
 
@@ -711,7 +1420,15 @@ if not app.debug:
 
 
 
+
+
+
+
     app.logger.setLevel(logging.INFO)
+
+
+
+
 
 
 
@@ -719,11 +1436,23 @@ if not app.debug:
 
 
 
+
+
+
+
 else:
 
 
 
+
+
+
+
     # Development logging
+
+
+
+
 
 
 
@@ -735,19 +1464,43 @@ else:
 
 
 
+
+
+
+
+
+
+
+
 def get_local_time():
 
+
+
     """Get current time in UTC+3 (Kenya timezone)"""
+
+
 
     return datetime.utcnow() + timedelta(hours=3)
 
 
 
+
+
+
+
 def get_local_date():
+
+
 
     """Get current date in UTC+3 (Kenya timezone)"""
 
+
+
     return (datetime.utcnow() + timedelta(hours=3)).date()
+
+
+
+
 
 
 
@@ -759,11 +1512,31 @@ def get_local_date():
 
 
 
+
+
+
+
+
+
+
+
 def get_current_time():
+
+
 
     """Get current datetime in UTC+3 (Kenya timezone)."""
 
+
+
     return datetime.utcnow() + timedelta(hours=3)
+
+
+
+
+
+
+
+
 
 
 
@@ -775,7 +1548,15 @@ def get_local_time(current_time=None):
 
 
 
+
+
+
+
     """Get current time."""
+
+
+
+
 
 
 
@@ -783,7 +1564,15 @@ def get_local_time(current_time=None):
 
 
 
+
+
+
+
         return get_current_time()
+
+
+
+
 
 
 
@@ -795,7 +1584,19 @@ def get_local_time(current_time=None):
 
 
 
+
+
+
+
+
+
+
+
 # Rate limiting for login attempts
+
+
+
+
 
 
 
@@ -803,7 +1604,15 @@ LOGIN_ATTEMPT_LIMIT = 5  # Max 5 attempts
 
 
 
+
+
+
+
 LOGIN_ATTEMPT_WINDOW = 300  # 5 minutes window
+
+
+
+
 
 
 
@@ -815,7 +1624,19 @@ login_attempts = defaultdict(list)
 
 
 
+
+
+
+
+
+
+
+
 def is_rate_limited(ip_address):
+
+
+
+
 
 
 
@@ -823,7 +1644,15 @@ def is_rate_limited(ip_address):
 
 
 
+
+
+
+
     now = time.time()
+
+
+
+
 
 
 
@@ -831,7 +1660,15 @@ def is_rate_limited(ip_address):
 
 
 
+
+
+
+
     login_attempts[ip_address] = [
+
+
+
+
 
 
 
@@ -839,7 +1676,15 @@ def is_rate_limited(ip_address):
 
 
 
+
+
+
+
         if now - attempt_time < LOGIN_ATTEMPT_WINDOW
+
+
+
+
 
 
 
@@ -847,7 +1692,15 @@ def is_rate_limited(ip_address):
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -855,7 +1708,15 @@ def is_rate_limited(ip_address):
 
 
 
+
+
+
+
     if len(login_attempts[ip_address]) >= LOGIN_ATTEMPT_LIMIT:
+
+
+
+
 
 
 
@@ -863,7 +1724,15 @@ def is_rate_limited(ip_address):
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -871,7 +1740,15 @@ def is_rate_limited(ip_address):
 
 
 
+
+
+
+
     login_attempts[ip_address].append(now)
+
+
+
+
 
 
 
@@ -883,7 +1760,19 @@ def is_rate_limited(ip_address):
 
 
 
+
+
+
+
+
+
+
+
 # Initialize database tables with robust error handling
+
+
+
+
 
 
 
@@ -891,7 +1780,15 @@ def ensure_database_tables():
 
 
 
+
+
+
+
     """Ensure database tables exist with simple, reliable approach."""
+
+
+
+
 
 
 
@@ -899,7 +1796,15 @@ def ensure_database_tables():
 
 
 
+
+
+
+
         with app.app_context():
+
+
+
+
 
 
 
@@ -907,7 +1812,15 @@ def ensure_database_tables():
 
 
 
+
+
+
+
             print("Creating database tables...")
+
+
+
+
 
 
 
@@ -915,7 +1828,15 @@ def ensure_database_tables():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -923,7 +1844,15 @@ def ensure_database_tables():
 
 
 
+
+
+
+
             inspector = db.inspect(db.engine)
+
+
+
+
 
 
 
@@ -931,15 +1860,31 @@ def ensure_database_tables():
 
 
 
+
+
+
+
             required_tables = ['users', 'delivery', 'audit_log', 'shelf']
 
 
 
+
+
+
+
             
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -947,11 +1892,23 @@ def ensure_database_tables():
 
 
 
+
+
+
+
                 print("All required tables exist")
 
 
 
+
+
+
+
                 
+
+
+
+
 
 
 
@@ -959,7 +1916,15 @@ def ensure_database_tables():
 
 
 
+
+
+
+
                 try:
+
+
+
+
 
 
 
@@ -967,7 +1932,15 @@ def ensure_database_tables():
 
 
 
+
+
+
+
                     if not admin_user:
+
+
+
+
 
 
 
@@ -975,7 +1948,15 @@ def ensure_database_tables():
 
 
 
+
+
+
+
                             username='admin',
+
+
+
+
 
 
 
@@ -983,7 +1964,15 @@ def ensure_database_tables():
 
 
 
+
+
+
+
                             is_active=True
+
+
+
+
 
 
 
@@ -991,7 +1980,15 @@ def ensure_database_tables():
 
 
 
+
+
+
+
                         admin_user.set_password('ErrantMate@24!')
+
+
+
+
 
 
 
@@ -999,7 +1996,15 @@ def ensure_database_tables():
 
 
 
+
+
+
+
                         db.session.commit()
+
+
+
+
 
 
 
@@ -1007,7 +2012,15 @@ def ensure_database_tables():
 
 
 
+
+
+
+
                     else:
+
+
+
+
 
 
 
@@ -1015,7 +2028,15 @@ def ensure_database_tables():
 
 
 
+
+
+
+
                 except Exception as admin_error:
+
+
+
+
 
 
 
@@ -1023,7 +2044,15 @@ def ensure_database_tables():
 
 
 
+
+
+
+
                 
+
+
+
+
 
 
 
@@ -1031,7 +2060,15 @@ def ensure_database_tables():
 
 
 
+
+
+
+
             else:
+
+
+
+
 
 
 
@@ -1039,7 +2076,15 @@ def ensure_database_tables():
 
 
 
+
+
+
+
                 return False
+
+
+
+
 
 
 
@@ -1047,11 +2092,23 @@ def ensure_database_tables():
 
 
 
+
+
+
+
     except Exception as e:
 
 
 
+
+
+
+
         print(f"Error: {e}")
+
+
+
+
 
 
 
@@ -1063,7 +2120,19 @@ def ensure_database_tables():
 
 
 
+
+
+
+
+
+
+
+
 # Models
+
+
+
+
 
 
 
@@ -1071,7 +2140,15 @@ class User(db.Model):
 
 
 
+
+
+
+
     __tablename__ = 'users'
+
+
+
+
 
 
 
@@ -1079,7 +2156,15 @@ class User(db.Model):
 
 
 
+
+
+
+
     username = db.Column(db.String(80), unique=True, nullable=False)
+
+
+
+
 
 
 
@@ -1087,7 +2172,15 @@ class User(db.Model):
 
 
 
+
+
+
+
     phone_number = db.Column(db.String(20), unique=True, nullable=True)
+
+
+
+
 
 
 
@@ -1095,7 +2188,15 @@ class User(db.Model):
 
 
 
+
+
+
+
     actual_password = db.Column(db.String(255), nullable=True)  # Store actual password for admin viewing (user/staff only)
+
+
+
+
 
 
 
@@ -1103,7 +2204,15 @@ class User(db.Model):
 
 
 
+
+
+
+
     created_at = db.Column(db.DateTime, default=get_current_time)
+
+
+
+
 
 
 
@@ -1111,23 +2220,47 @@ class User(db.Model):
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
     def set_password(self, password):
 
+
+
         self.password_hash = generate_password_hash(password)
 
+
+
         # Store actual password for admin viewing (user/staff only)
+
         if self.role in ['user', 'staff']:
+
             self.actual_password = password
+
         else:
+
             self.actual_password = None  # Don't store admin passwords
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -1135,11 +2268,23 @@ class User(db.Model):
 
 
 
+
+
+
+
         return check_password_hash(self.password_hash, password)
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -1147,7 +2292,15 @@ class User(db.Model):
 
 
 
+
+
+
+
         return self.role == 'admin'
+
+
+
+
 
 
 
@@ -1155,11 +2308,23 @@ class User(db.Model):
 
 
 
+
+
+
+
         return self.role == 'staff'
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -1167,19 +2332,43 @@ class User(db.Model):
 
 
 
+
+
+
+
         return self.role == 'admin'
+
     
+
     def can_view_audit_logs(self):
+
         return self.role == 'admin'
+
     
+
     def can_view_system_health(self):
+
         return self.role == 'admin'
+
     
+
     def can_delete_delivery(self):
+
         return self.role in ['admin', 'staff']
+
     
+
     def can_manage_deliveries(self):
+
         return self.role in ['admin', 'staff']
+
+
+
+
+
+
+
+
 
 
 
@@ -1191,7 +2380,15 @@ class Delivery(db.Model):
 
 
 
+
+
+
+
     __tablename__ = 'delivery'
+
+
+
+
 
 
 
@@ -1199,7 +2396,15 @@ class Delivery(db.Model):
 
 
 
+
+
+
+
     display_id = db.Column(db.String(20), unique=True, nullable=False)
+
+
+
+
 
 
 
@@ -1207,7 +2412,15 @@ class Delivery(db.Model):
 
 
 
+
+
+
+
     sender_phone = db.Column(db.String(20), nullable=False)
+
+
+
+
 
 
 
@@ -1215,7 +2428,15 @@ class Delivery(db.Model):
 
 
 
+
+
+
+
     recipient_phone = db.Column(db.String(20), nullable=False)
+
+
+
+
 
 
 
@@ -1223,7 +2444,15 @@ class Delivery(db.Model):
 
 
 
+
+
+
+
     delivery_person = db.Column(db.String(100), nullable=True)
+
+
+
+
 
 
 
@@ -1231,7 +2460,15 @@ class Delivery(db.Model):
 
 
 
+
+
+
+
     quantity = db.Column(db.Integer, nullable=False)
+
+
+
+
 
 
 
@@ -1239,7 +2476,15 @@ class Delivery(db.Model):
 
 
 
+
+
+
+
     expenses = db.Column(db.Float, default=0.0)
+
+
+
+
 
 
 
@@ -1247,7 +2492,15 @@ class Delivery(db.Model):
 
 
 
+
+
+
+
     status = db.Column(db.String(20), default='Pending')
+
+
+
+
 
 
 
@@ -1255,7 +2508,15 @@ class Delivery(db.Model):
 
 
 
+
+
+
+
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+
+
+
 
 
 
@@ -1263,7 +2524,15 @@ class Delivery(db.Model):
 
 
 
+
+
+
+
     # Relationship to User
+
+
+
+
 
 
 
@@ -1275,7 +2544,19 @@ class Delivery(db.Model):
 
 
 
+
+
+
+
+
+
+
+
     def __repr__(self):
+
+
+
+
 
 
 
@@ -1287,7 +2568,19 @@ class Delivery(db.Model):
 
 
 
+
+
+
+
+
+
+
+
 class AuditLog(db.Model):
+
+
+
+
 
 
 
@@ -1295,7 +2588,15 @@ class AuditLog(db.Model):
 
 
 
+
+
+
+
     id = db.Column(db.Integer, primary_key=True)
+
+
+
+
 
 
 
@@ -1303,7 +2604,15 @@ class AuditLog(db.Model):
 
 
 
+
+
+
+
     username = db.Column(db.String(80), nullable=False)
+
+
+
+
 
 
 
@@ -1311,7 +2620,15 @@ class AuditLog(db.Model):
 
 
 
+
+
+
+
     resource_type = db.Column(db.String(50), nullable=True)  # USER, DELIVERY, REPORT
+
+
+
+
 
 
 
@@ -1319,7 +2636,15 @@ class AuditLog(db.Model):
 
 
 
+
+
+
+
     details = db.Column(db.Text, nullable=True)  # Additional details about the action
+
+
+
+
 
 
 
@@ -1327,7 +2652,15 @@ class AuditLog(db.Model):
 
 
 
+
+
+
+
     user_agent = db.Column(db.String(500), nullable=True)  # Browser/device info
+
+
+
+
 
 
 
@@ -1335,7 +2668,15 @@ class AuditLog(db.Model):
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -1343,7 +2684,15 @@ class AuditLog(db.Model):
 
 
 
+
+
+
+
     user = db.relationship('User', backref='audit_logs')
+
+
+
+
 
 
 
@@ -1351,7 +2700,15 @@ class AuditLog(db.Model):
 
 
 
+
+
+
+
     def __repr__(self):
+
+
+
+
 
 
 
@@ -1359,47 +2716,95 @@ class AuditLog(db.Model):
 
 
 
+
+
+
+
 class Shelf(db.Model):
+
+
 
     __tablename__ = 'shelf'
 
+
+
     
+
+
 
     id = db.Column(db.String(10), primary_key=True)  # e.g., A-01, B-02
 
+
+
     status = db.Column(db.String(20), default='available')  # available, occupied, maintenance
+
+
 
     size = db.Column(db.String(10), nullable=False)  # Small, Large
 
+
+
     price = db.Column(db.Integer, nullable=False)  # Monthly fee in KSh
+
+
 
     customer_name = db.Column(db.String(100), nullable=True)
 
+
+
     customer_phone = db.Column(db.String(20), nullable=True)
+
+
 
     customer_email = db.Column(db.String(100), nullable=True)
 
+
+
     card_number = db.Column(db.String(50), nullable=True)
+
+
 
     rented_date = db.Column(db.Date, nullable=True)
 
+
+
     items_description = db.Column(db.Text, nullable=True)
+
+
 
     rental_period = db.Column(db.Integer, nullable=True)  # in months
 
+
+
     discount = db.Column(db.Float, default=0.0)  # Discount percentage
+
+
 
     maintenance_reason = db.Column(db.String(200), nullable=True)
 
+
+
     created_at = db.Column(db.DateTime, default=get_local_time)
+
+
 
     updated_at = db.Column(db.DateTime, default=get_local_time, onupdate=get_local_time)
 
+
+
     
+
+
 
     def __repr__(self):
 
+
+
         return f'<Shelf {self.id} - {self.status}>'
+
+
+
+
 
 
 
@@ -1407,7 +2812,15 @@ def generate_display_id():
 
 
 
+
+
+
+
     """Generate a unique display ID for new deliveries."""
+
+
+
+
 
 
 
@@ -1415,11 +2828,23 @@ def generate_display_id():
 
 
 
+
+
+
+
     date_str = now.strftime('%y%m%d')
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -1427,7 +2852,15 @@ def generate_display_id():
 
 
 
+
+
+
+
     today_start = get_current_time().replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+
+
 
 
 
@@ -1435,7 +2868,15 @@ def generate_display_id():
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -1443,7 +2884,15 @@ def generate_display_id():
 
 
 
+
+
+
+
     today_count = len(today_deliveries)
+
+
+
+
 
 
 
@@ -1451,7 +2900,15 @@ def generate_display_id():
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -1459,11 +2916,23 @@ def generate_display_id():
 
 
 
+
+
+
+
     display_id = f"{date_str}{str(next_sequence).zfill(4)}"
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -1471,7 +2940,15 @@ def generate_display_id():
 
 
 
+
+
+
+
     max_attempts = 10
+
+
+
+
 
 
 
@@ -1479,7 +2956,15 @@ def generate_display_id():
 
 
 
+
+
+
+
         existing = Delivery.query.filter_by(display_id=display_id).first()
+
+
+
+
 
 
 
@@ -1487,7 +2972,15 @@ def generate_display_id():
 
 
 
+
+
+
+
             return display_id
+
+
+
+
 
 
 
@@ -1495,7 +2988,15 @@ def generate_display_id():
 
 
 
+
+
+
+
         # If it exists, increment and try again
+
+
+
+
 
 
 
@@ -1503,7 +3004,15 @@ def generate_display_id():
 
 
 
+
+
+
+
         display_id = f"{date_str}{str(next_sequence).zfill(4)}"
+
+
+
+
 
 
 
@@ -1511,7 +3020,15 @@ def generate_display_id():
 
 
 
+
+
+
+
     # If we still have a conflict after max attempts, use a timestamp-based fallback
+
+
+
+
 
 
 
@@ -1519,7 +3036,15 @@ def generate_display_id():
 
 
 
+
+
+
+
     timestamp_suffix = str(int(time.time()))[-4:]
+
+
+
+
 
 
 
@@ -1531,7 +3056,19 @@ def generate_display_id():
 
 
 
+
+
+
+
+
+
+
+
 def get_date_ranges():
+
+
+
+
 
 
 
@@ -1539,7 +3076,15 @@ def get_date_ranges():
 
 
 
+
+
+
+
     now = get_local_time()
+
+
+
+
 
 
 
@@ -1547,11 +3092,23 @@ def get_date_ranges():
 
 
 
+
+
+
+
     today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -1559,7 +3116,15 @@ def get_date_ranges():
 
 
 
+
+
+
+
     week_start = today - timedelta(days=today.weekday())
+
+
+
+
 
 
 
@@ -1567,7 +3132,15 @@ def get_date_ranges():
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -1575,7 +3148,15 @@ def get_date_ranges():
 
 
 
+
+
+
+
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
+
+
 
 
 
@@ -1583,7 +3164,15 @@ def get_date_ranges():
 
 
 
+
+
+
+
         month_end = now.replace(year=now.year+1, month=1, day=1) - timedelta(microseconds=1)
+
+
+
+
 
 
 
@@ -1591,11 +3180,23 @@ def get_date_ranges():
 
 
 
+
+
+
+
         month_end = now.replace(month=now.month+1, day=1) - timedelta(microseconds=1)
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -1603,7 +3204,15 @@ def get_date_ranges():
 
 
 
+
+
+
+
     year_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
+
+
 
 
 
@@ -1611,7 +3220,15 @@ def get_date_ranges():
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -1619,7 +3236,15 @@ def get_date_ranges():
 
 
 
+
+
+
+
         'today': (today, today_end),
+
+
+
+
 
 
 
@@ -1627,7 +3252,15 @@ def get_date_ranges():
 
 
 
+
+
+
+
         'month': (month_start, month_end),
+
+
+
+
 
 
 
@@ -1635,7 +3268,15 @@ def get_date_ranges():
 
 
 
+
+
+
+
         'all': (datetime(2000, 1, 1), today_end)  # All time from year 2000
+
+
+
+
 
 
 
@@ -1647,7 +3288,19 @@ def get_date_ranges():
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/create-admin')
+
+
+
+
 
 
 
@@ -1655,7 +3308,15 @@ def create_admin():
 
 
 
+
+
+
+
     """Create initial admin user (remove after use)."""
+
+
+
+
 
 
 
@@ -1663,7 +3324,15 @@ def create_admin():
 
 
 
+
+
+
+
         # Check if admin already exists
+
+
+
+
 
 
 
@@ -1671,7 +3340,15 @@ def create_admin():
 
 
 
+
+
+
+
         if admin:
+
+
+
+
 
 
 
@@ -1679,7 +3356,15 @@ def create_admin():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -1687,7 +3372,15 @@ def create_admin():
 
 
 
+
+
+
+
         admin = User(
+
+
+
+
 
 
 
@@ -1695,7 +3388,15 @@ def create_admin():
 
 
 
+
+
+
+
             role='admin'
+
+
+
+
 
 
 
@@ -1703,11 +3404,23 @@ def create_admin():
 
 
 
+
+
+
+
         admin.set_password('ErrantMate@24!')  # Change this password!
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -1715,7 +3428,15 @@ def create_admin():
 
 
 
+
+
+
+
         db.session.commit()
+
+
+
+
 
 
 
@@ -1723,11 +3444,23 @@ def create_admin():
 
 
 
+
+
+
+
         return jsonify({'status': 'success', 'message': 'Admin user created', 'username': 'admin', 'password': 'ErrantMate@24!'})
 
 
 
+
+
+
+
     except Exception as e:
+
+
+
+
 
 
 
@@ -1739,247 +3472,499 @@ def create_admin():
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/emergency-migrate', methods=['POST'])
+
+
 
 def emergency_migrate():
 
+
+
     """Emergency migration endpoint to fix production database"""
+
+
 
     try:
 
+
+
         with app.app_context():
+
+
 
             app.logger.info("🚨 Emergency migration started")
 
+
+
             
+
+
 
             # Check current columns
 
+
+
             inspector = db.inspect(db.engine)
+
+
 
             columns = inspector.get_columns('shelf')
 
+
+
             column_names = [col['name'] for col in columns]
 
+
+
             
+
+
 
             app.logger.info(f"Current shelf columns: {column_names}")
 
+
+
             
+
+
 
             # Add missing columns
 
+
+
             migrations = [
+
+
 
                 ('customer_email', 'VARCHAR(100)', None),
 
+
+
                 ('card_number', 'VARCHAR(50)', None),
+
+
 
                 ('discount', 'FLOAT', '0.0')
 
+
+
             ]
 
+
+
             
+
+
 
             added_columns = []
 
+
+
             
+
+
 
             for column_name, column_type, default_value in migrations:
 
+
+
                 if column_name not in column_names:
+
+
 
                     app.logger.info(f"Adding {column_name} column...")
 
+
+
                     
+
+
 
                     if 'sqlite' in str(db.engine.url).lower():
 
+
+
                         # SQLite
+
+
 
                         if default_value:
 
+
+
                             sql = f'ALTER TABLE shelf ADD COLUMN {column_name} {column_type} DEFAULT {default_value}'
+
+
 
                         else:
 
+
+
                             sql = f'ALTER TABLE shelf ADD COLUMN {column_name} {column_type}'
+
+
 
                     else:
 
+
+
                         # PostgreSQL
+
+
 
                         if default_value:
 
+
+
                             sql = f'ALTER TABLE shelf ADD COLUMN {column_name} {column_type} DEFAULT {default_value}'
+
+
 
                         else:
 
+
+
                             sql = f'ALTER TABLE shelf ADD COLUMN {column_name} {column_type}'
 
+
+
                     
+
+
 
                     with db.engine.connect() as conn:
 
+
+
                         conn.execute(db.text(sql))
+
+
 
                         conn.commit()
 
+
+
                     
+
+
 
                     added_columns.append(column_name)
 
+
+
                     app.logger.info(f"✅ {column_name} added successfully")
+
+
 
                 else:
 
+
+
                     app.logger.info(f"✅ {column_name} already exists")
 
+
+
             
+
+
 
             # Test the Shelf model
 
+
+
             try:
+
+
 
                 test_shelf = Shelf.query.first()
 
+
+
                 if test_shelf:
+
+
 
                     app.logger.info(f"✅ Shelf model test successful: {test_shelf.id}")
 
+
+
             except Exception as e:
+
+
 
                 app.logger.error(f"❌ Shelf model test failed: {e}")
 
+
+
                 return jsonify({'success': False, 'error': f'Shelf model test failed: {str(e)}'}), 500
 
+
+
             
+
+
 
             app.logger.info(f"🎉 Emergency migration completed! Added columns: {added_columns}")
 
+
+
             
+
+
 
             return jsonify({
 
+
+
                 'success': True,
+
+
 
                 'message': 'Emergency migration completed successfully',
 
+
+
                 'added_columns': added_columns,
+
+
 
                 'total_columns': len(column_names) + len(added_columns)
 
+
+
             })
+
+
 
             
 
+
+
     except Exception as e:
+
+
 
         app.logger.error(f"❌ Emergency migration failed: {str(e)}", exc_info=True)
 
+
+
         return jsonify({
+
+
 
             'success': False,
 
+
+
             'error': str(e)
 
+
+
         }), 500
+
+
+
+
 
 
 
 @app.route('/force-restart', methods=['POST'])
 
+
+
 def force_restart():
+
+
 
     """Force restart by causing intentional error to trigger Render.com restart"""
 
+
+
     try:
+
+
 
         app.logger.info("🔄 Force restart requested - causing intentional error")
 
+
+
         
+
+
 
         # Cause an intentional error that will force Render.com to restart the service
 
+
+
         raise Exception("INTENTIONAL ERROR: Force application restart for model reload")
+
+
 
         
 
+
+
     except Exception as e:
+
+
 
         app.logger.info(f"✅ Force restart triggered: {str(e)}")
 
+
+
         return jsonify({
+
+
 
             'success': True,
 
+
+
             'message': 'Force restart triggered - application will restart',
 
+
+
             'error': str(e)
+
+
 
         }), 500  # Return 500 to ensure Render.com restarts
 
 
 
+
+
+
+
 @app.route('/restart-app', methods=['POST'])
+
+
 
 def restart_app():
 
+
+
     """Restart the application to reload models after migration"""
+
+
 
     try:
 
+
+
         app.logger.info("🔄 Application restart requested")
+
+
 
         
 
+
+
         # Test if Shelf model works after restart
+
+
 
         try:
 
+
+
             shelves = Shelf.query.all()
+
+
 
             app.logger.info(f"✅ Shelf model working: {len(shelves)} shelves found")
 
+
+
             
 
+
+
             return jsonify({
+
+
 
                 'success': True,
 
+
+
                 'message': 'Application models reloaded successfully',
+
+
 
                 'shelves_count': len(shelves)
 
+
+
             })
 
+
+
             
+
+
 
         except Exception as e:
 
+
+
             app.logger.error(f"❌ Shelf model still failing: {e}")
+
+
 
             return jsonify({
 
+
+
                 'success': False,
+
+
 
                 'error': f'Shelf model error: {str(e)}'
 
+
+
             }), 500
+
+
 
             
 
+
+
     except Exception as e:
+
+
 
         app.logger.error(f"❌ Restart failed: {str(e)}", exc_info=True)
 
+
+
         return jsonify({
+
+
 
             'success': False,
 
+
+
             'error': str(e)
 
+
+
         }), 500
+
+
+
+
 
 
 
@@ -1987,7 +3972,15 @@ def restart_app():
 
 
 
+
+
+
+
 def health_check():
+
+
+
+
 
 
 
@@ -1995,7 +3988,15 @@ def health_check():
 
 
 
+
+
+
+
     try:
+
+
+
+
 
 
 
@@ -2003,7 +4004,15 @@ def health_check():
 
 
 
+
+
+
+
         db.session.execute(text('SELECT 1'))
+
+
+
+
 
 
 
@@ -2011,7 +4020,15 @@ def health_check():
 
 
 
+
+
+
+
     except Exception as e:
+
+
+
+
 
 
 
@@ -2023,7 +4040,19 @@ def health_check():
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/check-db')
+
+
+
+
 
 
 
@@ -2031,7 +4060,15 @@ def check_database():
 
 
 
+
+
+
+
     """Check database status and tables."""
+
+
+
+
 
 
 
@@ -2039,7 +4076,15 @@ def check_database():
 
 
 
+
+
+
+
         inspector = inspect(db.engine)
+
+
+
+
 
 
 
@@ -2047,7 +4092,15 @@ def check_database():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -2055,7 +4108,15 @@ def check_database():
 
 
 
+
+
+
+
         required_tables = ['users', 'delivery', 'audit_log', 'shelf']
+
+
+
+
 
 
 
@@ -2063,7 +4124,15 @@ def check_database():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -2071,7 +4140,15 @@ def check_database():
 
 
 
+
+
+
+
             return jsonify({
+
+
+
+
 
 
 
@@ -2079,7 +4156,15 @@ def check_database():
 
 
 
+
+
+
+
                 'message': f'Missing tables: {missing_tables}',
+
+
+
+
 
 
 
@@ -2087,11 +4172,23 @@ def check_database():
 
 
 
+
+
+
+
             }), 200
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -2099,7 +4196,15 @@ def check_database():
 
 
 
+
+
+
+
         user_count = User.query.count()
+
+
+
+
 
 
 
@@ -2107,7 +4212,15 @@ def check_database():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -2115,7 +4228,15 @@ def check_database():
 
 
 
+
+
+
+
             'status': 'ready',
+
+
+
+
 
 
 
@@ -2123,7 +4244,15 @@ def check_database():
 
 
 
+
+
+
+
             'tables': tables,
+
+
+
+
 
 
 
@@ -2131,7 +4260,15 @@ def check_database():
 
 
 
+
+
+
+
             'deliveries': delivery_count
+
+
+
+
 
 
 
@@ -2139,7 +4276,15 @@ def check_database():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -2147,7 +4292,19 @@ def check_database():
 
 
 
+
+
+
+
         return jsonify({'status': 'error', 'error': str(e)}), 500
+
+
+
+
+
+
+
+
 
 
 
@@ -2159,7 +4316,15 @@ def check_database():
 
 
 
+
+
+
+
 def init_database():
+
+
+
+
 
 
 
@@ -2167,7 +4332,15 @@ def init_database():
 
 
 
+
+
+
+
     try:
+
+
+
+
 
 
 
@@ -2175,7 +4348,15 @@ def init_database():
 
 
 
+
+
+
+
             db.create_all()
+
+
+
+
 
 
 
@@ -2183,7 +4364,15 @@ def init_database():
 
 
 
+
+
+
+
     except Exception as e:
+
+
+
+
 
 
 
@@ -2195,7 +4384,19 @@ def init_database():
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/')
+
+
+
+
 
 
 
@@ -2203,7 +4404,15 @@ def dashboard():
 
 
 
+
+
+
+
     """Render the dashboard with operational statistics and overview."""
+
+
+
+
 
 
 
@@ -2211,7 +4420,15 @@ def dashboard():
 
 
 
+
+
+
+
         # Get all deliveries for statistics
+
+
+
+
 
 
 
@@ -2219,7 +4436,15 @@ def dashboard():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -2227,7 +4452,15 @@ def dashboard():
 
 
 
+
+
+
+
         total_deliveries = len(deliveries)
+
+
+
+
 
 
 
@@ -2235,7 +4468,15 @@ def dashboard():
 
 
 
+
+
+
+
         in_transit_count = len([d for d in deliveries if d.status == 'In Transit'])
+
+
+
+
 
 
 
@@ -2243,7 +4484,15 @@ def dashboard():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -2251,11 +4500,23 @@ def dashboard():
 
 
 
+
+
+
+
         active_deliveries = pending_count + in_transit_count
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -2263,7 +4524,15 @@ def dashboard():
 
 
 
+
+
+
+
         today = get_current_time().date()
+
+
+
+
 
 
 
@@ -2271,7 +4540,15 @@ def dashboard():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -2279,7 +4556,15 @@ def dashboard():
 
 
 
+
+
+
+
         current_month = get_current_time().date().replace(day=1)
+
+
+
+
 
 
 
@@ -2287,7 +4572,15 @@ def dashboard():
 
 
 
+
+
+
+
         month_delivered = [d for d in month_deliveries if d.status == 'Delivered']
+
+
+
+
 
 
 
@@ -2295,7 +4588,15 @@ def dashboard():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -2303,11 +4604,23 @@ def dashboard():
 
 
 
+
+
+
+
         today_deliveries = [d for d in deliveries if d.created_at.date() == today]
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -2315,7 +4628,15 @@ def dashboard():
 
 
 
+
+
+
+
         total_revenue = sum(float(d.amount) for d in deliveries if d.amount)  # Use actual delivery amounts as revenue
+
+
+
+
 
 
 
@@ -2323,7 +4644,15 @@ def dashboard():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -2331,11 +4660,23 @@ def dashboard():
 
 
 
+
+
+
+
         for delivery in deliveries[:10]:
 
 
 
+
+
+
+
             time_ago = get_time_ago(delivery.created_at) if delivery.created_at else "Unknown"
+
+
+
+
 
 
 
@@ -2343,7 +4684,15 @@ def dashboard():
 
 
 
+
+
+
+
                 'display_id': delivery.display_id,
+
+
+
+
 
 
 
@@ -2351,7 +4700,15 @@ def dashboard():
 
 
 
+
+
+
+
                 'time_ago': time_ago,
+
+
+
+
 
 
 
@@ -2359,11 +4716,23 @@ def dashboard():
 
 
 
+
+
+
+
             })
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -2371,7 +4740,15 @@ def dashboard():
 
 
 
+
+
+
+
         deliveries_dict = []
+
+
+
+
 
 
 
@@ -2379,7 +4756,15 @@ def dashboard():
 
 
 
+
+
+
+
             time_ago = get_time_ago(delivery.created_at) if delivery.created_at else "Unknown"
+
+
+
+
 
 
 
@@ -2387,7 +4772,15 @@ def dashboard():
 
 
 
+
+
+
+
                 'id': delivery.id,
+
+
+
+
 
 
 
@@ -2395,7 +4788,15 @@ def dashboard():
 
 
 
+
+
+
+
                 'sender_name': delivery.sender_name,
+
+
+
+
 
 
 
@@ -2403,7 +4804,15 @@ def dashboard():
 
 
 
+
+
+
+
                 'recipient_address': delivery.recipient_address,
+
+
+
+
 
 
 
@@ -2411,7 +4820,15 @@ def dashboard():
 
 
 
+
+
+
+
                 'created_at': delivery.created_at.isoformat() if delivery.created_at else None,
+
+
+
+
 
 
 
@@ -2419,7 +4836,15 @@ def dashboard():
 
 
 
+
+
+
+
                 'time_ago': time_ago,
+
+
+
+
 
 
 
@@ -2427,7 +4852,15 @@ def dashboard():
 
 
 
+
+
+
+
             })
+
+
+
+
 
 
 
@@ -2435,7 +4868,15 @@ def dashboard():
 
 
 
+
+
+
+
         return render_template('index.html', 
+
+
+
+
 
 
 
@@ -2443,7 +4884,15 @@ def dashboard():
 
 
 
+
+
+
+
                              total_deliveries=total_deliveries,
+
+
+
+
 
 
 
@@ -2451,7 +4900,15 @@ def dashboard():
 
 
 
+
+
+
+
                              completed_today=completed_today,
+
+
+
+
 
 
 
@@ -2459,7 +4916,15 @@ def dashboard():
 
 
 
+
+
+
+
                              pending_count=pending_count,
+
+
+
+
 
 
 
@@ -2467,7 +4932,15 @@ def dashboard():
 
 
 
+
+
+
+
                              delivered_count=delivered_count,
+
+
+
+
 
 
 
@@ -2475,7 +4948,15 @@ def dashboard():
 
 
 
+
+
+
+
                              recent_activities=recent_activities,
+
+
+
+
 
 
 
@@ -2483,7 +4964,15 @@ def dashboard():
 
 
 
+
+
+
+
                              total_expenses=total_expenses)
+
+
+
+
 
 
 
@@ -2491,7 +4980,15 @@ def dashboard():
 
 
 
+
+
+
+
         app.logger.error(f"Error loading dashboard: {str(e)}")
+
+
+
+
 
 
 
@@ -2499,7 +4996,15 @@ def dashboard():
 
 
 
+
+
+
+
         return render_template('index.html', 
+
+
+
+
 
 
 
@@ -2507,7 +5012,15 @@ def dashboard():
 
 
 
+
+
+
+
                              total_deliveries=0,
+
+
+
+
 
 
 
@@ -2515,7 +5028,15 @@ def dashboard():
 
 
 
+
+
+
+
                              completed_today=0,
+
+
+
+
 
 
 
@@ -2523,7 +5044,15 @@ def dashboard():
 
 
 
+
+
+
+
                              pending_count=0,
+
+
+
+
 
 
 
@@ -2531,7 +5060,15 @@ def dashboard():
 
 
 
+
+
+
+
                              delivered_count=0,
+
+
+
+
 
 
 
@@ -2539,11 +5076,23 @@ def dashboard():
 
 
 
+
+
+
+
                              recent_activities=[],
 
 
 
+
+
+
+
                              total_revenue=0.0,
+
+
+
+
 
 
 
@@ -2555,7 +5104,19 @@ def dashboard():
 
 
 
+
+
+
+
+
+
+
+
 def get_time_ago(created_at):
+
+
+
+
 
 
 
@@ -2563,7 +5124,15 @@ def get_time_ago(created_at):
 
 
 
+
+
+
+
     if not created_at:
+
+
+
+
 
 
 
@@ -2571,7 +5140,15 @@ def get_time_ago(created_at):
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -2579,7 +5156,15 @@ def get_time_ago(created_at):
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -2587,7 +5172,15 @@ def get_time_ago(created_at):
 
 
 
+
+
+
+
     diff = now - created_at
+
+
+
+
 
 
 
@@ -2595,7 +5188,15 @@ def get_time_ago(created_at):
 
 
 
+
+
+
+
     if diff.days > 0:
+
+
+
+
 
 
 
@@ -2603,7 +5204,15 @@ def get_time_ago(created_at):
 
 
 
+
+
+
+
     elif diff.seconds > 3600:
+
+
+
+
 
 
 
@@ -2611,7 +5220,15 @@ def get_time_ago(created_at):
 
 
 
+
+
+
+
         return f"{hours} hour{'s' if hours > 1 else ''} ago"
+
+
+
+
 
 
 
@@ -2619,7 +5236,15 @@ def get_time_ago(created_at):
 
 
 
+
+
+
+
         minutes = diff.seconds // 60
+
+
+
+
 
 
 
@@ -2627,7 +5252,15 @@ def get_time_ago(created_at):
 
 
 
+
+
+
+
     else:
+
+
+
+
 
 
 
@@ -2639,7 +5272,19 @@ def get_time_ago(created_at):
 
 
 
+
+
+
+
+
+
+
+
 # Audit Logging Functions
+
+
+
+
 
 
 
@@ -2647,7 +5292,15 @@ def log_audit(action, resource_type=None, resource_id=None, details=None):
 
 
 
+
+
+
+
     """Log an audit event for security monitoring."""
+
+
+
+
 
 
 
@@ -2655,11 +5308,23 @@ def log_audit(action, resource_type=None, resource_id=None, details=None):
 
 
 
+
+
+
+
         # Get user information from session
 
 
 
+
+
+
+
         user_id = session.get('user_id')
+
+
+
+
 
 
 
@@ -2669,9 +5334,21 @@ def log_audit(action, resource_type=None, resource_id=None, details=None):
 
 
 
+
+
+
+
+
+
         # Get request information
 
+
+
         ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'Unknown'))[:45]  # Limit to 45 chars
+
+
+
+
 
 
 
@@ -2681,7 +5358,17 @@ def log_audit(action, resource_type=None, resource_id=None, details=None):
 
 
 
+
+
+
+
+
+
         # Create audit log entry
+
+
+
+
 
 
 
@@ -2689,7 +5376,15 @@ def log_audit(action, resource_type=None, resource_id=None, details=None):
 
 
 
+
+
+
+
             user_id=user_id,
+
+
+
+
 
 
 
@@ -2697,7 +5392,15 @@ def log_audit(action, resource_type=None, resource_id=None, details=None):
 
 
 
+
+
+
+
             action=action,
+
+
+
+
 
 
 
@@ -2705,7 +5408,15 @@ def log_audit(action, resource_type=None, resource_id=None, details=None):
 
 
 
+
+
+
+
             resource_id=str(resource_id) if resource_id else None,
+
+
+
+
 
 
 
@@ -2713,7 +5424,15 @@ def log_audit(action, resource_type=None, resource_id=None, details=None):
 
 
 
+
+
+
+
             ip_address=ip_address,
+
+
+
+
 
 
 
@@ -2721,11 +5440,23 @@ def log_audit(action, resource_type=None, resource_id=None, details=None):
 
 
 
+
+
+
+
         )
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -2733,7 +5464,15 @@ def log_audit(action, resource_type=None, resource_id=None, details=None):
 
 
 
+
+
+
+
         db.session.commit()
+
+
+
+
 
 
 
@@ -2741,7 +5480,15 @@ def log_audit(action, resource_type=None, resource_id=None, details=None):
 
 
 
+
+
+
+
     except Exception as e:
+
+
+
+
 
 
 
@@ -2749,7 +5496,15 @@ def log_audit(action, resource_type=None, resource_id=None, details=None):
 
 
 
+
+
+
+
         app.logger.error(f"Error logging audit event: {str(e)}")
+
+
+
+
 
 
 
@@ -2761,7 +5516,19 @@ def log_audit(action, resource_type=None, resource_id=None, details=None):
 
 
 
+
+
+
+
+
+
+
+
 def log_login(user, success=True, reason=None):
+
+
+
+
 
 
 
@@ -2769,7 +5536,15 @@ def log_login(user, success=True, reason=None):
 
 
 
+
+
+
+
     action = "LOGIN_SUCCESS" if success else "LOGIN_FAILED"
+
+
+
+
 
 
 
@@ -2777,7 +5552,15 @@ def log_login(user, success=True, reason=None):
 
 
 
+
+
+
+
     if not success:
+
+
+
+
 
 
 
@@ -2785,7 +5568,15 @@ def log_login(user, success=True, reason=None):
 
 
 
+
+
+
+
     else:
+
+
+
+
 
 
 
@@ -2793,7 +5584,15 @@ def log_login(user, success=True, reason=None):
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -2805,7 +5604,19 @@ def log_login(user, success=True, reason=None):
 
 
 
+
+
+
+
+
+
+
+
 def log_logout():
+
+
+
+
 
 
 
@@ -2813,11 +5624,23 @@ def log_logout():
 
 
 
+
+
+
+
     username = session.get('username', 'Unknown')
 
 
 
+
+
+
+
     details = f"User {username} logged out"
+
+
+
+
 
 
 
@@ -2829,11 +5652,27 @@ def log_logout():
 
 
 
+
+
+
+
+
+
+
+
 def log_delivery_action(action, delivery_id, details=None):
 
 
 
+
+
+
+
     """Log delivery-related actions."""
+
+
+
+
 
 
 
@@ -2845,7 +5684,19 @@ def log_delivery_action(action, delivery_id, details=None):
 
 
 
+
+
+
+
+
+
+
+
 def log_export(period, format='CSV'):
+
+
+
+
 
 
 
@@ -2853,7 +5704,15 @@ def log_export(period, format='CSV'):
 
 
 
+
+
+
+
     details = f"Exported {period} report in {format} format"
+
+
+
+
 
 
 
@@ -2865,7 +5724,19 @@ def log_export(period, format='CSV'):
 
 
 
+
+
+
+
+
+
+
+
 def log_page_view(page):
+
+
+
+
 
 
 
@@ -2873,7 +5744,15 @@ def log_page_view(page):
 
 
 
+
+
+
+
     details = f"Viewed {page} page"
+
+
+
+
 
 
 
@@ -2885,7 +5764,19 @@ def log_page_view(page):
 
 
 
+
+
+
+
+
+
+
+
 # Database check decorator to prevent recurring errors
+
+
+
+
 
 
 
@@ -2893,7 +5784,15 @@ def database_required(f):
 
 
 
+
+
+
+
     """Decorator to ensure database tables exist before executing route."""
+
+
+
+
 
 
 
@@ -2901,7 +5800,15 @@ def database_required(f):
 
 
 
+
+
+
+
     def decorated_function(*args, **kwargs):
+
+
+
+
 
 
 
@@ -2909,7 +5816,15 @@ def database_required(f):
 
 
 
+
+
+
+
             # Quick check if tables exist
+
+
+
+
 
 
 
@@ -2917,7 +5832,15 @@ def database_required(f):
 
 
 
+
+
+
+
             tables = inspector.get_table_names()
+
+
+
+
 
 
 
@@ -2925,7 +5848,15 @@ def database_required(f):
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -2933,7 +5864,15 @@ def database_required(f):
 
 
 
+
+
+
+
                 # Try to create tables if missing
+
+
+
+
 
 
 
@@ -2941,7 +5880,15 @@ def database_required(f):
 
 
 
+
+
+
+
                     return jsonify({
+
+
+
+
 
 
 
@@ -2949,7 +5896,15 @@ def database_required(f):
 
 
 
+
+
+
+
                         'message': 'Please visit /force-init-db to initialize database',
+
+
+
+
 
 
 
@@ -2957,11 +5912,23 @@ def database_required(f):
 
 
 
+
+
+
+
                     }), 503
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -2969,7 +5936,15 @@ def database_required(f):
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -2977,7 +5952,15 @@ def database_required(f):
 
 
 
+
+
+
+
             return jsonify({
+
+
+
+
 
 
 
@@ -2985,7 +5968,15 @@ def database_required(f):
 
 
 
+
+
+
+
                 'message': str(e),
+
+
+
+
 
 
 
@@ -2993,11 +5984,27 @@ def database_required(f):
 
 
 
+
+
+
+
             }), 503
 
 
 
+
+
+
+
     return decorated_function
+
+
+
+
+
+
+
+
 
 
 
@@ -3009,7 +6016,15 @@ def database_required(f):
 
 
 
+
+
+
+
 def login_required(f):
+
+
+
+
 
 
 
@@ -3017,7 +6032,15 @@ def login_required(f):
 
 
 
+
+
+
+
     def decorated_function(*args, **kwargs):
+
+
+
+
 
 
 
@@ -3025,7 +6048,15 @@ def login_required(f):
 
 
 
+
+
+
+
             return redirect(url_for('login', next=request.url))
+
+
+
+
 
 
 
@@ -3033,7 +6064,19 @@ def login_required(f):
 
 
 
+
+
+
+
     return decorated_function
+
+
+
+
+
+
+
+
 
 
 
@@ -3045,7 +6088,15 @@ def login_required(f):
 
 
 
+
+
+
+
 def admin_required(f):
+
+
+
+
 
 
 
@@ -3053,7 +6104,15 @@ def admin_required(f):
 
 
 
+
+
+
+
     def decorated_function(*args, **kwargs):
+
+
+
+
 
 
 
@@ -3061,7 +6120,15 @@ def admin_required(f):
 
 
 
+
+
+
+
             return redirect(url_for('login', next=request.url))
+
+
+
+
 
 
 
@@ -3069,7 +6136,15 @@ def admin_required(f):
 
 
 
+
+
+
+
             flash('Admin access required', 'danger')
+
+
+
+
 
 
 
@@ -3077,11 +6152,27 @@ def admin_required(f):
 
 
 
+
+
+
+
         return f(*args, **kwargs)
 
 
 
+
+
+
+
     return decorated_function
+
+
+
+
+
+
+
+
 
 
 
@@ -3093,7 +6184,15 @@ def admin_required(f):
 
 
 
+
+
+
+
 def login_required_api(f):
+
+
+
+
 
 
 
@@ -3101,7 +6200,15 @@ def login_required_api(f):
 
 
 
+
+
+
+
     def decorated_function(*args, **kwargs):
+
+
+
+
 
 
 
@@ -3109,7 +6216,15 @@ def login_required_api(f):
 
 
 
+
+
+
+
             return jsonify({
+
+
+
+
 
 
 
@@ -3117,7 +6232,15 @@ def login_required_api(f):
 
 
 
+
+
+
+
                 'redirect': '/login'
+
+
+
+
 
 
 
@@ -3125,11 +6248,27 @@ def login_required_api(f):
 
 
 
+
+
+
+
         return f(*args, **kwargs)
 
 
 
+
+
+
+
     return decorated_function
+
+
+
+
+
+
+
+
 
 
 
@@ -3141,7 +6280,15 @@ def login_required_api(f):
 
 
 
+
+
+
+
 def admin_required_api(f):
+
+
+
+
 
 
 
@@ -3149,7 +6296,15 @@ def admin_required_api(f):
 
 
 
+
+
+
+
     def decorated_function(*args, **kwargs):
+
+
+
+
 
 
 
@@ -3157,7 +6312,15 @@ def admin_required_api(f):
 
 
 
+
+
+
+
             return jsonify({
+
+
+
+
 
 
 
@@ -3165,7 +6328,15 @@ def admin_required_api(f):
 
 
 
+
+
+
+
                 'redirect': '/login'
+
+
+
+
 
 
 
@@ -3173,7 +6344,15 @@ def admin_required_api(f):
 
 
 
+
+
+
+
         if session.get('user_role') != 'admin':
+
+
+
+
 
 
 
@@ -3181,7 +6360,15 @@ def admin_required_api(f):
 
 
 
+
+
+
+
                 'error': 'Admin access required'
+
+
+
+
 
 
 
@@ -3189,11 +6376,31 @@ def admin_required_api(f):
 
 
 
+
+
+
+
         return f(*args, **kwargs)
 
 
 
+
+
+
+
     return decorated_function
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -3209,7 +6416,15 @@ def admin_required_api(f):
 
 
 
+
+
+
+
 @admin_required_api
+
+
+
+
 
 
 
@@ -3217,7 +6432,15 @@ def reset_database():
 
 
 
+
+
+
+
     """Reset database completely - admin only with confirmation."""
+
+
+
+
 
 
 
@@ -3225,7 +6448,15 @@ def reset_database():
 
 
 
+
+
+
+
     confirm = request.args.get('confirm')
+
+
+
+
 
 
 
@@ -3233,7 +6464,15 @@ def reset_database():
 
 
 
+
+
+
+
         return jsonify({
+
+
+
+
 
 
 
@@ -3241,7 +6480,15 @@ def reset_database():
 
 
 
+
+
+
+
             'error': 'Confirmation required. Add ?confirm=RESET_CONFIRMED to proceed'
+
+
+
+
 
 
 
@@ -3249,7 +6496,15 @@ def reset_database():
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -3257,7 +6512,15 @@ def reset_database():
 
 
 
+
+
+
+
     user_id = session.get('user_id')
+
+
+
+
 
 
 
@@ -3265,7 +6528,15 @@ def reset_database():
 
 
 
+
+
+
+
     app.logger.warning(f"Database reset initiated by admin user {username} (ID: {user_id})")
+
+
+
+
 
 
 
@@ -3273,7 +6544,15 @@ def reset_database():
 
 
 
+
+
+
+
     try:
+
+
+
+
 
 
 
@@ -3281,7 +6560,15 @@ def reset_database():
 
 
 
+
+
+
+
             # Drop all tables
+
+
+
+
 
 
 
@@ -3289,7 +6576,15 @@ def reset_database():
 
 
 
+
+
+
+
             # Create all tables fresh
+
+
+
+
 
 
 
@@ -3297,7 +6592,15 @@ def reset_database():
 
 
 
+
+
+
+
             return jsonify({
+
+
+
+
 
 
 
@@ -3305,7 +6608,15 @@ def reset_database():
 
 
 
+
+
+
+
                 'message': 'Database reset successfully',
+
+
+
+
 
 
 
@@ -3313,7 +6624,15 @@ def reset_database():
 
 
 
+
+
+
+
                 'timestamp': get_current_time().isoformat()
+
+
+
+
 
 
 
@@ -3321,11 +6640,23 @@ def reset_database():
 
 
 
+
+
+
+
     except Exception as e:
 
 
 
+
+
+
+
         app.logger.error(f"Database reset failed: {str(e)}")
+
+
+
+
 
 
 
@@ -3337,7 +6668,19 @@ def reset_database():
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/force-init-db')
+
+
+
+
 
 
 
@@ -3345,7 +6688,15 @@ def reset_database():
 
 
 
+
+
+
+
 def force_init_database():
+
+
+
+
 
 
 
@@ -3353,7 +6704,15 @@ def force_init_database():
 
 
 
+
+
+
+
     # Require confirmation parameter
+
+
+
+
 
 
 
@@ -3361,7 +6720,15 @@ def force_init_database():
 
 
 
+
+
+
+
     if confirm != 'FORCE_INIT_CONFIRMED':
+
+
+
+
 
 
 
@@ -3369,7 +6736,15 @@ def force_init_database():
 
 
 
+
+
+
+
             'status': 'error', 
+
+
+
+
 
 
 
@@ -3377,11 +6752,23 @@ def force_init_database():
 
 
 
+
+
+
+
         }), 400
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -3389,7 +6776,15 @@ def force_init_database():
 
 
 
+
+
+
+
     user_id = session.get('user_id')
+
+
+
+
 
 
 
@@ -3397,7 +6792,15 @@ def force_init_database():
 
 
 
+
+
+
+
     app.logger.warning(f"Database force initialization initiated by admin user {username} (ID: {user_id})")
+
+
+
+
 
 
 
@@ -3405,7 +6808,15 @@ def force_init_database():
 
 
 
+
+
+
+
     try:
+
+
+
+
 
 
 
@@ -3413,7 +6824,15 @@ def force_init_database():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -3421,7 +6840,15 @@ def force_init_database():
 
 
 
+
+
+
+
             print("Dropping existing tables...")
+
+
+
+
 
 
 
@@ -3429,11 +6856,23 @@ def force_init_database():
 
 
 
+
+
+
+
             db.drop_all()
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -3441,7 +6880,15 @@ def force_init_database():
 
 
 
+
+
+
+
             print("Creating tables...")
+
+
+
+
 
 
 
@@ -3449,11 +6896,23 @@ def force_init_database():
 
 
 
+
+
+
+
             db.create_all()
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -3461,7 +6920,15 @@ def force_init_database():
 
 
 
+
+
+
+
             inspector = inspect(db.engine)
+
+
+
+
 
 
 
@@ -3469,11 +6936,23 @@ def force_init_database():
 
 
 
+
+
+
+
             required_tables = ['users', 'delivery', 'audit_log', 'shelf']
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -3481,7 +6960,15 @@ def force_init_database():
 
 
 
+
+
+
+
                 
+
+
+
+
 
 
 
@@ -3489,7 +6976,15 @@ def force_init_database():
 
 
 
+
+
+
+
                 admin_user = User.query.filter_by(username='admin').first()
+
+
+
+
 
 
 
@@ -3497,7 +6992,15 @@ def force_init_database():
 
 
 
+
+
+
+
                     admin_user = User(
+
+
+
+
 
 
 
@@ -3505,7 +7008,15 @@ def force_init_database():
 
 
 
+
+
+
+
                         role='admin',
+
+
+
+
 
 
 
@@ -3513,7 +7024,15 @@ def force_init_database():
 
 
 
+
+
+
+
                     )
+
+
+
+
 
 
 
@@ -3521,7 +7040,15 @@ def force_init_database():
 
 
 
+
+
+
+
                     db.session.add(admin_user)
+
+
+
+
 
 
 
@@ -3529,7 +7056,15 @@ def force_init_database():
 
 
 
+
+
+
+
                     print("Default admin user created")
+
+
+
+
 
 
 
@@ -3537,7 +7072,15 @@ def force_init_database():
 
 
 
+
+
+
+
                 else:
+
+
+
+
 
 
 
@@ -3545,7 +7088,15 @@ def force_init_database():
 
 
 
+
+
+
+
                     app.logger.info("Admin user already exists")
+
+
+
+
 
 
 
@@ -3553,7 +7104,15 @@ def force_init_database():
 
 
 
+
+
+
+
                 return jsonify({
+
+
+
+
 
 
 
@@ -3561,7 +7120,15 @@ def force_init_database():
 
 
 
+
+
+
+
                     'message': 'Database force initialized successfully',
+
+
+
+
 
 
 
@@ -3569,7 +7136,15 @@ def force_init_database():
 
 
 
+
+
+
+
                     'database_url': str(app.config['SQLALCHEMY_DATABASE_URI']),
+
+
+
+
 
 
 
@@ -3577,7 +7152,15 @@ def force_init_database():
 
 
 
+
+
+
+
                     'performed_by': username,
+
+
+
+
 
 
 
@@ -3585,7 +7168,15 @@ def force_init_database():
 
 
 
+
+
+
+
                 }), 200
+
+
+
+
 
 
 
@@ -3593,7 +7184,15 @@ def force_init_database():
 
 
 
+
+
+
+
                 missing = [table for table in required_tables if table not in tables]
+
+
+
+
 
 
 
@@ -3601,7 +7200,15 @@ def force_init_database():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -3609,7 +7216,15 @@ def force_init_database():
 
 
 
+
+
+
+
         import traceback
+
+
+
+
 
 
 
@@ -3617,7 +7232,15 @@ def force_init_database():
 
 
 
+
+
+
+
         app.logger.error(f"Database force initialization failed: {str(e)}\n{error_details}")
+
+
+
+
 
 
 
@@ -3625,7 +7248,15 @@ def force_init_database():
 
 
 
+
+
+
+
         return jsonify({
+
+
+
+
 
 
 
@@ -3633,7 +7264,15 @@ def force_init_database():
 
 
 
+
+
+
+
             'error': str(e),
+
+
+
+
 
 
 
@@ -3641,7 +7280,19 @@ def force_init_database():
 
 
 
+
+
+
+
         }), 500
+
+
+
+
+
+
+
+
 
 
 
@@ -3653,11 +7304,23 @@ def force_init_database():
 
 
 
+
+
+
+
 @login_required
 
 
 
+
+
+
+
 @database_required
+
+
+
+
 
 
 
@@ -3665,14 +7328,29 @@ def add_delivery():
 
 
 
+
+
+
+
     """Handle adding a new delivery."""
+
     if request.method == 'GET':
+
         # Log page view
+
         log_page_view("Add Delivery")
+
         return render_template('add_delivery.html')
 
+
+
     if request.method == 'POST':
+
         try:
+
+
+
+
 
 
 
@@ -3680,7 +7358,15 @@ def add_delivery():
 
 
 
+
+
+
+
             browser_local_time = request.form.get('browser_local_time')
+
+
+
+
 
 
 
@@ -3688,7 +7374,15 @@ def add_delivery():
 
 
 
+
+
+
+
                 # Parse browser local time directly as naive datetime (no timezone conversion)
+
+
+
+
 
 
 
@@ -3696,7 +7390,15 @@ def add_delivery():
 
 
 
+
+
+
+
             else:
+
+
+
+
 
 
 
@@ -3704,11 +7406,23 @@ def add_delivery():
 
 
 
+
+
+
+
                 current_time = get_current_time()
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -3716,7 +7430,15 @@ def add_delivery():
 
 
 
+
+
+
+
                 display_id=generate_display_id(),
+
+
+
+
 
 
 
@@ -3724,7 +7446,15 @@ def add_delivery():
 
 
 
+
+
+
+
                 sender_phone=request.form['sender_phone'],
+
+
+
+
 
 
 
@@ -3732,7 +7462,15 @@ def add_delivery():
 
 
 
+
+
+
+
                 recipient_phone=request.form['recipient_phone'],
+
+
+
+
 
 
 
@@ -3740,7 +7478,15 @@ def add_delivery():
 
 
 
+
+
+
+
                 goods_type=request.form['goods_type'],
+
+
+
+
 
 
 
@@ -3748,7 +7494,15 @@ def add_delivery():
 
 
 
+
+
+
+
                 amount=float(request.form['amount']),
+
+
+
+
 
 
 
@@ -3756,7 +7510,15 @@ def add_delivery():
 
 
 
+
+
+
+
                 payment_by=request.form.get('payment_by', 'M-Pesa'),  # Use form value or default
+
+
+
+
 
 
 
@@ -3764,7 +7526,15 @@ def add_delivery():
 
 
 
+
+
+
+
                 created_at=current_time,  # Use browser local time
+
+
+
+
 
 
 
@@ -3772,7 +7542,15 @@ def add_delivery():
 
 
 
+
+
+
+
                 delivery_person=session.get('username') if session.get('user_role') == 'admin' else None  # Auto-assign to admin users
+
+
+
+
 
 
 
@@ -3780,7 +7558,15 @@ def add_delivery():
 
 
 
+
+
+
+
             db.session.add(delivery)
+
+
+
+
 
 
 
@@ -3788,7 +7574,15 @@ def add_delivery():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -3796,7 +7590,15 @@ def add_delivery():
 
 
 
+
+
+
+
             details = f"Created delivery {delivery.display_id}: {delivery.sender_name} -> {delivery.recipient_name} ({delivery.goods_type}, KSh{delivery.amount})"
+
+
+
+
 
 
 
@@ -3804,7 +7606,15 @@ def add_delivery():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -3812,7 +7622,15 @@ def add_delivery():
 
 
 
+
+
+
+
             return redirect(url_for('add_delivery'))
+
+
+
+
 
 
 
@@ -3820,7 +7638,15 @@ def add_delivery():
 
 
 
+
+
+
+
             db.session.rollback()
+
+
+
+
 
 
 
@@ -3828,7 +7654,15 @@ def add_delivery():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -3836,7 +7670,15 @@ def add_delivery():
 
 
 
+
+
+
+
             error_str = str(e).lower()
+
+
+
+
 
 
 
@@ -3844,7 +7686,15 @@ def add_delivery():
 
 
 
+
+
+
+
                 # Try again with a new display ID
+
+
+
+
 
 
 
@@ -3852,7 +7702,15 @@ def add_delivery():
 
 
 
+
+
+
+
                     # Generate a new display ID with timestamp fallback
+
+
+
+
 
 
 
@@ -3860,7 +7718,15 @@ def add_delivery():
 
 
 
+
+
+
+
                     now = get_local_time()
+
+
+
+
 
 
 
@@ -3868,7 +7734,15 @@ def add_delivery():
 
 
 
+
+
+
+
                     timestamp_suffix = str(int(time.time()))[-4:]
+
+
+
+
 
 
 
@@ -3876,7 +7750,15 @@ def add_delivery():
 
 
 
+
+
+
+
                     
+
+
+
+
 
 
 
@@ -3884,7 +7766,15 @@ def add_delivery():
 
 
 
+
+
+
+
                         display_id=new_display_id,
+
+
+
+
 
 
 
@@ -3892,7 +7782,15 @@ def add_delivery():
 
 
 
+
+
+
+
                         sender_phone=request.form['sender_phone'],
+
+
+
+
 
 
 
@@ -3900,7 +7798,15 @@ def add_delivery():
 
 
 
+
+
+
+
                         recipient_phone=request.form['recipient_phone'],
+
+
+
+
 
 
 
@@ -3908,7 +7814,15 @@ def add_delivery():
 
 
 
+
+
+
+
                         goods_type=request.form['goods_type'],
+
+
+
+
 
 
 
@@ -3916,7 +7830,15 @@ def add_delivery():
 
 
 
+
+
+
+
                         amount=float(request.form['amount']),
+
+
+
+
 
 
 
@@ -3924,7 +7846,15 @@ def add_delivery():
 
 
 
+
+
+
+
                         payment_by=request.form.get('payment_by', 'M-Pesa'),  # Use form value or default
+
+
+
+
 
 
 
@@ -3932,7 +7862,15 @@ def add_delivery():
 
 
 
+
+
+
+
                         created_at=current_time,  # Use browser local time
+
+
+
+
 
 
 
@@ -3940,7 +7878,15 @@ def add_delivery():
 
 
 
+
+
+
+
                         delivery_person=session.get('username') if session.get('user_role') == 'admin' else None  # Auto-assign to admin users
+
+
+
+
 
 
 
@@ -3948,7 +7894,15 @@ def add_delivery():
 
 
 
+
+
+
+
                     db.session.add(delivery)
+
+
+
+
 
 
 
@@ -3956,7 +7910,15 @@ def add_delivery():
 
 
 
+
+
+
+
                     
+
+
+
+
 
 
 
@@ -3964,7 +7926,15 @@ def add_delivery():
 
 
 
+
+
+
+
                     details = f"Created delivery {delivery.display_id}: {delivery.sender_name} -> {delivery.recipient_name} ({delivery.goods_type}, KSh{delivery.amount})"
+
+
+
+
 
 
 
@@ -3972,7 +7942,15 @@ def add_delivery():
 
 
 
+
+
+
+
                     
+
+
+
+
 
 
 
@@ -3980,7 +7958,15 @@ def add_delivery():
 
 
 
+
+
+
+
                     return redirect(url_for('add_delivery'))
+
+
+
+
 
 
 
@@ -3988,7 +7974,15 @@ def add_delivery():
 
 
 
+
+
+
+
                 except Exception as retry_error:
+
+
+
+
 
 
 
@@ -3996,7 +7990,15 @@ def add_delivery():
 
 
 
+
+
+
+
                     app.logger.error(f"Retry failed for delivery creation: {str(retry_error)}")
+
+
+
+
 
 
 
@@ -4004,16 +8006,33 @@ def add_delivery():
 
 
 
+
+
+
+
             else:
+
+
+
+
 
 
 
                 flash('Error adding delivery. Please check form and try again.', 'danger')
 
+
+
 @app.route('/api/update_delivery_status', methods=['POST'])
 
 
+
+
+
 @login_required_api
+
+
+
+
 
 
 
@@ -4021,7 +8040,15 @@ def add_delivery():
 
 
 
+
+
+
+
 def api_update_delivery_status():
+
+
+
+
 
 
 
@@ -4029,7 +8056,15 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
     try:
+
+
+
+
 
 
 
@@ -4037,7 +8072,15 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
         user_id = session.get('user_id')
+
+
+
+
 
 
 
@@ -4045,7 +8088,15 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
             return jsonify({'success': False, 'error': 'Authentication required'}), 401
+
+
+
+
 
 
 
@@ -4053,12 +8104,25 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
         user = User.query.get(user_id)
+
         if not user or not user.is_admin():
+
             return jsonify({'success': False, 'error': 'Admin access required'}), 403
 
 
+
+
+
         data = request.get_json()
+
+
+
+
 
 
 
@@ -4066,7 +8130,15 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
         new_status = data.get('status')
+
+
+
+
 
 
 
@@ -4074,7 +8146,15 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -4082,11 +8162,23 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
             return jsonify({'success': False, 'error': 'Missing required fields'}), 400
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -4094,11 +8186,23 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
             return jsonify({'success': False, 'error': 'Invalid status'}), 400
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -4106,16 +8210,33 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
         # Additional validation: Admin users can update any delivery (no restrictions)
+
         # Removed previous restrictions that limited access to assigned deliveries
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -4123,7 +8244,15 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -4131,7 +8260,15 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
         if delivery_person:
+
+
+
+
 
 
 
@@ -4139,7 +8276,15 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -4147,7 +8292,15 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -4155,7 +8308,15 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
         if delivery_person:
+
+
+
+
 
 
 
@@ -4163,7 +8324,15 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -4171,7 +8340,15 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
             'success': True,
+
+
+
+
 
 
 
@@ -4179,7 +8356,15 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
         })
+
+
+
+
 
 
 
@@ -4187,7 +8372,15 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
     except Exception as e:
+
+
+
+
 
 
 
@@ -4195,7 +8388,15 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
         app.logger.error(f"Error updating delivery status: {str(e)}")
+
+
+
+
 
 
 
@@ -4207,7 +8408,19 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/update_status/<int:delivery_id>/<status>', methods=['GET', 'POST'])
+
+
+
+
 
 
 
@@ -4215,7 +8428,15 @@ def api_update_delivery_status():
 
 
 
+
+
+
+
 @database_required
+
+
+
+
 
 
 
@@ -4223,7 +8444,15 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
     """Update the status of a delivery."""
+
+
+
+
 
 
 
@@ -4231,7 +8460,15 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
         # Check if user is admin
+
+
+
+
 
 
 
@@ -4239,11 +8476,23 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
         if not user_id:
 
 
 
+
+
+
+
             if request.is_json:
+
+
+
+
 
 
 
@@ -4251,11 +8500,23 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
             return redirect(url_for('login'))
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -4263,11 +8524,23 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
         if not user or not user.is_admin():
 
 
 
+
+
+
+
             if request.is_json:
+
+
+
+
 
 
 
@@ -4275,7 +8548,15 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
             flash('Admin access required', 'error')
+
+
+
+
 
 
 
@@ -4283,20 +8564,41 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
         delivery = Delivery.query.get_or_404(delivery_id)
 
 
+
+
+
         
+
         # Additional validation: Users can only update their own assigned deliveries
+
         if user.role == 'user' and delivery.delivery_person and delivery.delivery_person != user.username:
+
             if request.is_json:
 
 
+
+
+
                 return jsonify({
+
+
+
+
 
 
 
@@ -4304,7 +8606,15 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
                     'error': 'You can only update status for deliveries assigned to you'
+
+
+
+
 
 
 
@@ -4312,7 +8622,15 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
             flash('You can only update status for deliveries assigned to you', 'error')
+
+
+
+
 
 
 
@@ -4320,7 +8638,15 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -4328,7 +8654,15 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
         db.session.commit()
+
+
+
+
 
 
 
@@ -4336,7 +8670,15 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
         # Check if this is an AJAX request
+
+
+
+
 
 
 
@@ -4344,7 +8686,15 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
             return jsonify({
+
+
+
+
 
 
 
@@ -4352,7 +8702,15 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
                 'message': f'Delivery status updated to {status}',
+
+
+
+
 
 
 
@@ -4360,11 +8718,23 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
             })
 
 
 
+
+
+
+
         else:
+
+
+
+
 
 
 
@@ -4372,7 +8742,15 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
             return redirect(url_for('dashboard'))
+
+
+
+
 
 
 
@@ -4380,7 +8758,15 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
     except Exception as e:
+
+
+
+
 
 
 
@@ -4388,7 +8774,15 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
         app.logger.error(f"Error updating status: {str(e)}")
+
+
+
+
 
 
 
@@ -4396,7 +8790,15 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
         # Check if this is an AJAX request
+
+
+
+
 
 
 
@@ -4404,7 +8806,15 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
             return jsonify({
+
+
+
+
 
 
 
@@ -4412,7 +8822,15 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
                 'error': 'Error updating status'
+
+
+
+
 
 
 
@@ -4420,7 +8838,15 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
         else:
+
+
+
+
 
 
 
@@ -4428,7 +8854,19 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
             return redirect(url_for('dashboard'))
+
+
+
+
+
+
+
+
 
 
 
@@ -4440,7 +8878,15 @@ def update_status(delivery_id, status):
 
 
 
+
+
+
+
 @database_required
+
+
+
+
 
 
 
@@ -4448,7 +8894,15 @@ def delete_delivery(delivery_id):
 
 
 
+
+
+
+
     """Delete a delivery."""
+
+
+
+
 
 
 
@@ -4456,7 +8910,15 @@ def delete_delivery(delivery_id):
 
 
 
+
+
+
+
         delivery = Delivery.query.get_or_404(delivery_id)
+
+
+
+
 
 
 
@@ -4464,7 +8926,15 @@ def delete_delivery(delivery_id):
 
 
 
+
+
+
+
         db.session.commit()
+
+
+
+
 
 
 
@@ -4472,7 +8942,15 @@ def delete_delivery(delivery_id):
 
 
 
+
+
+
+
     except Exception as e:
+
+
+
+
 
 
 
@@ -4480,7 +8958,15 @@ def delete_delivery(delivery_id):
 
 
 
+
+
+
+
         app.logger.error(f"Error deleting delivery: {str(e)}", exc_info=True)
+
+
+
+
 
 
 
@@ -4492,7 +8978,19 @@ def delete_delivery(delivery_id):
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/login', methods=['GET', 'POST'])
+
+
+
+
 
 
 
@@ -4500,7 +8998,15 @@ def login():
 
 
 
+
+
+
+
     """Handle user login."""
+
+
+
+
 
 
 
@@ -4508,7 +9014,15 @@ def login():
 
 
 
+
+
+
+
         # Get client IP for rate limiting
+
+
+
+
 
 
 
@@ -4516,7 +9030,15 @@ def login():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -4524,7 +9046,15 @@ def login():
 
 
 
+
+
+
+
         if is_rate_limited(client_ip):
+
+
+
+
 
 
 
@@ -4532,7 +9062,15 @@ def login():
 
 
 
+
+
+
+
             flash('Too many login attempts. Please try again later.', 'danger')
+
+
+
+
 
 
 
@@ -4540,7 +9078,15 @@ def login():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -4548,11 +9094,23 @@ def login():
 
 
 
+
+
+
+
         password = request.form.get('password', '')
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -4560,7 +9118,15 @@ def login():
 
 
 
+
+
+
+
             flash('Please enter both username and password', 'danger')
+
+
+
+
 
 
 
@@ -4568,7 +9134,15 @@ def login():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -4576,7 +9150,15 @@ def login():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -4584,7 +9166,15 @@ def login():
 
 
 
+
+
+
+
             session['user_id'] = user.id
+
+
+
+
 
 
 
@@ -4592,7 +9182,15 @@ def login():
 
 
 
+
+
+
+
             session['user_role'] = user.role  # Store user role in session
+
+
+
+
 
 
 
@@ -4600,7 +9198,15 @@ def login():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -4608,11 +9214,23 @@ def login():
 
 
 
+
+
+
+
             log_login(user, success=True)
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -4620,7 +9238,15 @@ def login():
 
 
 
+
+
+
+
             next_page = request.args.get('next')
+
+
+
+
 
 
 
@@ -4628,7 +9254,15 @@ def login():
 
 
 
+
+
+
+
                 return redirect(next_page)
+
+
+
+
 
 
 
@@ -4636,7 +9270,15 @@ def login():
 
 
 
+
+
+
+
             # Role-based redirect
+
+
+
+
 
 
 
@@ -4644,7 +9286,15 @@ def login():
 
 
 
+
+
+
+
                 return redirect(url_for('reports'))
+
+
+
+
 
 
 
@@ -4652,7 +9302,15 @@ def login():
 
 
 
+
+
+
+
                 return redirect(url_for('add_delivery'))
+
+
+
+
 
 
 
@@ -4660,7 +9318,15 @@ def login():
 
 
 
+
+
+
+
                 return redirect(url_for('add_delivery'))
+
+
+
+
 
 
 
@@ -4668,7 +9334,15 @@ def login():
 
 
 
+
+
+
+
             # Log failed login attempt
+
+
+
+
 
 
 
@@ -4676,7 +9350,15 @@ def login():
 
 
 
+
+
+
+
                 # Try to get user for logging (even if password is wrong)
+
+
+
+
 
 
 
@@ -4684,7 +9366,15 @@ def login():
 
 
 
+
+
+
+
                 if user:
+
+
+
+
 
 
 
@@ -4692,7 +9382,15 @@ def login():
 
 
 
+
+
+
+
                 else:
+
+
+
+
 
 
 
@@ -4700,11 +9398,23 @@ def login():
 
 
 
+
+
+
+
             flash('Invalid username or password', 'danger')
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -4716,7 +9426,19 @@ def login():
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/logout')
+
+
+
+
 
 
 
@@ -4724,7 +9446,15 @@ def logout():
 
 
 
+
+
+
+
     """Handle user logout."""
+
+
+
+
 
 
 
@@ -4732,7 +9462,15 @@ def logout():
 
 
 
+
+
+
+
     log_logout()
+
+
+
+
 
 
 
@@ -4740,7 +9478,15 @@ def logout():
 
 
 
+
+
+
+
     flash('You have been logged out successfully', 'info')
+
+
+
+
 
 
 
@@ -4752,7 +9498,19 @@ def logout():
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/reports')
+
+
+
+
 
 
 
@@ -4760,7 +9518,15 @@ def logout():
 
 
 
+
+
+
+
 @database_required
+
+
+
+
 
 
 
@@ -4768,7 +9534,15 @@ def reports():
 
 
 
+
+
+
+
     """Render the reports page - Admin only."""
+
+
+
+
 
 
 
@@ -4776,7 +9550,15 @@ def reports():
 
 
 
+
+
+
+
         # Log page view
+
+
+
+
 
 
 
@@ -4784,7 +9566,15 @@ def reports():
 
 
 
+
+
+
+
         # Get recent deliveries (last 10)
+
+
+
+
 
 
 
@@ -4792,7 +9582,15 @@ def reports():
 
 
 
+
+
+
+
         return render_template('reports.html', recent_deliveries=recent_deliveries)
+
+
+
+
 
 
 
@@ -4800,7 +9598,15 @@ def reports():
 
 
 
+
+
+
+
         app.logger.error(f"Error loading reports page: {str(e)}", exc_info=True)
+
+
+
+
 
 
 
@@ -4812,7 +9618,19 @@ def reports():
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/rent_shelf')
+
+
+
+
 
 
 
@@ -4820,7 +9638,15 @@ def reports():
 
 
 
+
+
+
+
 @database_required
+
+
+
+
 
 
 
@@ -4828,7 +9654,15 @@ def rent_shelf():
 
 
 
+
+
+
+
     """Render the rent a shelf page - Available to all users."""
+
+
+
+
 
 
 
@@ -4836,7 +9670,15 @@ def rent_shelf():
 
 
 
+
+
+
+
         # Log page view
+
+
+
+
 
 
 
@@ -4844,45 +9686,91 @@ def rent_shelf():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
         # Get initial shelf data for server-side rendering
 
+
+
         shelves = Shelf.query.all()
+
+
 
         shelves_data = []
 
+
+
         
+
+
 
         for shelf in shelves:
 
+
+
             shelf_dict = {
+
+
 
                 'id': shelf.id,
 
+
+
                 'status': shelf.status,
+
+
 
                 'size': shelf.size,
 
+
+
                 'price': shelf.price,
+
+
 
                 'customer': shelf.customer_name,
 
+
+
                 'phone': shelf.customer_phone,
+
+
 
                 'rentedDate': shelf.rented_date.strftime('%Y-%m-%d') if shelf.rented_date else None,
 
+
+
                 'itemsDescription': shelf.items_description,
+
+
 
                 'rentalPeriod': shelf.rental_period,
 
+
+
                 'reason': shelf.maintenance_reason
+
+
 
             }
 
+
+
             shelves_data.append(shelf_dict)
+
+
+
+
 
 
 
@@ -4890,11 +9778,23 @@ def rent_shelf():
 
 
 
+
+
+
+
     except Exception as e:
 
 
 
+
+
+
+
         app.logger.error(f"Error loading rent shelf page: {str(e)}", exc_info=True)
+
+
+
+
 
 
 
@@ -4905,543 +9805,1094 @@ def rent_shelf():
 
 
 
+
+
+
+
+
+
+
 @app.route('/api/shelves', methods=['GET'])
+
+
 
 @login_required
 
+
+
 @database_required
+
+
 
 def get_shelves():
 
+
+
     """Get all shelves with role-based filtering."""
+
+
 
     try:
 
+
+
         shelves = Shelf.query.all()
+
+
 
         shelves_data = []
 
+
+
         
+
+
 
         for shelf in shelves:
 
+
+
             shelf_dict = {
+
+
 
                 'id': shelf.id,
 
+
+
                 'status': shelf.status,
+
+
 
                 'size': shelf.size,
 
+
+
                 'price': shelf.price,
+
+
 
                 'customer': shelf.customer_name,
 
+
+
                 'phone': shelf.customer_phone,
+
+
 
                 'customerEmail': shelf.customer_email,
 
+
+
                 'cardNumber': shelf.card_number,
+
+
 
                 'rentedDate': shelf.rented_date.strftime('%Y-%m-%d') if shelf.rented_date else None,
 
+
+
                 'itemsDescription': shelf.items_description,
+
+
 
                 'rentalPeriod': shelf.rental_period,
 
+
+
                 'discount': shelf.discount,
+
+
 
                 'reason': shelf.maintenance_reason
 
+
+
             }
+
+
 
             shelves_data.append(shelf_dict)
 
+
+
         
+
+
 
         return jsonify(shelves_data), 200
 
+
+
         
+
+
 
     except Exception as e:
 
+
+
         app.logger.error(f"Error fetching shelves: {str(e)}", exc_info=True)
+
+
 
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
 
 
+
+
+
+
 @app.route('/api/test/time', methods=['GET'])
+
+
 
 @login_required
 
+
+
 @database_required
+
+
 
 def test_server_time():
 
+
+
     """Test server current time and date."""
+
+
 
     try:
 
+
+
         from datetime import datetime
+
+
 
         import time
 
+
+
         
+
+
 
         utc_now = datetime.utcnow()
 
+
+
         local_now = datetime.now()
+
+
 
         timestamp_now = datetime.fromtimestamp(time.time())
 
+
+
         
 
+
+
         return jsonify({
+
+
 
             'success': True,
 
+
+
             'utc_now': str(utc_now),
+
+
 
             'local_now': str(local_now),
 
+
+
             'timestamp_now': str(timestamp_now),
+
+
 
             'utc_date': str(utc_now.date()),
 
+
+
             'local_date': str(local_now.date()),
+
+
 
             'server_timezone': 'Local server time'
 
+
+
         })
+
+
 
     except Exception as e:
 
+
+
         return jsonify({
+
+
 
             'success': False,
 
+
+
             'error': str(e)
 
+
+
         }), 500
+
+
+
+
 
 
 
 @app.route('/api/test/db', methods=['GET'])
 
+
+
 @login_required
+
+
 
 @database_required
 
+
+
 def test_database():
+
+
 
     """Test database connection and shelf table."""
 
+
+
     try:
+
+
 
         # Test basic database connection
 
+
+
         shelves = Shelf.query.limit(1).all()
+
+
 
         app.logger.info(f"Database test successful - found {len(shelves)} shelves")
 
+
+
         
 
+
+
         return jsonify({
+
+
 
             'success': True,
 
+
+
             'message': 'Database connection successful',
+
+
 
             'shelves_found': len(shelves)
 
+
+
         })
+
+
 
     except Exception as e:
 
+
+
         app.logger.error(f"Database test failed: {str(e)}", exc_info=True)
+
+
 
         return jsonify({
 
+
+
             'success': False,
+
+
 
             'error': str(e),
 
+
+
             'message': 'Database connection failed'
 
+
+
         }), 500
+
+
+
+
 
 
 
 @app.route('/api/shelves/update-ultra', methods=['POST'])
 
+
+
 @login_required
+
+
 
 @database_required
 
+
+
 def update_shelf_details_ultra():
+
+
 
     """Ultra-simple PostgreSQL update details - most basic approach"""
 
+
+
     try:
+
+
 
         # Check permissions
 
+
+
         if session.get('user_role') != 'admin':
+
+
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
+
+
         
+
+
 
         data = request.get_json()
 
+
+
         shelf_id = data.get('shelfId')
+
+
 
         customer_name = data.get('customerName', '')
 
+
+
         customer_email = data.get('customerEmail', '')
+
+
 
         card_number = data.get('cardNumber', '')
 
+
+
         items_description = data.get('itemsDescription', '')
+
+
 
         rental_period = data.get('rentalPeriod', '')
 
+
+
         discount = data.get('discount', 0)
 
+
+
         
+
+
 
         if not shelf_id:
 
+
+
             return jsonify({'success': False, 'error': 'Shelf ID required'}), 400
 
+
+
         
+
+
 
         app.logger.info(f"Ultra-simple update for shelf: {shelf_id}")
 
+
+
         
+
+
 
         # Use the most basic approach possible
 
+
+
         try:
+
+
 
             # Use raw SQL with the simplest possible syntax
 
+
+
             with db.engine.connect() as conn:
+
+
 
                 # Build basic UPDATE statement - only update non-empty fields
 
+
+
                 updates = []
+
+
 
                 if customer_name:
 
+
+
                     updates.append(f"customer_name = '{customer_name}'")
+
+
 
                 if customer_email:
 
+
+
                     updates.append(f"customer_email = '{customer_email}'")
+
+
 
                 if card_number:
 
+
+
                     updates.append(f"card_number = '{card_number}'")
+
+
 
                 if items_description:
 
+
+
                     updates.append(f"items_description = '{items_description}'")
+
+
 
                 if rental_period:
 
+
+
                     updates.append(f"rental_period = '{rental_period}'")
+
+
 
                 if discount:
 
+
+
                     updates.append(f"discount = {discount}")
 
+
+
                 
+
+
 
                 if not updates:
 
+
+
                     return jsonify({'success': False, 'error': 'No fields to update'}), 400
 
+
+
                 
+
+
 
                 # Add updated_at
 
+
+
                 if 'sqlite' in str(db.engine.url).lower():
+
+
 
                     updates.append("updated_at = datetime('now')")
 
+
+
                 else:
+
+
 
                     updates.append("updated_at = NOW()")
 
+
+
                 
+
+
 
                 # Construct SQL
 
+
+
                 sql = "UPDATE shelf SET " + ", ".join(updates) + f" WHERE id = '{shelf_id}'"
 
+
+
                 
+
+
 
                 result = conn.execute(db.text(sql))
 
+
+
                 conn.commit()
+
+
 
                 
 
+
+
                 if result.rowcount > 0:
+
+
 
                     app.logger.info(f"Ultra-simple update success: {shelf_id}")
 
+
+
                     
+
+
 
                     # Simple logging
 
+
+
                     app.logger.info(f"User {session.get('username', 'unknown')} updated shelf {shelf_id}")
+
+
 
                     
 
+
+
                     return jsonify({
+
+
 
                         'success': True,
 
+
+
                         'message': f'Shelf {shelf_id} details updated successfully'
+
+
 
                     }), 200
 
+
+
                 else:
+
+
 
                     return jsonify({
 
+
+
                         'success': False,
+
+
 
                         'error': 'Shelf not found'
 
+
+
                     }), 400
+
+
 
                     
 
+
+
         except Exception as e:
+
+
 
             app.logger.error(f"Ultra-simple update DB error: {str(e)}", exc_info=True)
 
+
+
             return jsonify({
+
+
 
                 'success': False,
 
+
+
                 'error': f'Database operation failed: {str(e)}'
+
+
 
             }), 500
 
+
+
             
+
+
 
     except Exception as e:
 
+
+
         app.logger.error(f"Ultra-simple update failed: {str(e)}", exc_info=True)
+
+
 
         return jsonify({
 
+
+
             'success': False,
+
+
 
             'error': 'Internal server error'
 
+
+
         }), 500
+
+
+
+
 
 
 
 @app.route('/api/shelves/complete-maintenance', methods=['POST'])
 
+
+
 @login_required
+
+
 
 @database_required
 
+
+
 def complete_maintenance():
+
+
 
     """Complete maintenance for a shelf - change status from maintenance to available."""
 
+
+
     try:
+
+
 
         # Check if user has permission
 
+
+
         if session.get('user_role') != 'admin':
+
+
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
+
+
         
+
+
 
         data = request.get_json()
 
+
+
         shelf_id = data.get('shelfId', '').strip()
 
+
+
         
+
+
 
         if not shelf_id:
 
+
+
             return jsonify({'success': False, 'error': 'Shelf ID is required'}), 400
 
+
+
         
+
+
 
         # Find the shelf
 
+
+
         shelf = Shelf.query.filter_by(id=shelf_id).first()
+
+
 
         if not shelf:
 
+
+
             return jsonify({'success': False, 'error': 'Shelf not found'}), 404
 
+
+
         
+
+
 
         # Check if shelf is in maintenance
 
+
+
         if shelf.status != 'maintenance':
+
+
 
             return jsonify({'success': False, 'error': f'Shelf is not in maintenance (current status: {shelf.status})'}), 400
 
+
+
         
+
+
 
         # Update shelf status to available and clear maintenance reason
 
+
+
         shelf.status = 'available'
+
+
 
         shelf.maintenance_reason = None
 
+
+
         shelf.updated_at = get_local_time()
 
+
+
         
+
+
 
         db.session.commit()
 
+
+
         
+
+
 
         app.logger.info(f"Maintenance completed for shelf: {shelf_id} by {session.get('username', 'unknown')}")
 
+
+
         
 
+
+
         return jsonify({
+
+
 
             'success': True,
 
+
+
             'message': f'Shelf {shelf_id} is now available'
+
+
 
         }), 200
 
+
+
         
+
+
 
     except Exception as e:
 
+
+
         db.session.rollback()
+
+
 
         app.logger.error(f"Complete maintenance failed: {str(e)}", exc_info=True)
 
+
+
         return jsonify({
+
+
 
             'success': False,
 
+
+
             'error': 'Internal server error'
 
+
+
         }), 500
+
+
+
+
 
 
 
 @app.route('/api/shelves/create-orm', methods=['POST'])
 
+
+
 @login_required
+
+
 
 @database_required
 
+
+
 def create_shelf_orm():
+
+
 
     """Create shelf using SQLAlchemy ORM for maximum PostgreSQL compatibility."""
 
+
+
     try:
+
+
 
         # Check if user has permission
 
+
+
         if session.get('user_role') != 'admin':
+
+
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
+
+
         
+
+
 
         data = request.get_json()
 
+
+
         shelf_id = data.get('shelfId', '').strip()
+
+
 
         price = data.get('price', 0)
 
+
+
         
+
+
 
         if not shelf_id:
 
+
+
             return jsonify({'success': False, 'error': 'Shelf ID is required'}), 400
 
+
+
         
+
+
 
         if price < 0:
 
+
+
             return jsonify({'success': False, 'error': 'Price must be positive'}), 400
 
+
+
         
+
+
 
         # Check if shelf already exists using ORM
 
+
+
         existing_shelf = Shelf.query.filter_by(id=shelf_id).first()
+
+
 
         if existing_shelf:
 
+
+
             return jsonify({'success': False, 'error': 'Shelf with this ID already exists'}), 400
 
+
+
         
+
+
 
         # Create new shelf using ORM (most compatible)
 
+
+
         new_shelf = Shelf(
+
+
 
             id=shelf_id,
 
+
+
             size='Small',  # Default size
+
+
 
             price=price,
 
+
+
             status='available'
+
+
 
         )
 
+
+
         
+
+
 
         db.session.add(new_shelf)
 
+
+
         db.session.commit()
 
+
+
         
+
+
 
         app.logger.info(f"New shelf created: {shelf_id} by {session.get('username', 'unknown')}")
 
+
+
         
 
+
+
         return jsonify({
+
+
 
             'success': True,
 
+
+
             'message': f'Shelf {shelf_id} created successfully'
+
+
 
         }), 200
 
+
+
         
+
+
 
     except Exception as e:
 
+
+
         db.session.rollback()
+
+
 
         app.logger.error(f"ORM create shelf failed: {str(e)}", exc_info=True)
 
+
+
         return jsonify({
+
+
 
             'success': False,
 
+
+
             'error': 'Internal server error'
 
+
+
         }), 500
+
+
+
+
+
+
+
+
 
 
 
@@ -5451,1219 +10902,2441 @@ def create_shelf_orm():
 
 @app.route('/api/shelves/create', methods=['POST'])
 
+
+
 @login_required
+
+
 
 @database_required
 
+
+
 def create_shelf():
+
+
 
     """Create a new shelf - for staff/admin only."""
 
+
+
     try:
+
+
 
         # Check if user has permission
 
+
+
         if session.get('user_role') != 'admin':
+
+
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
+
+
         
+
+
 
         data = request.get_json()
 
+
+
         shelf_id = data.get('shelfId', '').strip()
+
+
 
         price = data.get('price', 0)
 
+
+
         size = data.get('size', 'Small')  # Default size
 
+
+
         
+
+
 
         if not shelf_id:
 
+
+
             return jsonify({'success': False, 'error': 'Shelf ID is required'}), 400
 
+
+
         
+
+
 
         if price < 0:
 
+
+
             return jsonify({'success': False, 'error': 'Price must be positive'}), 400
 
+
+
         
+
+
 
         # Check if shelf already exists
 
+
+
         existing_shelf = Shelf.query.filter_by(id=shelf_id).first()
+
+
 
         if existing_shelf:
 
+
+
             return jsonify({'success': False, 'error': 'Shelf with this ID already exists'}), 400
 
+
+
         
+
+
 
         # Create new shelf
 
+
+
         new_shelf = Shelf(
+
+
 
             id=shelf_id,
 
+
+
             size=size,
+
+
 
             price=price,
 
+
+
             status='available'
+
+
 
         )
 
+
+
         
+
+
 
         db.session.add(new_shelf)
 
+
+
         db.session.commit()
 
+
+
         
+
+
 
         app.logger.info(f"New shelf created: {shelf_id} by {session.get('username', 'unknown')}")
 
+
+
         
+
+
 
         return jsonify({
 
+
+
             'success': True,
+
+
 
             'message': f'Shelf {shelf_id} created successfully'
 
+
+
         }), 200
+
+
 
         
 
+
+
     except Exception as e:
+
+
 
         db.session.rollback()
 
+
+
         app.logger.error(f"Error creating shelf: {str(e)}", exc_info=True)
 
+
+
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+
+
+
 
 
 
 @app.route('/api/shelves/update-info', methods=['POST'])
 
+
+
 @login_required
+
+
 
 @database_required
 
+
+
 def update_shelf_info():
+
+
 
     """Update shelf ID and price - for staff/admin only."""
 
+
+
     try:
+
+
 
         # Check if user has permission
 
+
+
         if session.get('user_role') != 'admin':
+
+
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
+
+
         
+
+
 
         data = request.get_json()
 
+
+
         original_shelf_id = data.get('originalShelfId', '').strip()
+
+
 
         new_shelf_id = data.get('newShelfId', '').strip()
 
+
+
         price = data.get('price', 0)
 
+
+
         
+
+
 
         if not original_shelf_id or not new_shelf_id:
 
+
+
             return jsonify({'success': False, 'error': 'Shelf IDs are required'}), 400
 
+
+
         
+
+
 
         # Find the shelf
 
+
+
         shelf = Shelf.query.filter_by(id=original_shelf_id).first()
+
+
 
         if not shelf:
 
+
+
             return jsonify({'success': False, 'error': 'Shelf not found'}), 404
 
+
+
         
+
+
 
         # Check if new ID already exists (if different from original)
 
+
+
         if new_shelf_id != original_shelf_id:
+
+
 
             existing_shelf = Shelf.query.filter_by(id=new_shelf_id).first()
 
+
+
             if existing_shelf:
+
+
 
                 return jsonify({'success': False, 'error': 'Shelf with this ID already exists'}), 400
 
+
+
         
+
+
 
         # Update shelf information
 
+
+
         shelf.id = new_shelf_id
+
+
 
         if price > 0:
 
+
+
             shelf.price = price
 
+
+
         
+
+
 
         shelf.updated_at = get_local_time()
 
+
+
         
+
+
 
         db.session.commit()
 
+
+
         
+
+
 
         app.logger.info(f"Shelf info updated: {original_shelf_id} -> {new_shelf_id} by {session.get('username', 'unknown')}")
 
+
+
         
+
+
 
         return jsonify({
 
+
+
             'success': True,
+
+
 
             'message': f'Shelf information updated successfully'
 
+
+
         }), 200
+
+
 
         
 
+
+
     except Exception as e:
+
+
 
         db.session.rollback()
 
+
+
         app.logger.error(f"Error updating shelf info: {str(e)}", exc_info=True)
 
+
+
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+
+
+
 
 
 
 @app.route('/api/shelves/delete', methods=['POST'])
 
+
+
 @login_required
+
+
 
 @database_required
 
+
+
 def delete_shelf():
+
+
 
     """Delete a shelf - for staff/admin only."""
 
+
+
     try:
+
+
 
         # Check if user has permission
 
+
+
         if session.get('user_role') != 'admin':
+
+
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
+
+
         
+
+
 
         data = request.get_json()
 
+
+
         shelf_id = data.get('shelfId', '').strip()
 
+
+
         
+
+
 
         if not shelf_id:
 
+
+
             return jsonify({'success': False, 'error': 'Shelf ID is required'}), 400
 
+
+
         
+
+
 
         # Find the shelf
 
+
+
         shelf = Shelf.query.filter_by(id=shelf_id).first()
+
+
 
         if not shelf:
 
+
+
             return jsonify({'success': False, 'error': 'Shelf not found'}), 404
 
+
+
         
+
+
 
         # Check if shelf is occupied (prevent deletion of occupied shelves)
 
+
+
         if shelf.status == 'occupied':
+
+
 
             return jsonify({'success': False, 'error': 'Cannot delete occupied shelf'}), 400
 
+
+
         
+
+
 
         # Delete the shelf
 
+
+
         db.session.delete(shelf)
+
+
 
         db.session.commit()
 
+
+
         
+
+
 
         app.logger.info(f"Shelf deleted: {shelf_id} by {session.get('username', 'unknown')}")
 
+
+
         
+
+
 
         return jsonify({
 
+
+
             'success': True,
+
+
 
             'message': f'Shelf {shelf_id} deleted successfully'
 
+
+
         }), 200
+
+
 
         
 
+
+
     except Exception as e:
+
+
 
         db.session.rollback()
 
+
+
         app.logger.error(f"Error deleting shelf: {str(e)}", exc_info=True)
 
+
+
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+
+
+
 
 
 
 @app.route('/api/shelves/update', methods=['POST'])
 
+
+
 @login_required
+
+
 
 @database_required
 
+
+
 def update_shelf_details():
+
+
 
     """Update shelf details - for staff/admin only."""
 
+
+
     try:
+
+
 
         # Check if user has permission
 
+
+
         if session.get('user_role') != 'admin':
+
+
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
+
+
         
+
+
 
         data = request.get_json()
 
+
+
         app.logger.info(f"Received update shelf request: {data}")
 
+
+
         
+
+
 
         shelf_id = data.get('shelfId')
 
+
+
         customer_name = data.get('customerName')
+
+
 
         customer_phone = data.get('customerPhone')
 
+
+
         customer_email = data.get('customerEmail')
+
+
 
         card_number = data.get('cardNumber')
 
+
+
         items_description = data.get('itemsDescription')
+
+
 
         rental_period = data.get('rentalPeriod')
 
+
+
         monthly_fee = data.get('monthlyFee')
+
+
 
         discount = data.get('discount')
 
+
+
         
+
+
 
         # Find the shelf
 
+
+
         shelf = Shelf.query.filter_by(id=shelf_id).first()
+
+
 
         if not shelf:
 
+
+
             return jsonify({'success': False, 'error': 'Shelf not found'}), 404
 
+
+
         
+
+
 
         # Update shelf information
 
+
+
         if customer_name is not None:
+
+
 
             shelf.customer_name = customer_name
 
+
+
         if customer_phone is not None:
+
+
 
             shelf.customer_phone = customer_phone
 
+
+
         if customer_email is not None:
+
+
 
             shelf.customer_email = customer_email
 
+
+
         if card_number is not None:
+
+
 
             shelf.card_number = card_number
 
+
+
         if items_description is not None:
+
+
 
             shelf.items_description = items_description
 
+
+
         if rental_period is not None:
+
+
 
             shelf.rental_period = rental_period
 
+
+
         if monthly_fee is not None:
+
+
 
             shelf.price = float(monthly_fee)
 
+
+
         if discount is not None:
+
+
 
             shelf.discount = float(discount)
 
+
+
         
+
+
 
         shelf.updated_at = datetime.now()
 
+
+
         
+
+
 
         db.session.commit()
 
+
+
         
+
+
 
         # Log the action
 
+
+
         log_action(
+
+
 
             username=session.get('username', 'unknown'),
 
+
+
             action=f"Updated shelf {shelf_id} details",
+
+
 
             details=f"Customer: {customer_name}, Period: {rental_period} months"
 
+
+
         )
 
+
+
         
+
+
 
         return jsonify({
 
+
+
             'success': True,
+
+
 
             'message': f'Shelf {shelf_id} details updated successfully'
 
+
+
         }), 200
+
+
 
         
 
+
+
     except Exception as e:
+
+
 
         db.session.rollback()
 
+
+
         app.logger.error(f"Error updating shelf: {str(e)}", exc_info=True)
 
+
+
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+
+
+
 
 
 
 @app.route('/api/shelves/end-rental-ultra', methods=['POST'])
 
+
+
 @login_required
+
+
 
 @database_required
 
+
+
 def end_shelf_rental_ultra():
+
+
 
     """Ultra-simple PostgreSQL end rental - most basic approach"""
 
+
+
     try:
+
+
 
         # Check permissions
 
+
+
         if session.get('user_role') != 'admin':
+
+
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
+
+
         
+
+
 
         data = request.get_json()
 
+
+
         shelf_id = data.get('shelfId')
 
+
+
         
+
+
 
         if not shelf_id:
 
+
+
             return jsonify({'success': False, 'error': 'Shelf ID required'}), 400
 
+
+
         
+
+
 
         app.logger.info(f"Ultra-simple end-rental for shelf: {shelf_id}")
 
+
+
         
+
+
 
         # Use the most basic approach possible
 
+
+
         try:
+
+
 
             # Use raw SQL with the simplest possible syntax
 
+
+
             with db.engine.connect() as conn:
+
+
 
                 # Use the most basic UPDATE statement
 
+
+
                 sql = "UPDATE shelf SET status = 'available' WHERE id = '" + shelf_id + "'"
 
+
+
                 
+
+
 
                 result = conn.execute(db.text(sql))
 
+
+
                 conn.commit()
+
+
 
                 
 
+
+
                 if result.rowcount > 0:
+
+
 
                     app.logger.info(f"Ultra-simple end-rental success: {shelf_id}")
 
+
+
                     
+
+
 
                     # Simple logging without log_action function
 
+
+
                     app.logger.info(f"User {session.get('username', 'unknown')} ended rental for shelf {shelf_id}")
+
+
 
                     
 
+
+
                     return jsonify({
+
+
 
                         'success': True,
 
+
+
                         'message': f'Shelf {shelf_id} rental ended successfully'
+
+
 
                     }), 200
 
+
+
                 else:
+
+
 
                     return jsonify({
 
+
+
                         'success': False,
+
+
 
                         'error': 'Shelf not found or already available'
 
+
+
                     }), 400
+
+
 
                     
 
+
+
         except Exception as e:
+
+
 
             app.logger.error(f"Ultra-simple end-rental DB error: {str(e)}", exc_info=True)
 
+
+
             return jsonify({
+
+
 
                 'success': False,
 
+
+
                 'error': f'Database operation failed: {str(e)}'
+
+
 
             }), 500
 
+
+
             
+
+
 
     except Exception as e:
 
+
+
         app.logger.error(f"Ultra-simple end-rental failed: {str(e)}", exc_info=True)
+
+
 
         return jsonify({
 
+
+
             'success': False,
+
+
 
             'error': 'Internal server error'
 
+
+
         }), 500
+
+
+
+
 
 
 
 @app.route('/api/shelves/end-rental-safe', methods=['POST'])
 
+
+
 @login_required
+
+
 
 @database_required
 
+
+
 def end_shelf_rental_safe():
+
+
 
     """PostgreSQL-safe end rental - minimal approach"""
 
+
+
     try:
+
+
 
         # Check permissions
 
+
+
         if session.get('user_role') != 'admin':
+
+
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
+
+
         
+
+
 
         data = request.get_json()
 
+
+
         shelf_id = data.get('shelfId')
 
+
+
         
+
+
 
         if not shelf_id:
 
+
+
             return jsonify({'success': False, 'error': 'Shelf ID required'}), 400
 
+
+
         
+
+
 
         app.logger.info(f"Safe end-rental for shelf: {shelf_id}")
 
+
+
         
+
+
 
         # Use the simplest possible approach - just update status
 
+
+
         try:
+
+
 
             with db.engine.connect() as conn:
 
+
+
                 # Simple update that just changes status
+
+
 
                 if 'sqlite' in str(db.engine.url).lower():
 
+
+
                     sql = "UPDATE shelf SET status = 'available' WHERE id = ?"
+
+
 
                     params = (shelf_id,)
 
+
+
                 else:
+
+
 
                     # PostgreSQL - use string formatting for safety
 
+
+
                     sql = f"UPDATE shelf SET status = 'available' WHERE id = '{shelf_id}'"
+
+
 
                     params = None
 
+
+
                 
+
+
 
                 result = conn.execute(db.text(sql), params or {})
 
+
+
                 conn.commit()
+
+
 
                 
 
+
+
                 if result.rowcount > 0:
+
+
 
                     app.logger.info(f"Safe end-rental success: {shelf_id}")
 
+
+
                     
+
+
 
                     # Log the action
 
+
+
                     log_action(
+
+
 
                         username=session.get('username', 'unknown'),
 
+
+
                         action=f"Ended rental for shelf {shelf_id} (safe method)",
+
+
 
                         details="Rental ended using minimal SQL update"
 
+
+
                     )
+
+
 
                     
 
+
+
                     return jsonify({
+
+
 
                         'success': True,
 
+
+
                         'message': f'Shelf {shelf_id} rental ended successfully'
+
+
 
                     }), 200
 
+
+
                 else:
+
+
 
                     return jsonify({
 
+
+
                         'success': False,
+
+
 
                         'error': 'Shelf not found or already available'
 
+
+
                     }), 400
+
+
 
                     
 
+
+
         except Exception as e:
+
+
 
             app.logger.error(f"Safe end-rental DB error: {str(e)}", exc_info=True)
 
+
+
             return jsonify({
+
+
 
                 'success': False,
 
+
+
                 'error': 'Database operation failed'
+
+
 
             }), 500
 
+
+
             
+
+
 
     except Exception as e:
 
+
+
         app.logger.error(f"Safe end-rental failed: {str(e)}", exc_info=True)
+
+
 
         return jsonify({
 
+
+
             'success': False,
+
+
 
             'error': 'Internal server error'
 
+
+
         }), 500
+
+
+
+
 
 
 
 @app.route('/api/shelves/end-rental-simple', methods=['POST'])
 
+
+
 @login_required
+
+
 
 @database_required
 
+
+
 def end_shelf_rental_simple():
+
+
 
     """Simple end rental that bypasses model field recognition issues"""
 
+
+
     try:
+
+
 
         # Check if user has permission
 
+
+
         if session.get('user_role') != 'admin':
+
+
 
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
+
+
         
+
+
 
         data = request.get_json()
 
+
+
         shelf_id = data.get('shelfId')
 
+
+
         
+
+
 
         if not shelf_id:
 
+
+
             return jsonify({'success': False, 'error': 'Shelf ID required'}), 400
 
+
+
         
+
+
 
         app.logger.info(f"Simple end-rental requested for shelf: {shelf_id}")
 
+
+
         
+
+
 
         # Direct database update without using Shelf model to avoid field recognition issues
 
+
+
         try:
+
+
 
             # Use SQLAlchemy ORM approach for better PostgreSQL compatibility
 
+
+
             with db.engine.connect() as conn:
+
+
 
                 # First check if shelf exists and is occupied
 
+
+
                 if 'sqlite' in str(db.engine.url).lower():
+
+
 
                     check_sql = "SELECT id FROM shelf WHERE id = ? AND status = 'occupied'"
 
+
+
                     check_params = (shelf_id,)
 
+
+
                 else:
+
+
 
                     check_sql = "SELECT id FROM shelf WHERE id = :shelf_id AND status = 'occupied'"
 
+
+
                     check_params = {'shelf_id': shelf_id}
 
+
+
                 
+
+
 
                 check_result = conn.execute(db.text(check_sql), check_params)
 
+
+
                 shelf_exists = check_result.fetchone()
 
+
+
                 
+
+
 
                 if not shelf_exists:
 
+
+
                     app.logger.warning(f"Shelf {shelf_id} not found or not occupied")
+
+
 
                     return jsonify({
 
+
+
                         'success': False,
+
+
 
                         'error': 'Shelf not found or not currently occupied'
 
+
+
                     }), 400
 
+
+
                 
+
+
 
                 # Update the shelf using raw SQL with proper PostgreSQL syntax
 
+
+
                 if 'sqlite' in str(db.engine.url).lower():
+
+
 
                     update_sql = """
 
+
+
                     UPDATE shelf 
+
+
 
                     SET status = 'available',
 
+
+
                         customer_name = NULL,
+
+
 
                         customer_phone = NULL,
 
+
+
                         customer_email = NULL,
+
+
 
                         card_number = NULL,
 
+
+
                         items_description = NULL,
+
+
 
                         rental_period = NULL,
 
+
+
                         discount = NULL,
+
+
 
                         rented_date = NULL,
 
+
+
                         maintenance_reason = NULL,
+
+
 
                         updated_at = datetime('now')
 
+
+
                     WHERE id = ?
 
+
+
                     """
+
+
 
                     update_params = (shelf_id,)
 
+
+
                 else:
+
+
 
                     # PostgreSQL - use proper parameter binding
 
+
+
                     update_sql = """
+
+
 
                     UPDATE shelf 
 
+
+
                     SET status = 'available',
+
+
 
                         customer_name = NULL,
 
+
+
                         customer_phone = NULL,
+
+
 
                         customer_email = NULL,
 
+
+
                         card_number = NULL,
+
+
 
                         items_description = NULL,
 
+
+
                         rental_period = NULL,
+
+
 
                         discount = NULL,
 
+
+
                         rented_date = NULL,
+
+
 
                         maintenance_reason = NULL,
 
+
+
                         updated_at = NOW()
+
+
 
                     WHERE id = :shelf_id
 
+
+
                     """
+
+
 
                     update_params = {'shelf_id': shelf_id}
 
+
+
                 
+
+
 
                 # Execute the update
 
+
+
                 result = conn.execute(db.text(update_sql), update_params)
+
+
 
                 conn.commit()
 
+
+
                 
+
+
 
                 if result.rowcount > 0:
 
+
+
                     app.logger.info(f"PostgreSQL end-rental successful for shelf: {shelf_id}")
 
+
+
                     
+
+
 
                     # Log the action
 
+
+
                     log_action(
+
+
 
                         username=session.get('username', 'unknown'),
 
+
+
                         action=f"Ended rental for shelf {shelf_id} (PostgreSQL method)",
+
+
 
                         details="Rental ended using PostgreSQL-compatible SQL update"
 
+
+
                     )
+
+
 
                     
 
+
+
                     return jsonify({
+
+
 
                         'success': True,
 
+
+
                         'message': f'Shelf {shelf_id} rental ended successfully'
+
+
 
                     }), 200
 
+
+
                 else:
+
+
 
                     app.logger.error(f"PostgreSQL update failed for shelf: {shelf_id}")
 
+
+
                     return jsonify({
+
+
 
                         'success': False,
 
+
+
                         'error': 'Failed to update shelf'
+
+
 
                     }), 500
 
+
+
             
+
+
 
         except Exception as e:
 
+
+
             app.logger.error(f"PostgreSQL end-rental database error: {str(e)}", exc_info=True)
+
+
 
             return jsonify({
 
+
+
                 'success': False,
+
+
 
                 'error': 'Database update failed'
 
+
+
             }), 500
+
+
 
             
 
+
+
     except Exception as e:
+
+
 
         app.logger.error(f"❌ Simple end-rental failed: {str(e)}", exc_info=True)
 
+
+
         return jsonify({
+
+
 
             'success': False,
 
+
+
             'error': 'Internal server error'
+
+
 
         }), 500
 
 
 
+
+
+
+
 @app.route('/api/shelves/end-rental', methods=['POST'])
+
+
 
 @login_required
 
+
+
 @database_required
+
+
 
 def end_shelf_rental():
 
+
+
     """End shelf rental and free up the shelf - for staff/admin only."""
+
+
 
     try:
 
+
+
         # Check if user has permission
+
+
 
         if session.get('user_role') != 'admin':
 
+
+
             return jsonify({'success': False, 'error': 'Permission denied'}), 403
 
+
+
         
+
+
 
         data = request.get_json()
 
+
+
         app.logger.info(f"Received end rental request: {data}")
 
+
+
         
+
+
 
         shelf_id = data.get('shelfId')
 
+
+
         
+
+
 
         # Find the shelf
 
+
+
         shelf = Shelf.query.filter_by(id=shelf_id).first()
+
+
 
         if not shelf:
 
+
+
             return jsonify({'success': False, 'error': 'Shelf not found'}), 404
 
+
+
         
+
+
 
         # Check if shelf is occupied
 
+
+
         if shelf.status != 'occupied':
+
+
 
             return jsonify({'success': False, 'error': 'Shelf is not currently occupied'}), 400
 
+
+
         
+
+
 
         # Store rental info for logging
 
+
+
         customer_name = shelf.customer_name
+
+
 
         rental_period = shelf.rental_period
 
+
+
         
+
+
 
         # Clear rental information
 
+
+
         shelf.status = 'available'
+
+
 
         shelf.customer_name = None
 
+
+
         shelf.customer_phone = None
+
+
 
         shelf.customer_email = None
 
+
+
         shelf.card_number = None
+
+
 
         shelf.items_description = None
 
+
+
         shelf.rental_period = None
+
+
 
         shelf.discount = None
 
+
+
         shelf.rented_date = None
+
+
 
         shelf.maintenance_reason = None
 
+
+
         shelf.updated_at = datetime.now()
 
+
+
         
+
+
 
         db.session.commit()
 
+
+
         
+
+
 
         # Log the action
 
+
+
         log_action(
+
+
 
             username=session.get('username', 'unknown'),
 
+
+
             action=f"Ended rental for shelf {shelf_id}",
+
+
 
             details=f"Previous customer: {customer_name}, Period: {rental_period} months"
 
+
+
         )
 
+
+
         
+
+
 
         return jsonify({
 
+
+
             'success': True,
+
+
 
             'message': f'Shelf {shelf_id} rental ended successfully'
 
+
+
         }), 200
+
+
 
         
 
+
+
     except Exception as e:
+
+
 
         db.session.rollback()
 
+
+
         app.logger.error(f"Error ending rental: {str(e)}", exc_info=True)
 
+
+
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+
+
+
 
 
 
 @app.route('/api/shelves/rent', methods=['POST'])
 
+
+
 @login_required
+
+
 
 @database_required
 
+
+
 def rent_shelf_api():
+
+
 
     """Rent a shelf - update shelf status and customer information."""
 
+
+
     try:
+
+
 
         data = request.get_json()
 
+
+
         
+
+
 
         shelf_id = data.get('shelfId')  # Changed from shelf_id to shelfId
 
+
+
         customer_name = data.get('customerName')  # Changed from customerName to customer_name
+
+
 
         customer_phone = data.get('customerPhone')  # Changed from customerPhone to customer_phone
 
+
+
         items_description = data.get('itemsDescription')  # Changed from itemsDescription to items_description
+
+
 
         rental_period = data.get('rentalPeriod')  # Changed from rentalPeriod to rental_period
 
+
+
         
+
+
 
         # Validate required fields
 
+
+
         if not shelf_id or not customer_name or not customer_phone:
+
+
 
             return jsonify({'success': False, 'error': 'Missing required fields'}), 400
 
+
+
         
+
+
 
         # Find the shelf
 
+
+
         shelf = Shelf.query.filter_by(id=shelf_id).first()
+
+
 
         if not shelf:
 
+
+
             return jsonify({'success': False, 'error': 'Shelf not found'}), 404
 
+
+
         
+
+
 
         # Check if shelf is available
 
+
+
         if shelf.status != 'available':
+
+
 
             return jsonify({'success': False, 'error': 'Shelf is not available'}), 400
 
+
+
         
+
+
 
         # Update shelf information
 
+
+
         current_date = get_local_date()
+
+
 
         current_datetime = get_local_time()
 
+
+
         
+
+
 
         app.logger.info(f"DEBUG: Current local date: {current_date}")
 
+
+
         app.logger.info(f"DEBUG: Current local datetime: {current_datetime}")
 
+
+
         
+
+
 
         shelf.status = 'occupied'
 
+
+
         shelf.customer_name = customer_name
+
+
 
         shelf.customer_phone = customer_phone
 
+
+
         shelf.rented_date = current_date  # Use local date instead of UTC
+
+
 
         shelf.items_description = items_description
 
+
+
         shelf.rental_period = rental_period
+
+
 
         shelf.maintenance_reason = None  # Clear any maintenance reason
 
+
+
         shelf.updated_at = current_datetime  # Use local datetime instead of UTC
 
+
+
         
+
+
 
         app.logger.info(f"FINAL: Setting rented_date to: {current_date}")
 
+
+
         app.logger.info(f"FINAL: Setting updated_at to: {current_datetime}")
+
+
 
         
 
+
+
         try:
+
+
 
             db.session.commit()
 
+
+
             app.logger.info(f"Successfully committed shelf rental for {shelf_id}")
+
+
 
         except Exception as db_error:
 
+
+
             app.logger.error(f"Database commit error: {str(db_error)}", exc_info=True)
+
+
 
             db.session.rollback()
 
+
+
             return jsonify({'success': False, 'error': 'Database error occurred'}), 500
 
+
+
         
+
+
 
         # Log the action
 
+
+
         try:
+
+
 
             log_action(
 
+
+
                 username=session.get('username', 'unknown'),
+
+
 
                 action=f"Rented shelf {shelf_id} to {customer_name}",
 
+
+
                 details=f"Phone: {customer_phone}, Period: {rental_period} months"
+
+
 
             )
 
+
+
             app.logger.info(f"Successfully logged rental action for {shelf_id}")
+
+
 
         except Exception as log_error:
 
+
+
             app.logger.warning(f"Failed to log action but rental succeeded: {str(log_error)}")
+
+
 
             # Don't fail the request if logging fails
 
+
+
         
+
+
 
         return jsonify({
 
+
+
             'success': True, 
+
+
 
             'message': f'Shelf {shelf_id} successfully rented to {customer_name}'
 
+
+
         }), 200
+
+
 
         
 
+
+
     except Exception as e:
+
+
 
         db.session.rollback()
 
+
+
         app.logger.error(f"Error renting shelf: {str(e)}", exc_info=True)
 
+
+
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+
+
+
 
 
 
 @app.route('/api/shelves/stats', methods=['GET'])
 
+
+
 @login_required
+
+
 
 @database_required
 
+
+
 def get_shelf_stats():
+
+
 
     """Get shelf statistics for reports."""
 
+
+
     try:
+
+
 
         available = Shelf.query.filter_by(status='available').count()
 
+
+
         occupied = Shelf.query.filter_by(status='occupied').count()
+
+
 
         maintenance = Shelf.query.filter_by(status='maintenance').count()
 
+
+
         
+
+
 
         # Calculate monthly revenue from occupied shelves
 
+
+
         occupied_shelves = Shelf.query.filter_by(status='occupied').all()
+
+
 
         revenue = sum(shelf.price for shelf in occupied_shelves)
 
+
+
         
+
+
 
         return jsonify({
 
+
+
             'available': available,
+
+
 
             'occupied': occupied,
 
+
+
             'maintenance': maintenance,
+
+
 
             'revenue': revenue
 
+
+
         }), 200
+
+
 
         
 
+
+
     except Exception as e:
+
+
 
         app.logger.error(f"Error fetching shelf stats: {str(e)}", exc_info=True)
 
+
+
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+
+
+
+
+
+
+
 
 
 
@@ -6673,9 +13346,17 @@ def get_shelf_stats():
 
 @app.route('/get_delivery_persons')
 
+
+
 @login_required
 
+
+
 @database_required
+
+
+
+
 
 
 
@@ -6683,7 +13364,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
     """Get delivery persons and their delivery counts for a specific period."""
+
+
+
+
 
 
 
@@ -6691,7 +13380,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
         # Get period parameter from query string
+
+
+
+
 
 
 
@@ -6699,7 +13396,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -6707,7 +13412,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
         end_date = get_current_time()
+
+
+
+
 
 
 
@@ -6715,7 +13428,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
             start_date = end_date.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+
+
 
 
 
@@ -6723,7 +13444,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
             start_date = end_date - timedelta(days=7)
+
+
+
+
 
 
 
@@ -6731,7 +13460,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
             start_date = end_date - timedelta(days=30)
+
+
+
+
 
 
 
@@ -6739,11 +13476,23 @@ def get_delivery_persons():
 
 
 
+
+
+
+
             start_date = end_date - timedelta(days=365)  # Limit to 1 year for performance
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -6751,11 +13500,23 @@ def get_delivery_persons():
 
 
 
+
+
+
+
         staff_users = User.query.filter(User.role == 'admin', User.is_active == True).all()
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -6763,7 +13524,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
         deliveries = Delivery.query.filter(
+
+
+
+
 
 
 
@@ -6771,7 +13540,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
             Delivery.delivery_person.isnot(None),
+
+
+
+
 
 
 
@@ -6779,11 +13556,23 @@ def get_delivery_persons():
 
 
 
+
+
+
+
         ).all()
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -6791,7 +13580,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
         for delivery in deliveries:
+
+
+
+
 
 
 
@@ -6799,7 +13596,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
             if person not in persons_data:
+
+
+
+
 
 
 
@@ -6807,7 +13612,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
                     'name': person,
+
+
+
+
 
 
 
@@ -6815,7 +13628,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
                     'revenue': 0.0,
+
+
+
+
 
 
 
@@ -6823,7 +13644,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
                     'pending_count': 0,
+
+
+
+
 
 
 
@@ -6831,7 +13660,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
                     'daily_deliveries': {}
+
+
+
+
 
 
 
@@ -6839,7 +13676,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -6847,7 +13692,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
             persons_data[person]['revenue'] += float(delivery.amount or 0)
+
+
+
+
 
 
 
@@ -6855,11 +13708,23 @@ def get_delivery_persons():
 
 
 
+
+
+
+
                 persons_data[person]['completed'] += 1
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -6867,7 +13732,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
             if delivery.status == 'Pending':
+
+
+
+
 
 
 
@@ -6875,7 +13748,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -6883,7 +13764,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
             if delivery.status == 'Delivered' or delivery.status == 'delivered':
+
+
+
+
 
 
 
@@ -6891,7 +13780,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -6899,7 +13796,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
             delivery_date = delivery.created_at.strftime('%Y-%m-%d')
+
+
+
+
 
 
 
@@ -6907,7 +13812,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
                 persons_data[person]['daily_deliveries'][delivery_date] = []
+
+
+
+
 
 
 
@@ -6915,7 +13828,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
             persons_data[person]['daily_deliveries'][delivery_date].append({
+
+
+
+
 
 
 
@@ -6923,7 +13844,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
                 'amount': float(delivery.amount) if delivery.amount else 0.0,
+
+
+
+
 
 
 
@@ -6931,7 +13860,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
                 'status': delivery.status
+
+
+
+
 
 
 
@@ -6939,7 +13876,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -6947,7 +13892,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
         for staff_user in staff_users:
+
+
+
+
 
 
 
@@ -6955,7 +13908,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
                 persons_data[staff_user.username] = {
+
+
+
+
 
 
 
@@ -6963,7 +13924,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
                     'deliveries': 0,
+
+
+
+
 
 
 
@@ -6971,7 +13940,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
                     'completed': 0,
+
+
+
+
 
 
 
@@ -6979,7 +13956,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
                     'delivered_count': 0,
+
+
+
+
 
 
 
@@ -6987,11 +13972,23 @@ def get_delivery_persons():
 
 
 
+
+
+
+
                 }
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -6999,7 +13996,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
         result = list(persons_data.values())
+
+
+
+
 
 
 
@@ -7007,7 +14012,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7015,11 +14028,23 @@ def get_delivery_persons():
 
 
 
+
+
+
+
     except Exception as e:
 
 
 
+
+
+
+
         app.logger.error(f"Error getting delivery persons: {str(e)}")
+
+
+
+
 
 
 
@@ -7031,7 +14056,19 @@ def get_delivery_persons():
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/get_summary')
+
+
+
+
 
 
 
@@ -7039,7 +14076,15 @@ def get_delivery_persons():
 
 
 
+
+
+
+
 @database_required
+
+
+
+
 
 
 
@@ -7047,7 +14092,15 @@ def get_summary():
 
 
 
+
+
+
+
     """Get summary statistics for deliveries."""
+
+
+
+
 
 
 
@@ -7055,11 +14108,23 @@ def get_summary():
 
 
 
+
+
+
+
         dates = get_date_ranges()
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7067,11 +14132,23 @@ def get_summary():
 
 
 
+
+
+
+
         all_deliveries = Delivery.query.order_by(Delivery.created_at.desc()).all()
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7079,7 +14156,15 @@ def get_summary():
 
 
 
+
+
+
+
         deliveries_data = []
+
+
+
+
 
 
 
@@ -7087,7 +14172,15 @@ def get_summary():
 
 
 
+
+
+
+
             delivery_dict = {
+
+
+
+
 
 
 
@@ -7095,7 +14188,15 @@ def get_summary():
 
 
 
+
+
+
+
                 'display_id': delivery.display_id,
+
+
+
+
 
 
 
@@ -7103,7 +14204,15 @@ def get_summary():
 
 
 
+
+
+
+
                 'recipient_name': delivery.recipient_name,
+
+
+
+
 
 
 
@@ -7111,7 +14220,15 @@ def get_summary():
 
 
 
+
+
+
+
                 'amount': float(delivery.amount) if delivery.amount else 0.0,
+
+
+
+
 
 
 
@@ -7119,7 +14236,15 @@ def get_summary():
 
 
 
+
+
+
+
                 'delivery_person': delivery.delivery_person or '',
+
+
+
+
 
 
 
@@ -7127,11 +14252,23 @@ def get_summary():
 
 
 
+
+
+
+
                 'time_ago': get_time_ago(delivery.created_at) if delivery.created_at else "Unknown"
 
 
 
+
+
+
+
             }
+
+
+
+
 
 
 
@@ -7139,7 +14276,15 @@ def get_summary():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7147,7 +14292,15 @@ def get_summary():
 
 
 
+
+
+
+
             """Helper function to get summary data for a query."""
+
+
+
+
 
 
 
@@ -7155,9 +14308,19 @@ def get_summary():
 
 
 
+
+
+
+
             total_amount = sum(float(d.amount) for d in deliveries if d.amount)  # Use actual delivery amounts as revenue
 
+
+
             total_expenses = 0  # No operational costs by default
+
+
+
+
 
 
 
@@ -7165,7 +14328,15 @@ def get_summary():
 
 
 
+
+
+
+
                 'total_deliveries': len(deliveries),
+
+
+
+
 
 
 
@@ -7173,7 +14344,15 @@ def get_summary():
 
 
 
+
+
+
+
                 'total_expenses': total_expenses,
+
+
+
+
 
 
 
@@ -7181,7 +14360,15 @@ def get_summary():
 
 
 
+
+
+
+
                 'in_transit': len([d for d in deliveries if d.status == 'In Transit']),
+
+
+
+
 
 
 
@@ -7189,7 +14376,15 @@ def get_summary():
 
 
 
+
+
+
+
             }
+
+
+
+
 
 
 
@@ -7197,7 +14392,15 @@ def get_summary():
 
 
 
+
+
+
+
         return jsonify({
+
+
+
+
 
 
 
@@ -7205,15 +14408,31 @@ def get_summary():
 
 
 
+
+
+
+
             'summary': {
+
+
+
+
 
 
 
                 'total_revenue': sum(float(d.amount) for d in all_deliveries if d.amount),  # Use actual delivery amounts as revenue
 
+
+
                 'total_expenses': 0,  # No operational costs by default
 
+
+
                 'total_deliveries': len(all_deliveries),
+
+
+
+
 
 
 
@@ -7221,7 +14440,15 @@ def get_summary():
 
 
 
+
+
+
+
                 'in_transit': len([d for d in all_deliveries if d.status == 'In Transit']),
+
+
+
+
 
 
 
@@ -7229,7 +14456,15 @@ def get_summary():
 
 
 
+
+
+
+
             },
+
+
+
+
 
 
 
@@ -7237,7 +14472,15 @@ def get_summary():
 
 
 
+
+
+
+
             'week': get_summary_data(Delivery.query.filter(Delivery.created_at >= dates['week'][0])),
+
+
+
+
 
 
 
@@ -7245,7 +14488,15 @@ def get_summary():
 
 
 
+
+
+
+
             'year': get_summary_data(Delivery.query.filter(Delivery.created_at >= dates['year'][0])),
+
+
+
+
 
 
 
@@ -7253,7 +14504,15 @@ def get_summary():
 
 
 
+
+
+
+
         })
+
+
+
+
 
 
 
@@ -7261,11 +14520,27 @@ def get_summary():
 
 
 
+
+
+
+
         app.logger.error(f"Error getting summary: {str(e)}")
 
 
 
+
+
+
+
         return jsonify({'error': str(e)}), 500
+
+
+
+
+
+
+
+
 
 
 
@@ -7277,7 +14552,15 @@ def get_summary():
 
 
 
+
+
+
+
 @login_required
+
+
+
+
 
 
 
@@ -7285,7 +14568,15 @@ def get_summary():
 
 
 
+
+
+
+
 def export(period):
+
+
+
+
 
 
 
@@ -7293,7 +14584,15 @@ def export(period):
 
 
 
+
+
+
+
     try:
+
+
+
+
 
 
 
@@ -7301,7 +14600,15 @@ def export(period):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7309,7 +14616,15 @@ def export(period):
 
 
 
+
+
+
+
         if period == 'daily':
+
+
+
+
 
 
 
@@ -7317,7 +14632,15 @@ def export(period):
 
 
 
+
+
+
+
             filename = f'deliveries_{get_current_time().strftime("%Y-%m-%d")}.csv'
+
+
+
+
 
 
 
@@ -7325,7 +14648,15 @@ def export(period):
 
 
 
+
+
+
+
         elif period == 'weekly':
+
+
+
+
 
 
 
@@ -7333,7 +14664,15 @@ def export(period):
 
 
 
+
+
+
+
             filename = f'deliveries_week_{get_current_time().strftime("%Y-%U")}.csv'
+
+
+
+
 
 
 
@@ -7341,7 +14680,15 @@ def export(period):
 
 
 
+
+
+
+
         elif period == 'monthly':
+
+
+
+
 
 
 
@@ -7349,7 +14696,15 @@ def export(period):
 
 
 
+
+
+
+
             filename = f'deliveries_{get_current_time().strftime("%Y-%m")}.csv'
+
+
+
+
 
 
 
@@ -7357,7 +14712,15 @@ def export(period):
 
 
 
+
+
+
+
         elif period == 'yearly':
+
+
+
+
 
 
 
@@ -7365,11 +14728,23 @@ def export(period):
 
 
 
+
+
+
+
             filename = f'deliveries_{get_current_time().year}.csv'
 
 
 
+
+
+
+
             date_range = 'this year'
+
+
+
+
 
 
 
@@ -7377,7 +14752,15 @@ def export(period):
 
 
 
+
+
+
+
             start_date, end_date = date_ranges['all']
+
+
+
+
 
 
 
@@ -7385,7 +14768,15 @@ def export(period):
 
 
 
+
+
+
+
             date_range = 'all time'
+
+
+
+
 
 
 
@@ -7393,7 +14784,15 @@ def export(period):
 
 
 
+
+
+
+
             start_date, end_date = date_ranges['year']
+
+
+
+
 
 
 
@@ -7401,11 +14800,23 @@ def export(period):
 
 
 
+
+
+
+
             date_range = 'this year'
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7413,7 +14824,15 @@ def export(period):
 
 
 
+
+
+
+
         deliveries = Delivery.query.filter(
+
+
+
+
 
 
 
@@ -7421,11 +14840,23 @@ def export(period):
 
 
 
+
+
+
+
         ).order_by(Delivery.created_at.desc()).all()
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7433,7 +14864,15 @@ def export(period):
 
 
 
+
+
+
+
             flash(f'No delivery records found for {date_range}.', 'info')
+
+
+
+
 
 
 
@@ -7441,7 +14880,15 @@ def export(period):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7449,7 +14896,15 @@ def export(period):
 
 
 
+
+
+
+
         si = io.StringIO()
+
+
+
+
 
 
 
@@ -7457,7 +14912,15 @@ def export(period):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7465,7 +14928,15 @@ def export(period):
 
 
 
+
+
+
+
         writer.writerow([
+
+
+
+
 
 
 
@@ -7473,7 +14944,15 @@ def export(period):
 
 
 
+
+
+
+
             'Goods Type', 'Quantity', 'Amount (KSh)', 'Expenses (KSh)', 'Profit (KSh)', 'Status', 'Created At'
+
+
+
+
 
 
 
@@ -7481,7 +14960,15 @@ def export(period):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7489,7 +14976,15 @@ def export(period):
 
 
 
+
+
+
+
         for delivery in deliveries:
+
+
+
+
 
 
 
@@ -7497,7 +14992,15 @@ def export(period):
 
 
 
+
+
+
+
             writer.writerow([
+
+
+
+
 
 
 
@@ -7505,7 +15008,15 @@ def export(period):
 
 
 
+
+
+
+
                 f"'{delivery.display_id}",
+
+
+
+
 
 
 
@@ -7513,7 +15024,15 @@ def export(period):
 
 
 
+
+
+
+
                 delivery.recipient_name,
+
+
+
+
 
 
 
@@ -7521,7 +15040,15 @@ def export(period):
 
 
 
+
+
+
+
                 delivery.goods_type,
+
+
+
+
 
 
 
@@ -7529,7 +15056,15 @@ def export(period):
 
 
 
+
+
+
+
                 f"{delivery.amount:.2f}",
+
+
+
+
 
 
 
@@ -7537,7 +15072,15 @@ def export(period):
 
 
 
+
+
+
+
                 f"{profit:.2f}",
+
+
+
+
 
 
 
@@ -7545,7 +15088,15 @@ def export(period):
 
 
 
+
+
+
+
                 delivery.created_at.strftime('%Y-%m-%d %H:%M')
+
+
+
+
 
 
 
@@ -7553,7 +15104,15 @@ def export(period):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7561,11 +15120,23 @@ def export(period):
 
 
 
+
+
+
+
         log_export(date_range, 'CSV')
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7573,7 +15144,15 @@ def export(period):
 
 
 
+
+
+
+
         response = make_response(si.getvalue().encode('utf-8'))
+
+
+
+
 
 
 
@@ -7581,7 +15160,15 @@ def export(period):
 
 
 
+
+
+
+
         response.headers['Content-type'] = 'text/csv; charset=utf-8'
+
+
+
+
 
 
 
@@ -7589,7 +15176,15 @@ def export(period):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7597,11 +15192,23 @@ def export(period):
 
 
 
+
+
+
+
         app.logger.error(f"Error exporting {period} data: {str(e)}")
 
 
 
+
+
+
+
         flash(f'Error exporting {period} data: {str(e)}', 'danger')
+
+
+
+
 
 
 
@@ -7613,7 +15220,19 @@ def export(period):
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/get_delivery_details/<int:delivery_id>')
+
+
+
+
 
 
 
@@ -7621,7 +15240,15 @@ def export(period):
 
 
 
+
+
+
+
 @database_required
+
+
+
+
 
 
 
@@ -7629,7 +15256,15 @@ def get_delivery_details(delivery_id):
 
 
 
+
+
+
+
     """Get detailed information for a specific delivery."""
+
+
+
+
 
 
 
@@ -7637,7 +15272,15 @@ def get_delivery_details(delivery_id):
 
 
 
+
+
+
+
         delivery = Delivery.query.get(delivery_id)
+
+
+
+
 
 
 
@@ -7645,11 +15288,23 @@ def get_delivery_details(delivery_id):
 
 
 
+
+
+
+
             return jsonify({'error': 'Delivery not found'}), 404
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7657,7 +15312,15 @@ def get_delivery_details(delivery_id):
 
 
 
+
+
+
+
         delivery_data = {
+
+
+
+
 
 
 
@@ -7665,7 +15328,15 @@ def get_delivery_details(delivery_id):
 
 
 
+
+
+
+
             'display_id': delivery.display_id,
+
+
+
+
 
 
 
@@ -7673,7 +15344,15 @@ def get_delivery_details(delivery_id):
 
 
 
+
+
+
+
             'sender_phone': delivery.sender_phone,
+
+
+
+
 
 
 
@@ -7681,7 +15360,15 @@ def get_delivery_details(delivery_id):
 
 
 
+
+
+
+
             'recipient_name': delivery.recipient_name,
+
+
+
+
 
 
 
@@ -7689,7 +15376,15 @@ def get_delivery_details(delivery_id):
 
 
 
+
+
+
+
             'recipient_address': delivery.recipient_address,
+
+
+
+
 
 
 
@@ -7697,7 +15392,15 @@ def get_delivery_details(delivery_id):
 
 
 
+
+
+
+
             'amount': delivery.amount,
+
+
+
+
 
 
 
@@ -7705,7 +15408,15 @@ def get_delivery_details(delivery_id):
 
 
 
+
+
+
+
             'delivery_person': delivery.delivery_person,
+
+
+
+
 
 
 
@@ -7713,7 +15424,15 @@ def get_delivery_details(delivery_id):
 
 
 
+
+
+
+
             'goods_type': delivery.goods_type,
+
+
+
+
 
 
 
@@ -7721,7 +15440,15 @@ def get_delivery_details(delivery_id):
 
 
 
+
+
+
+
             'payment_by': delivery.payment_by,
+
+
+
+
 
 
 
@@ -7729,7 +15456,15 @@ def get_delivery_details(delivery_id):
 
 
 
+
+
+
+
                 'time_ago': get_time_ago(delivery.created_at) if delivery.created_at else "Unknown",
+
+
+
+
 
 
 
@@ -7737,11 +15472,23 @@ def get_delivery_details(delivery_id):
 
 
 
+
+
+
+
         }
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7749,7 +15496,15 @@ def get_delivery_details(delivery_id):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7757,11 +15512,27 @@ def get_delivery_details(delivery_id):
 
 
 
+
+
+
+
         app.logger.error(f"Error getting delivery details for ID {delivery_id}: {str(e)}")
 
 
 
+
+
+
+
         return jsonify({'error': 'Failed to load delivery details'}), 500
+
+
+
+
+
+
+
+
 
 
 
@@ -7773,7 +15544,15 @@ def get_delivery_details(delivery_id):
 
 
 
+
+
+
+
 @login_required
+
+
+
+
 
 
 
@@ -7781,7 +15560,15 @@ def get_delivery_details(delivery_id):
 
 
 
+
+
+
+
 def get_delivery_by_display_id(display_id):
+
+
+
+
 
 
 
@@ -7789,7 +15576,15 @@ def get_delivery_by_display_id(display_id):
 
 
 
+
+
+
+
     try:
+
+
+
+
 
 
 
@@ -7797,7 +15592,15 @@ def get_delivery_by_display_id(display_id):
 
 
 
+
+
+
+
         if not delivery:
+
+
+
+
 
 
 
@@ -7805,7 +15608,15 @@ def get_delivery_by_display_id(display_id):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7813,7 +15624,15 @@ def get_delivery_by_display_id(display_id):
 
 
 
+
+
+
+
         delivery_data = {
+
+
+
+
 
 
 
@@ -7821,7 +15640,15 @@ def get_delivery_by_display_id(display_id):
 
 
 
+
+
+
+
             'display_id': delivery.display_id,
+
+
+
+
 
 
 
@@ -7829,7 +15656,15 @@ def get_delivery_by_display_id(display_id):
 
 
 
+
+
+
+
             'sender_phone': delivery.sender_phone,
+
+
+
+
 
 
 
@@ -7837,7 +15672,15 @@ def get_delivery_by_display_id(display_id):
 
 
 
+
+
+
+
             'recipient_name': delivery.recipient_name,
+
+
+
+
 
 
 
@@ -7845,7 +15688,15 @@ def get_delivery_by_display_id(display_id):
 
 
 
+
+
+
+
             'recipient_address': delivery.recipient_address,
+
+
+
+
 
 
 
@@ -7853,7 +15704,15 @@ def get_delivery_by_display_id(display_id):
 
 
 
+
+
+
+
             'amount': delivery.amount,
+
+
+
+
 
 
 
@@ -7861,7 +15720,15 @@ def get_delivery_by_display_id(display_id):
 
 
 
+
+
+
+
             'delivery_person': delivery.delivery_person,
+
+
+
+
 
 
 
@@ -7869,7 +15736,15 @@ def get_delivery_by_display_id(display_id):
 
 
 
+
+
+
+
             'goods_type': delivery.goods_type,
+
+
+
+
 
 
 
@@ -7877,7 +15752,15 @@ def get_delivery_by_display_id(display_id):
 
 
 
+
+
+
+
             'payment_by': delivery.payment_by,
+
+
+
+
 
 
 
@@ -7885,7 +15768,15 @@ def get_delivery_by_display_id(display_id):
 
 
 
+
+
+
+
             'time_ago': get_time_ago(delivery.created_at) if delivery.created_at else "Unknown",
+
+
+
+
 
 
 
@@ -7893,11 +15784,23 @@ def get_delivery_by_display_id(display_id):
 
 
 
+
+
+
+
         }
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7905,7 +15808,15 @@ def get_delivery_by_display_id(display_id):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -7913,7 +15824,15 @@ def get_delivery_by_display_id(display_id):
 
 
 
+
+
+
+
         app.logger.error(f"Error getting delivery details for display ID {display_id}: {str(e)}")
+
+
+
+
 
 
 
@@ -7925,7 +15844,19 @@ def get_delivery_by_display_id(display_id):
 
 
 
+
+
+
+
+
+
+
+
 def normalize_phone_number(phone):
+
+
+
+
 
 
 
@@ -7933,7 +15864,15 @@ def normalize_phone_number(phone):
 
 
 
+
+
+
+
     if not phone:
+
+
+
+
 
 
 
@@ -7941,7 +15880,15 @@ def normalize_phone_number(phone):
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -7949,11 +15896,23 @@ def normalize_phone_number(phone):
 
 
 
+
+
+
+
     digits_only = ''.join(c for c in phone if c.isdigit())
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -7961,7 +15920,15 @@ def normalize_phone_number(phone):
 
 
 
+
+
+
+
     if digits_only.startswith('254') and len(digits_only) >= 12:
+
+
+
+
 
 
 
@@ -7969,7 +15936,15 @@ def normalize_phone_number(phone):
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -7977,7 +15952,15 @@ def normalize_phone_number(phone):
 
 
 
+
+
+
+
     if digits_only.startswith('0') and len(digits_only) == 10:
+
+
+
+
 
 
 
@@ -7985,7 +15968,15 @@ def normalize_phone_number(phone):
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -7993,7 +15984,15 @@ def normalize_phone_number(phone):
 
 
 
+
+
+
+
     if len(digits_only) == 9 and (digits_only.startswith('7') or digits_only.startswith('1')):
+
+
+
+
 
 
 
@@ -8001,11 +16000,23 @@ def normalize_phone_number(phone):
 
 
 
+
+
+
+
     
 
 
 
+
+
+
+
     # Otherwise return as is
+
+
+
+
 
 
 
@@ -8017,7 +16028,19 @@ def normalize_phone_number(phone):
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/search_delivery_by_display_id', methods=['GET'])
+
+
+
+
 
 
 
@@ -8025,7 +16048,15 @@ def normalize_phone_number(phone):
 
 
 
+
+
+
+
 def search_delivery_by_display_id():
+
+
+
+
 
 
 
@@ -8033,7 +16064,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
     try:
+
+
+
+
 
 
 
@@ -8041,7 +16080,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -8049,11 +16096,23 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
             return jsonify({'success': False, 'error': 'Search value is required'}), 400
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -8061,7 +16120,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -8069,11 +16136,23 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
         delivery = Delivery.query.filter_by(display_id=search_query).first()
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -8081,7 +16160,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
         if not delivery:
+
+
+
+
 
 
 
@@ -8089,7 +16176,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
             cleaned_phone = ''.join(c for c in search_query if c.isdigit())
+
+
+
+
 
 
 
@@ -8097,7 +16192,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
                 # Normalize the search phone number
+
+
+
+
 
 
 
@@ -8105,7 +16208,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
                 
+
+
+
+
 
 
 
@@ -8113,7 +16224,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
                 all_deliveries = Delivery.query.all()
+
+
+
+
 
 
 
@@ -8121,7 +16240,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
                     # Clean and normalize the stored phone number
+
+
+
+
 
 
 
@@ -8129,7 +16256,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
                     normalized_stored = normalize_phone_number(stored_phone_clean)
+
+
+
+
 
 
 
@@ -8137,7 +16272,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
                     # Check if normalized numbers match or if one contains the other
+
+
+
+
 
 
 
@@ -8145,7 +16288,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
                         normalized_search in stored_phone_clean or 
+
+
+
+
 
 
 
@@ -8153,7 +16304,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
                         normalized_search.endswith(stored_phone_clean[-9:])):
+
+
+
+
 
 
 
@@ -8161,11 +16320,23 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
                         break
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -8173,11 +16344,23 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
             return jsonify({'success': False, 'error': 'Delivery not found'}), 404
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -8185,7 +16368,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
         delivery_data = {
+
+
+
+
 
 
 
@@ -8193,7 +16384,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
             'recipient_name': delivery.recipient_name,
+
+
+
+
 
 
 
@@ -8201,7 +16400,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
             'status': delivery.status
+
+
+
+
 
 
 
@@ -8209,7 +16416,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -8217,7 +16432,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -8225,7 +16448,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
         app.logger.error(f"Error searching delivery by query '{search_query}': {str(e)}")
+
+
+
+
 
 
 
@@ -8237,7 +16468,19 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/update_delivery/<int:delivery_id>', methods=['PUT'])
+
+
+
+
 
 
 
@@ -8245,7 +16488,15 @@ def search_delivery_by_display_id():
 
 
 
+
+
+
+
 @database_required
+
+
+
+
 
 
 
@@ -8253,7 +16504,15 @@ def update_delivery_details(delivery_id):
 
 
 
+
+
+
+
     """Update delivery details."""
+
+
+
+
 
 
 
@@ -8261,7 +16520,15 @@ def update_delivery_details(delivery_id):
 
 
 
+
+
+
+
         delivery = Delivery.query.get(delivery_id)
+
+
+
+
 
 
 
@@ -8269,11 +16536,23 @@ def update_delivery_details(delivery_id):
 
 
 
+
+
+
+
             return jsonify({'error': 'Delivery not found'}), 404
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -8281,7 +16560,15 @@ def update_delivery_details(delivery_id):
 
 
 
+
+
+
+
         if not data:
+
+
+
+
 
 
 
@@ -8289,7 +16576,15 @@ def update_delivery_details(delivery_id):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -8297,7 +16592,15 @@ def update_delivery_details(delivery_id):
 
 
 
+
+
+
+
         delivery.sender_name = data.get('sender_name', delivery.sender_name)
+
+
+
+
 
 
 
@@ -8305,7 +16608,15 @@ def update_delivery_details(delivery_id):
 
 
 
+
+
+
+
         delivery.recipient_name = data.get('recipient_name', delivery.recipient_name)
+
+
+
+
 
 
 
@@ -8313,7 +16624,15 @@ def update_delivery_details(delivery_id):
 
 
 
+
+
+
+
         delivery.recipient_address = data.get('recipient_address', delivery.recipient_address)
+
+
+
+
 
 
 
@@ -8321,7 +16640,15 @@ def update_delivery_details(delivery_id):
 
 
 
+
+
+
+
         delivery.quantity = data.get('quantity', delivery.quantity)
+
+
+
+
 
 
 
@@ -8329,7 +16656,15 @@ def update_delivery_details(delivery_id):
 
 
 
+
+
+
+
         delivery.payment_by = data.get('payment_by', delivery.payment_by)  # Use form value or keep existing
+
+
+
+
 
 
 
@@ -8337,7 +16672,15 @@ def update_delivery_details(delivery_id):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -8345,7 +16688,15 @@ def update_delivery_details(delivery_id):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -8353,7 +16704,15 @@ def update_delivery_details(delivery_id):
 
 
 
+
+
+
+
             'success': True, 
+
+
+
+
 
 
 
@@ -8361,7 +16720,15 @@ def update_delivery_details(delivery_id):
 
 
 
+
+
+
+
         })
+
+
+
+
 
 
 
@@ -8369,7 +16736,15 @@ def update_delivery_details(delivery_id):
 
 
 
+
+
+
+
     except Exception as e:
+
+
+
+
 
 
 
@@ -8377,7 +16752,15 @@ def update_delivery_details(delivery_id):
 
 
 
+
+
+
+
         app.logger.error(f"Error updating delivery {delivery_id}: {str(e)}")
+
+
+
+
 
 
 
@@ -8393,380 +16776,435 @@ def update_delivery_details(delivery_id):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 @app.route('/get_unassigned_deliveries')
+
 @login_required
+
 @database_required
+
 def get_unassigned_deliveries():
+
     """Get unassigned deliveries for staff quick assignment"""
+
     try:
+
         # Get deliveries with no delivery person assigned and status is 'Pending'
+
         unassigned_deliveries = Delivery.query.filter(
+
             Delivery.delivery_person.is_(None),
+
             Delivery.status == 'Pending'
+
         ).order_by(Delivery.created_at.desc()).limit(10).all()
+
         
+
         deliveries_data = []
+
         for delivery in unassigned_deliveries:
+
             deliveries_data.append({
+
                 'id': delivery.id,
+
                 'display_id': delivery.display_id,
+
                 'sender_name': delivery.sender_name,
+
                 'recipient_name': delivery.recipient_name,
+
                 'recipient_address': delivery.recipient_address,
+
                 'goods_type': delivery.goods_type,
+
                 'quantity': delivery.quantity,
+
                 'amount': delivery.amount,
+
                 'created_at': delivery.created_at.strftime('%Y-%m-%d %H:%M') if delivery.created_at else None
+
             })
+
         
+
         return jsonify({
+
             'success': True,
+
             'count': len(deliveries_data),
+
             'deliveries': deliveries_data
+
         })
+
         
+
     except Exception as e:
+
         app.logger.error(f"Error getting unassigned deliveries: {str(e)}")
+
         return jsonify({'success': False, 'error': 'Failed to get unassigned deliveries'}), 500
 
 
+
+
+
 @app.route('/quick_assign_delivery/<int:delivery_id>', methods=['POST'])
+
 @login_required
+
 @database_required
+
 def quick_assign_delivery(delivery_id):
+
     """Quick assign delivery to current staff user and change status to In Transit"""
+
     try:
+
         # Get the delivery
+
         delivery = Delivery.query.get_or_404(delivery_id)
+
         
+
         # Check if delivery is unassigned and pending
+
         if delivery.delivery_person or delivery.status != 'Pending':
+
             return jsonify({
+
                 'success': False, 
+
                 'error': 'Delivery is already assigned or not in Pending status'
+
             }), 400
+
         
+
         # Get current user
+
         current_username = session.get('username')
+
         if not current_username:
+
             return jsonify({'success': False, 'error': 'User not logged in'}), 401
+
         
+
         # Assign to current user and change status
+
         delivery.delivery_person = current_username
+
         delivery.status = 'In Transit'
+
         delivery.updated_at = get_current_time()
+
         
+
         db.session.commit()
+
         
+
         # Create audit log
+
         try:
+
             audit_log = AuditLog(
+
                 action='QUICK_ASSIGN',
+
                 table_name='delivery',
+
                 record_id=delivery.id,
+
                 old_values={
+
                     'delivery_person': None,
+
                     'status': 'Pending'
+
                 },
+
                 new_values={
+
                     'delivery_person': current_username,
+
                     'status': 'In Transit'
+
                 },
+
                 performed_by=current_username
+
             )
+
             db.session.add(audit_log)
+
             db.session.commit()
+
         except Exception as audit_error:
+
             app.logger.error(f"Error creating audit log: {str(audit_error)}")
+
         
+
         return jsonify({
+
             'success': True,
+
             'message': f'Delivery {delivery.display_id} assigned to {current_username} and marked as In Transit',
+
             'delivery': {
+
                 'id': delivery.id,
+
                 'display_id': delivery.display_id,
+
                 'delivery_person': delivery.delivery_person,
+
                 'status': delivery.status
+
             }
+
         })
+
         
+
     except Exception as e:
+
         db.session.rollback()
+
         app.logger.error(f"Error quick assigning delivery: {str(e)}")
+
         return jsonify({'success': False, 'error': 'Failed to assign delivery'}), 500
 
 
+
+
+
 @app.route('/get_staff_stats')
+
 @login_required
+
 @database_required
+
 def get_staff_stats():
+
     """Get staff statistics for quick actions dashboard"""
+
     try:
+
         current_username = session.get('username')
+
         if not current_username:
+
             return jsonify({'success': False, 'error': 'User not logged in'}), 401
+
         
+
         # Get deliveries assigned to current user
+
         my_assigned = Delivery.query.filter(
+
             Delivery.delivery_person == current_username
+
         ).count()
+
         
+
         # Get deliveries in transit assigned to current user
+
         in_transit = Delivery.query.filter(
+
             Delivery.delivery_person == current_username,
+
             Delivery.status == 'In Transit'
+
         ).count()
+
         
+
         # Get completed deliveries for current user
+
         completed = Delivery.query.filter(
+
             Delivery.delivery_person == current_username,
+
             Delivery.status == 'Delivered'
+
         ).count()
+
         
+
         return jsonify({
+
             'success': True,
+
             'my_assigned': my_assigned,
+
             'in_transit': in_transit,
+
             'completed': completed
+
         })
+
         
+
     except Exception as e:
+
         app.logger.error(f"Error getting staff stats: {str(e)}")
+
         return jsonify({'success': False, 'error': 'Failed to get staff stats'}), 500
 
 
-@app.route('/api/users', methods=['GET', 'POST', 'PUT'])
-@login_required
+
+
+
+@app.route('/get_users')
+
+
+
+
+
+
+
+@admin_required_api
+
+
+
+
+
+
+
 @database_required
 
 
 
-def api_users():
 
 
 
-    """API endpoint for getting and creating users."""
 
+def get_users():
 
 
-    if request.method == 'GET':
-        # Get all users (both active and inactive) - only admins can see all users
-        try:
-            # Check if current user is admin
-            current_username = session.get('username')
-            current_user = User.query.filter_by(username=current_username).first()
 
 
 
-            if not current_user or not current_user.is_admin():
-                return jsonify({'error': 'Admin access required to view all users'}), 403
-            
-            users = User.query.order_by(User.is_active.desc(), User.username).all()
-            
-            users_data = []
-            for user in users:
 
 
+    """Get all users for admin management."""
 
-                users_data.append({
 
 
 
-                    'id': user.id,
 
 
 
-                    'username': user.username,
+    try:
 
 
 
-                    'role': user.role,
 
 
 
-                    'created_at': user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else None,
 
+        # Get all users (both active and inactive)
 
 
-                    'is_active': user.is_active,
 
 
 
-                    'is_admin': user.is_admin()
 
 
+        users = User.query.order_by(User.is_active.desc(), User.username).all()
 
-                })
 
 
 
-            return jsonify(users_data)
 
 
 
-        except Exception as e:
+        users_data = []
 
 
 
-            app.logger.error(f"Error getting users via API: {str(e)}")
 
 
 
-            return jsonify({'error': 'Failed to load users'}), 500
 
-    elif request.method == 'POST':
-        # Create new user - only admins can create users
-        try:
-            # Check if current user is admin
-            current_username = session.get('username')
-            current_user = User.query.filter_by(username=current_username).first()
-            
-            if not current_user or not current_user.is_admin():
-                return jsonify({'error': 'Admin access required to create users'}), 403
-            
-            data = request.get_json()
+        for user in users:
 
-            if not data:
 
 
 
-                return jsonify({'error': 'No data provided'}), 400
 
 
 
-            
+            users_data.append({
 
 
 
-            username = data.get('username', '').strip()
 
 
 
-            password = data.get('password', '').strip()
 
+                'id': user.id,
 
 
-            role = data.get('role', 'staff')
 
 
 
-            
 
 
+                'username': user.username,
 
-            if not username or not password:
 
 
 
-                return jsonify({'error': 'Username and password are required'}), 400
 
 
 
-            
+                'role': user.role,
 
 
 
-            # Check if user already exists
 
 
 
-            existing_user = User.query.filter_by(username=username).first()
 
+                'created_at': user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else None,
 
 
-            if existing_user:
 
 
 
-                return jsonify({'error': 'Username already exists'}), 400
 
 
+                'is_active': user.is_active,
 
-            
 
 
 
-            # Create new user
 
 
 
-            new_user = User(
+                'is_admin': user.is_admin()
 
 
 
-                username=username,
 
-
-
-                role=role,
-
-
-
-                is_active=True
-
-
-
-            )
-
-
-
-            new_user.set_password(password)
-
-
-
-            
-
-
-
-            db.session.add(new_user)
-
-
-
-            db.session.commit()
-
-
-
-            
-
-
-
-            return jsonify({
-
-
-
-                'success': True,
-
-
-
-                'message': 'User created successfully',
-
-
-
-                'user': {
-
-
-
-                    'id': new_user.id,
-
-
-
-                    'username': new_user.username,
-
-
-
-                    'role': new_user.role,
-
-
-
-                    'is_active': new_user.is_active,
-
-
-
-                    'is_admin': new_user.is_admin()
-
-
-
-                }
 
 
 
@@ -8774,74 +17212,43 @@ def api_users():
 
 
 
-        except Exception as e:
 
 
 
-            app.logger.error(f"Error creating user via API: {str(e)}")
+
+        return jsonify(users_data)
 
 
 
-            return jsonify({'error': 'Failed to create user'}), 500
 
-    elif request.method == 'PUT':
-        # Update existing user - only admins can update users
-        try:
-            # Check if current user is admin
-            current_username = session.get('username')
-            current_user = User.query.filter_by(username=current_username).first()
-            
-            if not current_user or not current_user.is_admin():
-                return jsonify({'error': 'Admin access required to update users'}), 403
-            
-            data = request.get_json()
-            if not data:
-                return jsonify({'error': 'No data provided'}), 400
-            
-            user_id = data.get('id')
-            if not user_id:
-                return jsonify({'error': 'User ID is required'}), 400
-            
-            user = User.query.get(user_id)
-            if not user:
-                return jsonify({'error': 'User not found'}), 404
-            
-            # Update user fields
-            username = data.get('username', '').strip()
-            password = data.get('password', '').strip()
-            role = data.get('role', user.role)
-            
-            if username and username != user.username:
-                # Check if username already exists
-                existing_user = User.query.filter_by(username=username).first()
-                if existing_user:
-                    return jsonify({'error': 'Username already exists'}), 400
-                user.username = username
-            
-            if password:
-                user.set_password(password)
-            
-            if role in ['admin', 'staff']:
-                user.role = role
-            
-            user.updated_at = get_current_time()
-            db.session.commit()
-            
-            return jsonify({
-                'success': True,
-                'message': 'User updated successfully',
-                'user': {
-                    'id': user.id,
-                    'username': user.username,
-                    'role': user.role,
-                    'is_active': user.is_active,
-                    'is_admin': user.is_admin()
-                }
-            })
-            
-        except Exception as e:
-            app.logger.error(f"Error updating user via API: {str(e)}")
-            return jsonify({'error': 'Failed to update user'}), 500
+
+
+
+    except Exception as e:
+
+
+
+
+
+
+
+        app.logger.error(f"Error getting users: {str(e)}")
+
+
+
+
+
+
+
+        return jsonify({'error': 'Failed to load users'}), 500
+
+
+
+
+
+
+
+
 
 
 
@@ -8853,7 +17260,15 @@ def api_users():
 
 
 
+
+
+
+
 def api_health():
+
+
+
+
 
 
 
@@ -8861,7 +17276,15 @@ def api_health():
 
 
 
+
+
+
+
     return jsonify({
+
+
+
+
 
 
 
@@ -8869,7 +17292,15 @@ def api_health():
 
 
 
+
+
+
+
         'message': 'API is working',
+
+
+
+
 
 
 
@@ -8877,7 +17308,19 @@ def api_health():
 
 
 
+
+
+
+
     })
+
+
+
+
+
+
+
+
 
 
 
@@ -8895,7 +17338,21 @@ def api_health():
 
 
 
+
+
+
+
+
+
+
+
+
+
 @app.route('/api/senders', methods=['GET'])
+
+
+
+
 
 
 
@@ -8903,7 +17360,15 @@ def api_health():
 
 
 
+
+
+
+
 @database_required
+
+
+
+
 
 
 
@@ -8911,7 +17376,15 @@ def api_get_senders():
 
 
 
+
+
+
+
     """Get unique sender names and phone numbers for autocomplete"""
+
+
+
+
 
 
 
@@ -8919,11 +17392,23 @@ def api_get_senders():
 
 
 
+
+
+
+
         query = request.args.get('q', '').strip()
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -8931,11 +17416,23 @@ def api_get_senders():
 
 
 
+
+
+
+
             return jsonify({'senders': []})
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -8943,16 +17440,28 @@ def api_get_senders():
 
 
 
+
+
+
+
         senders = db.session.query(Delivery.sender_name, Delivery.sender_phone)\
-            .filter(Delivery.sender_name.ilike(f'%{query}%'))\
-            .distinct()\
-            .order_by(Delivery.sender_name)\
-            .limit(10)\
+            .filter(Delivery.sender_name.ilike(f'%{query}%'))
+            .distinct()
+            .order_by(Delivery.sender_name)
+            .limit(10)
             .all()
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -8960,7 +17469,15 @@ def api_get_senders():
 
 
 
+
+
+
+
         for name, phone in senders:
+
+
+
+
 
 
 
@@ -8968,7 +17485,15 @@ def api_get_senders():
 
 
 
+
+
+
+
                 'name': name,
+
+
+
+
 
 
 
@@ -8976,11 +17501,23 @@ def api_get_senders():
 
 
 
+
+
+
+
             })
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -8988,7 +17525,15 @@ def api_get_senders():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -8996,7 +17541,15 @@ def api_get_senders():
 
 
 
+
+
+
+
         app.logger.error(f"Error getting senders: {str(e)}")
+
+
+
+
 
 
 
@@ -9008,7 +17561,19 @@ def api_get_senders():
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/auto_hard_delete_user', methods=['POST'])
+
+
+
+
 
 
 
@@ -9016,7 +17581,15 @@ def api_get_senders():
 
 
 
+
+
+
+
 @database_required
+
+
+
+
 
 
 
@@ -9024,7 +17597,15 @@ def auto_hard_delete_user():
 
 
 
+
+
+
+
     """Automatic hard delete user from database"""
+
+
+
+
 
 
 
@@ -9032,7 +17613,15 @@ def auto_hard_delete_user():
 
 
 
+
+
+
+
         data = request.get_json()
+
+
+
+
 
 
 
@@ -9040,7 +17629,15 @@ def auto_hard_delete_user():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9048,11 +17645,23 @@ def auto_hard_delete_user():
 
 
 
+
+
+
+
             return jsonify({'success': False, 'error': 'Username required'})
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9060,7 +17669,15 @@ def auto_hard_delete_user():
 
 
 
+
+
+
+
         user = User.query.filter_by(username=username).first()
+
+
+
+
 
 
 
@@ -9068,11 +17685,23 @@ def auto_hard_delete_user():
 
 
 
+
+
+
+
             return jsonify({'success': False, 'error': 'User not found'})
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9080,7 +17709,15 @@ def auto_hard_delete_user():
 
 
 
+
+
+
+
         deliveries_to_delete = Delivery.query.filter_by(created_by=user.id).all()
+
+
+
+
 
 
 
@@ -9088,7 +17725,15 @@ def auto_hard_delete_user():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9096,11 +17741,23 @@ def auto_hard_delete_user():
 
 
 
+
+
+
+
             db.session.delete(delivery)
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9108,7 +17765,15 @@ def auto_hard_delete_user():
 
 
 
+
+
+
+
         db.session.delete(user)
+
+
+
+
 
 
 
@@ -9116,7 +17781,15 @@ def auto_hard_delete_user():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9124,7 +17797,15 @@ def auto_hard_delete_user():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9132,7 +17813,15 @@ def auto_hard_delete_user():
 
 
 
+
+
+
+
             'success': True, 
+
+
+
+
 
 
 
@@ -9140,7 +17829,15 @@ def auto_hard_delete_user():
 
 
 
+
+
+
+
         })
+
+
+
+
 
 
 
@@ -9148,7 +17845,15 @@ def auto_hard_delete_user():
 
 
 
+
+
+
+
         db.session.rollback()
+
+
+
+
 
 
 
@@ -9156,7 +17861,19 @@ def auto_hard_delete_user():
 
 
 
+
+
+
+
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+
+
+
+
+
+
 
 
 
@@ -9168,7 +17885,15 @@ def auto_hard_delete_user():
 
 
 
+
+
+
+
 @admin_required
+
+
+
+
 
 
 
@@ -9176,7 +17901,15 @@ def auto_hard_delete_user():
 
 
 
+
+
+
+
 def complete_hard_delete_user():
+
+
+
+
 
 
 
@@ -9184,7 +17917,15 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
     try:
+
+
+
+
 
 
 
@@ -9192,11 +17933,23 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
         username = data.get('username')
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9204,11 +17957,23 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
             return jsonify({'success': False, 'error': 'Username required'})
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9216,7 +17981,15 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
         user = User.query.filter_by(username=username).first()
+
+
+
+
 
 
 
@@ -9224,11 +17997,23 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
             return jsonify({'success': False, 'error': 'User not found'})
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9236,7 +18021,15 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9244,7 +18037,15 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
         from app import AuditLog
+
+
+
+
 
 
 
@@ -9252,11 +18053,23 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
         audit_count = len(audit_logs_to_delete)
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9264,11 +18077,23 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
             db.session.delete(audit_log)
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9276,7 +18101,15 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
         from app import Delivery
+
+
+
+
 
 
 
@@ -9284,11 +18117,23 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
         delivery_count = len(deliveries_to_delete)
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9296,11 +18141,23 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
             db.session.delete(delivery)
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9308,7 +18165,15 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
         db.session.delete(user)
+
+
+
+
 
 
 
@@ -9316,7 +18181,15 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9324,7 +18197,15 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
         app.logger.info(f"Deleted {audit_count} audit logs and {delivery_count} deliveries")
+
+
+
+
 
 
 
@@ -9332,7 +18213,15 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
         return jsonify({
+
+
+
+
 
 
 
@@ -9340,7 +18229,15 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
             'message': f'User {username} completely deleted with {audit_count} audit logs and {delivery_count} deliveries'
+
+
+
+
 
 
 
@@ -9348,7 +18245,15 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
     except Exception as e:
+
+
+
+
 
 
 
@@ -9356,11 +18261,27 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
         app.logger.error(f"Error in complete hard delete: {str(e)}")
 
 
 
+
+
+
+
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+
+
+
+
+
+
 
 
 
@@ -9376,7 +18297,19 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/create_user', methods=['POST'])
+
+
+
+
 
 
 
@@ -9384,7 +18317,15 @@ def complete_hard_delete_user():
 
 
 
+
+
+
+
 @database_required
+
+
+
+
 
 
 
@@ -9392,7 +18333,15 @@ def create_user():
 
 
 
+
+
+
+
     """Create a new user."""
+
+
+
+
 
 
 
@@ -9400,11 +18349,23 @@ def create_user():
 
 
 
+
+
+
+
         app.logger.info(f"Create user attempt - Session: {dict(session)}")
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9412,7 +18373,15 @@ def create_user():
 
 
 
+
+
+
+
         if 'user_id' not in session:
+
+
+
+
 
 
 
@@ -9420,7 +18389,15 @@ def create_user():
 
 
 
+
+
+
+
             return jsonify({
+
+
+
+
 
 
 
@@ -9428,7 +18405,15 @@ def create_user():
 
 
 
+
+
+
+
                 'redirect': '/login'
+
+
+
+
 
 
 
@@ -9436,7 +18421,15 @@ def create_user():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9444,7 +18437,15 @@ def create_user():
 
 
 
+
+
+
+
         if session.get('user_role') != 'admin':
+
+
+
+
 
 
 
@@ -9452,7 +18453,15 @@ def create_user():
 
 
 
+
+
+
+
             return jsonify({
+
+
+
+
 
 
 
@@ -9460,11 +18469,23 @@ def create_user():
 
 
 
+
+
+
+
             }), 403
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9472,7 +18493,15 @@ def create_user():
 
 
 
+
+
+
+
         try:
+
+
+
+
 
 
 
@@ -9480,7 +18509,15 @@ def create_user():
 
 
 
+
+
+
+
             app.logger.info(f"Raw request data: {data}")
+
+
+
+
 
 
 
@@ -9488,7 +18525,15 @@ def create_user():
 
 
 
+
+
+
+
             app.logger.error(f"JSON parsing error: {str(json_error)}")
+
+
+
+
 
 
 
@@ -9496,7 +18541,15 @@ def create_user():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9504,7 +18557,15 @@ def create_user():
 
 
 
+
+
+
+
             app.logger.error("No JSON data received in create_user")
+
+
+
+
 
 
 
@@ -9512,7 +18573,15 @@ def create_user():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -9520,7 +18589,15 @@ def create_user():
 
 
 
+
+
+
+
         password = data.get('password', '')
+
+
+
+
 
 
 
@@ -9528,7 +18605,15 @@ def create_user():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9536,11 +18621,23 @@ def create_user():
 
 
 
+
+
+
+
         app.logger.info(f"Received data: {dict(data)}")
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9548,7 +18645,15 @@ def create_user():
 
 
 
+
+
+
+
         if not username:
+
+
+
+
 
 
 
@@ -9556,11 +18661,23 @@ def create_user():
 
 
 
+
+
+
+
             return jsonify({'error': 'Username is required'}), 400
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -9568,7 +18685,15 @@ def create_user():
 
 
 
+
+
+
+
             app.logger.error("Password is empty")
+
+
+
+
 
 
 
@@ -9576,7 +18701,15 @@ def create_user():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -9584,7 +18717,15 @@ def create_user():
 
 
 
+
+
+
+
             app.logger.error(f"Username too short: {username}")
+
+
+
+
 
 
 
@@ -9592,7 +18733,15 @@ def create_user():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -9600,7 +18749,15 @@ def create_user():
 
 
 
+
+
+
+
             app.logger.error(f"Password too short: {len(password)} characters")
+
+
+
+
 
 
 
@@ -9608,7 +18765,15 @@ def create_user():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9616,7 +18781,15 @@ def create_user():
 
 
 
+
+
+
+
             app.logger.error(f"Invalid role: {role}")
+
+
+
+
 
 
 
@@ -9624,7 +18797,15 @@ def create_user():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9632,7 +18813,15 @@ def create_user():
 
 
 
+
+
+
+
         try:
+
+
+
+
 
 
 
@@ -9640,7 +18829,15 @@ def create_user():
 
 
 
+
+
+
+
             if existing_user:
+
+
+
+
 
 
 
@@ -9648,7 +18845,15 @@ def create_user():
 
 
 
+
+
+
+
                 return jsonify({'error': 'Username already exists'}), 400
+
+
+
+
 
 
 
@@ -9656,7 +18861,15 @@ def create_user():
 
 
 
+
+
+
+
             app.logger.error(f"Database query error: {str(db_error)}")
+
+
+
+
 
 
 
@@ -9664,7 +18877,15 @@ def create_user():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9672,7 +18893,15 @@ def create_user():
 
 
 
+
+
+
+
         try:
+
+
+
+
 
 
 
@@ -9680,7 +18909,15 @@ def create_user():
 
 
 
+
+
+
+
             new_user.set_password(password)
+
+
+
+
 
 
 
@@ -9688,11 +18925,23 @@ def create_user():
 
 
 
+
+
+
+
             db.session.commit()
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -9700,7 +18949,15 @@ def create_user():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -9708,7 +18965,15 @@ def create_user():
 
 
 
+
+
+
+
                 'success': True, 
+
+
+
+
 
 
 
@@ -9716,7 +18981,15 @@ def create_user():
 
 
 
+
+
+
+
                 'user': {
+
+
+
+
 
 
 
@@ -9724,7 +18997,15 @@ def create_user():
 
 
 
+
+
+
+
                     'username': new_user.username,
+
+
+
+
 
 
 
@@ -9732,7 +19013,15 @@ def create_user():
 
 
 
+
+
+
+
                     'created_at': new_user.created_at.strftime('%Y-%m-%d %H:%M') if new_user.created_at else None
+
+
+
+
 
 
 
@@ -9740,7 +19029,15 @@ def create_user():
 
 
 
+
+
+
+
             })
+
+
+
+
 
 
 
@@ -9748,7 +19045,15 @@ def create_user():
 
 
 
+
+
+
+
         except Exception as commit_error:
+
+
+
+
 
 
 
@@ -9756,7 +19061,15 @@ def create_user():
 
 
 
+
+
+
+
             app.logger.error(f"Database commit error: {str(commit_error)}")
+
+
+
+
 
 
 
@@ -9764,7 +19077,15 @@ def create_user():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9772,7 +19093,21 @@ def create_user():
 
 
 
+
+
+
+
         db.session.rollback()
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -9786,7 +19121,15 @@ def create_user():
 
 
 
+
+
+
+
 @admin_required_api
+
+
+
+
 
 
 
@@ -9794,7 +19137,15 @@ def create_user():
 
 
 
+
+
+
+
 def update_user(user_id):
+
+
+
+
 
 
 
@@ -9802,7 +19153,15 @@ def update_user(user_id):
 
 
 
+
+
+
+
     try:
+
+
+
+
 
 
 
@@ -9810,7 +19169,15 @@ def update_user(user_id):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9818,7 +19185,15 @@ def update_user(user_id):
 
 
 
+
+
+
+
         if user.username == 'Admin':
+
+
+
+
 
 
 
@@ -9826,7 +19201,15 @@ def update_user(user_id):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9834,7 +19217,15 @@ def update_user(user_id):
 
 
 
+
+
+
+
         username = data.get('username', '').strip()
+
+
+
+
 
 
 
@@ -9842,11 +19233,23 @@ def update_user(user_id):
 
 
 
+
+
+
+
         role = data.get('role', user.role)
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9854,11 +19257,23 @@ def update_user(user_id):
 
 
 
+
+
+
+
             return jsonify({'error': 'Username is required'}), 400
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9866,11 +19281,23 @@ def update_user(user_id):
 
 
 
+
+
+
+
             return jsonify({'error': 'Role must be admin or user'}), 400
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9878,7 +19305,15 @@ def update_user(user_id):
 
 
 
+
+
+
+
         existing_user = User.query.filter(User.username == username, User.id != user_id).first()
+
+
+
+
 
 
 
@@ -9886,11 +19321,23 @@ def update_user(user_id):
 
 
 
+
+
+
+
             return jsonify({'error': 'Username already exists'}), 400
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9898,7 +19345,15 @@ def update_user(user_id):
 
 
 
+
+
+
+
         user.username = username
+
+
+
+
 
 
 
@@ -9906,7 +19361,15 @@ def update_user(user_id):
 
 
 
+
+
+
+
         if password:  # Only update password if provided
+
+
+
+
 
 
 
@@ -9914,7 +19377,15 @@ def update_user(user_id):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9922,7 +19393,15 @@ def update_user(user_id):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -9930,7 +19409,15 @@ def update_user(user_id):
 
 
 
+
+
+
+
             'success': True, 
+
+
+
+
 
 
 
@@ -9938,7 +19425,15 @@ def update_user(user_id):
 
 
 
+
+
+
+
             'user': {
+
+
+
+
 
 
 
@@ -9946,7 +19441,15 @@ def update_user(user_id):
 
 
 
+
+
+
+
                 'username': user.username,
+
+
+
+
 
 
 
@@ -9954,7 +19457,15 @@ def update_user(user_id):
 
 
 
+
+
+
+
                 'created_at': user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else None
+
+
+
+
 
 
 
@@ -9962,7 +19473,15 @@ def update_user(user_id):
 
 
 
+
+
+
+
         })
+
+
+
+
 
 
 
@@ -9970,11 +19489,23 @@ def update_user(user_id):
 
 
 
+
+
+
+
         db.session.rollback()
 
 
 
+
+
+
+
         app.logger.error(f"Error updating user: {str(e)}")
+
+
+
+
 
 
 
@@ -9986,7 +19517,19 @@ def update_user(user_id):
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/delete_user/<int:user_id>', methods=['DELETE'])
+
+
+
+
 
 
 
@@ -9994,7 +19537,15 @@ def update_user(user_id):
 
 
 
+
+
+
+
 @database_required
+
+
+
+
 
 
 
@@ -10002,7 +19553,15 @@ def delete_user(user_id):
 
 
 
+
+
+
+
     """Delete a user."""
+
+
+
+
 
 
 
@@ -10010,11 +19569,23 @@ def delete_user(user_id):
 
 
 
+
+
+
+
         user = User.query.get_or_404(user_id)
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10022,7 +19593,15 @@ def delete_user(user_id):
 
 
 
+
+
+
+
         if user.username == 'Admin':
+
+
+
+
 
 
 
@@ -10030,7 +19609,15 @@ def delete_user(user_id):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10038,7 +19625,15 @@ def delete_user(user_id):
 
 
 
+
+
+
+
         user.is_active = False
+
+
+
+
 
 
 
@@ -10046,7 +19641,15 @@ def delete_user(user_id):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10054,7 +19657,15 @@ def delete_user(user_id):
 
 
 
+
+
+
+
     except Exception as e:
+
+
+
+
 
 
 
@@ -10062,7 +19673,15 @@ def delete_user(user_id):
 
 
 
+
+
+
+
         app.logger.error(f"Error deleting user: {str(e)}")
+
+
+
+
 
 
 
@@ -10074,7 +19693,19 @@ def delete_user(user_id):
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/get_delivery_trends')
+
+
+
+
 
 
 
@@ -10082,7 +19713,15 @@ def delete_user(user_id):
 
 
 
+
+
+
+
 @database_required
+
+
+
+
 
 
 
@@ -10090,7 +19729,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
     """Get delivery trends data for charts."""
+
+
+
+
 
 
 
@@ -10098,7 +19745,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
         # Get date range from query params (default to last 30 days)
+
+
+
+
 
 
 
@@ -10106,7 +19761,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
         end_date = get_current_time()
+
+
+
+
 
 
 
@@ -10114,7 +19777,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10122,7 +19793,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
         deliveries = Delivery.query.filter(
+
+
+
+
 
 
 
@@ -10130,7 +19809,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
             Delivery.created_at <= end_date
+
+
+
+
 
 
 
@@ -10138,7 +19825,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10146,11 +19841,23 @@ def get_delivery_trends():
 
 
 
+
+
+
+
         daily_data = {}
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10158,11 +19865,23 @@ def get_delivery_trends():
 
 
 
+
+
+
+
             date_key = delivery.created_at.strftime('%Y-%m-%d')
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -10170,7 +19889,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
                 daily_data[date_key] = {'Pending': 0, 'In Transit': 0, 'Delivered': 0}
+
+
+
+
 
 
 
@@ -10178,11 +19905,23 @@ def get_delivery_trends():
 
 
 
+
+
+
+
             daily_data[date_key][delivery.status] = daily_data[date_key].get(delivery.status, 0) + 1
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10190,7 +19929,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
         dates = sorted(daily_data.keys())
+
+
+
+
 
 
 
@@ -10198,7 +19945,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
         in_transit_counts = [daily_data[date].get('In Transit', 0) for date in dates]
+
+
+
+
 
 
 
@@ -10206,7 +19961,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10214,7 +19977,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
             'labels': [datetime.strptime(date, '%Y-%m-%d').strftime('%b %d') for date in dates],
+
+
+
+
 
 
 
@@ -10222,7 +19993,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
                 {
+
+
+
+
 
 
 
@@ -10230,7 +20009,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
                     'data': pending_counts,
+
+
+
+
 
 
 
@@ -10238,7 +20025,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
                     'backgroundColor': 'rgba(245, 158, 11, 0.1)',
+
+
+
+
 
 
 
@@ -10246,7 +20041,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
                     'borderWidth': 2,
+
+
+
+
 
 
 
@@ -10254,7 +20057,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
                     'pointHoverRadius': 5
+
+
+
+
 
 
 
@@ -10262,7 +20073,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
                 {
+
+
+
+
 
 
 
@@ -10270,7 +20089,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
                     'data': in_transit_counts,
+
+
+
+
 
 
 
@@ -10278,7 +20105,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
                     'backgroundColor': 'rgba(59, 130, 246, 0.1)',
+
+
+
+
 
 
 
@@ -10286,7 +20121,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
                     'borderWidth': 2,
+
+
+
+
 
 
 
@@ -10294,7 +20137,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
                     'pointHoverRadius': 5
+
+
+
+
 
 
 
@@ -10302,7 +20153,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
                 {
+
+
+
+
 
 
 
@@ -10310,7 +20169,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
                     'data': delivered_counts,
+
+
+
+
 
 
 
@@ -10318,7 +20185,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
                     'backgroundColor': 'rgba(16, 185, 129, 0.1)',
+
+
+
+
 
 
 
@@ -10326,7 +20201,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
                     'borderWidth': 2,
+
+
+
+
 
 
 
@@ -10334,7 +20217,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
                     'pointHoverRadius': 5
+
+
+
+
 
 
 
@@ -10342,7 +20233,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
             ]
+
+
+
+
 
 
 
@@ -10350,7 +20249,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10358,11 +20265,27 @@ def get_delivery_trends():
 
 
 
+
+
+
+
         app.logger.error(f"Error getting delivery trends: {str(e)}")
 
 
 
+
+
+
+
         return jsonify({'error': 'Failed to load delivery trends'}), 500
+
+
+
+
+
+
+
+
 
 
 
@@ -10374,7 +20297,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
 @login_required
+
+
+
+
 
 
 
@@ -10382,7 +20313,15 @@ def get_delivery_trends():
 
 
 
+
+
+
+
 def get_revenue_charts():
+
+
+
+
 
 
 
@@ -10390,7 +20329,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
     try:
+
+
+
+
 
 
 
@@ -10398,7 +20345,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
         if 'user_id' not in session:
+
+
+
+
 
 
 
@@ -10406,7 +20361,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
             return jsonify({
+
+
+
+
 
 
 
@@ -10414,7 +20377,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                 'summary': {
+
+
+
+
 
 
 
@@ -10422,7 +20393,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                     'total_expenses': 0,
+
+
+
+
 
 
 
@@ -10430,7 +20409,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                     'profit_margin': 0
+
+
+
+
 
 
 
@@ -10438,7 +20425,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                 'error': 'Authentication required'
+
+
+
+
 
 
 
@@ -10446,7 +20441,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10454,7 +20457,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
         days = request.args.get('days', 30, type=int)
+
+
+
+
 
 
 
@@ -10462,11 +20473,23 @@ def get_revenue_charts():
 
 
 
+
+
+
+
         start_date = end_date - timedelta(days=days)
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10474,7 +20497,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
         deliveries = Delivery.query.filter(
+
+
+
+
 
 
 
@@ -10482,7 +20513,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
             Delivery.created_at <= end_date
+
+
+
+
 
 
 
@@ -10490,7 +20529,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10498,7 +20545,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
         daily_revenue = {}
+
+
+
+
 
 
 
@@ -10506,7 +20561,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10514,11 +20577,23 @@ def get_revenue_charts():
 
 
 
+
+
+
+
             date_key = delivery.created_at.strftime('%Y-%m-%d')
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -10526,7 +20601,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
             expenses = float(delivery.expenses) if delivery.expenses else 0.0
+
+
+
+
 
 
 
@@ -10534,7 +20617,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
             daily_revenue[date_key] = daily_revenue.get(date_key, 0) + amount
+
+
+
+
 
 
 
@@ -10542,7 +20633,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10550,7 +20649,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
         dates = sorted(daily_revenue.keys())
+
+
+
+
 
 
 
@@ -10558,11 +20665,23 @@ def get_revenue_charts():
 
 
 
+
+
+
+
         expenses_data = [daily_expenses[date] for date in dates]
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10570,7 +20689,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
         total_revenue = sum(revenue_data)
+
+
+
+
 
 
 
@@ -10578,7 +20705,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10586,7 +20721,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
             'line_chart': {
+
+
+
+
 
 
 
@@ -10594,11 +20737,23 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                 'datasets': [
 
 
 
+
+
+
+
                     {
+
+
+
+
 
 
 
@@ -10606,7 +20761,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                         'data': revenue_data,
+
+
+
+
 
 
 
@@ -10614,7 +20777,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                         'backgroundColor': 'rgba(16, 185, 129, 0.1)',
+
+
+
+
 
 
 
@@ -10622,7 +20793,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                         'borderWidth': 2,
+
+
+
+
 
 
 
@@ -10630,7 +20809,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                         'pointHoverRadius': 5
+
+
+
+
 
 
 
@@ -10638,7 +20825,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                     {
+
+
+
+
 
 
 
@@ -10646,7 +20841,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                         'data': expenses_data,
+
+
+
+
 
 
 
@@ -10654,7 +20857,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                         'backgroundColor': 'rgba(239, 68, 68, 0.1)',
+
+
+
+
 
 
 
@@ -10662,7 +20873,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                         'borderWidth': 2,
+
+
+
+
 
 
 
@@ -10670,7 +20889,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                         'pointHoverRadius': 5
+
+
+
+
 
 
 
@@ -10678,7 +20905,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                 ]
+
+
+
+
 
 
 
@@ -10686,7 +20921,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
             'summary': {
+
+
+
+
 
 
 
@@ -10694,7 +20937,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                 'total_expenses': round(total_expenses, 2)
+
+
+
+
 
 
 
@@ -10702,7 +20953,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
         })
+
+
+
+
 
 
 
@@ -10710,7 +20969,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
     except Exception as e:
+
+
+
+
 
 
 
@@ -10718,7 +20985,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
         # Return empty data structure with zeros to prevent JavaScript errors
+
+
+
+
 
 
 
@@ -10726,7 +21001,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
             'line_chart': {
+
+
+
+
 
 
 
@@ -10734,11 +21017,23 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                 'datasets': []
 
 
 
+
+
+
+
             },
+
+
+
+
 
 
 
@@ -10746,7 +21041,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                 'total_revenue': 0,
+
+
+
+
 
 
 
@@ -10754,7 +21057,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
                 'total_profit': 0,
+
+
+
+
 
 
 
@@ -10762,11 +21073,23 @@ def get_revenue_charts():
 
 
 
+
+
+
+
             },
 
 
 
+
+
+
+
             'error': 'Failed to load revenue charts'
+
+
+
+
 
 
 
@@ -10778,7 +21101,19 @@ def get_revenue_charts():
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/get_revenue_analytics')
+
+
+
+
 
 
 
@@ -10786,7 +21121,15 @@ def get_revenue_charts():
 
 
 
+
+
+
+
 @database_required
+
+
+
+
 
 
 
@@ -10794,7 +21137,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
     """Get revenue analytics data with real-time updates."""
+
+
+
+
 
 
 
@@ -10802,7 +21153,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         # Get period from query params (daily, weekly, monthly)
+
+
+
+
 
 
 
@@ -10810,7 +21169,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10818,7 +21185,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         end_date = get_current_time()
+
+
+
+
 
 
 
@@ -10826,7 +21201,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         if period == 'daily':
+
+
+
+
 
 
 
@@ -10834,11 +21217,23 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
             period_days = 7
 
 
 
+
+
+
+
         elif period == 'weekly':
+
+
+
+
 
 
 
@@ -10846,11 +21241,23 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
             period_days = 35
 
 
 
+
+
+
+
         else:  # monthly
+
+
+
+
 
 
 
@@ -10858,11 +21265,23 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
             period_days = 365
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10870,7 +21289,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         deliveries = Delivery.query.filter(
+
+
+
+
 
 
 
@@ -10878,7 +21305,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
             Delivery.created_at <= end_date
+
+
+
+
 
 
 
@@ -10886,7 +21321,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10894,7 +21337,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         daily_data = {}
+
+
+
+
 
 
 
@@ -10902,7 +21353,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
             date_key = delivery.created_at.strftime('%Y-%m-%d')
+
+
+
+
 
 
 
@@ -10910,7 +21369,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -10918,7 +21385,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
                 daily_data[date_key] = {'revenue': 0.0, 'count': 0, 'costs': 0.0}
+
+
+
+
 
 
 
@@ -10926,7 +21401,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
             daily_data[date_key]['costs'] += 0  # No operational costs by default
+
+
+
+
 
 
 
@@ -10934,7 +21417,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10942,7 +21433,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         if period == 'daily':
+
+
+
+
 
 
 
@@ -10950,7 +21449,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         elif period == 'weekly':
+
+
+
+
 
 
 
@@ -10958,7 +21465,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         else:  # monthly
+
+
+
+
 
 
 
@@ -10966,7 +21481,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -10974,7 +21497,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         total_revenue = sum(revenue_data)
+
+
+
+
 
 
 
@@ -10982,7 +21513,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         peak_revenue = max(revenue_data) if revenue_data else 0
+
+
+
+
 
 
 
@@ -10990,11 +21529,23 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         peak_label = labels[peak_index] if labels else 'N/A'
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -11002,11 +21553,23 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         growth_rate = calculate_growth_rate(revenue_data)
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -11014,7 +21577,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         avg_target = max(avg_daily * 0.8, 500 if period == 'daily' else 2000 if period == 'weekly' else 6000)
+
+
+
+
 
 
 
@@ -11022,7 +21593,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -11030,7 +21609,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
             'period': period,
+
+
+
+
 
 
 
@@ -11038,7 +21625,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
                 'start': start_date.strftime('%Y-%m-%d'),
+
+
+
+
 
 
 
@@ -11046,7 +21641,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
                 'description': get_period_description(period)
+
+
+
+
 
 
 
@@ -11054,7 +21657,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
             'labels': labels,
+
+
+
+
 
 
 
@@ -11062,7 +21673,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
             'target': target_data,
+
+
+
+
 
 
 
@@ -11070,7 +21689,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
                 'total_revenue': total_revenue,
+
+
+
+
 
 
 
@@ -11078,7 +21705,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
                 'peak_revenue': peak_revenue,
+
+
+
+
 
 
 
@@ -11086,7 +21721,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
                 'growth_rate': growth_rate
+
+
+
+
 
 
 
@@ -11094,7 +21737,15 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
         })
+
+
+
+
 
 
 
@@ -11102,11 +21753,23 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
     except Exception as e:
 
 
 
+
+
+
+
         app.logger.error(f"Error getting revenue analytics: {str(e)}")
+
+
+
+
 
 
 
@@ -11118,7 +21781,19 @@ def get_revenue_analytics():
 
 
 
+
+
+
+
+
+
+
+
 def process_daily_data(daily_data, days):
+
+
+
+
 
 
 
@@ -11126,7 +21801,15 @@ def process_daily_data(daily_data, days):
 
 
 
+
+
+
+
     labels = []
+
+
+
+
 
 
 
@@ -11134,7 +21817,15 @@ def process_daily_data(daily_data, days):
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -11142,7 +21833,15 @@ def process_daily_data(daily_data, days):
 
 
 
+
+
+
+
         date = get_current_time() - timedelta(days=days-1-i)
+
+
+
+
 
 
 
@@ -11150,7 +21849,15 @@ def process_daily_data(daily_data, days):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -11158,7 +21865,15 @@ def process_daily_data(daily_data, days):
 
 
 
+
+
+
+
         label = date.strftime('%a')
+
+
+
+
 
 
 
@@ -11166,7 +21881,15 @@ def process_daily_data(daily_data, days):
 
 
 
+
+
+
+
             label = date.strftime('%b %d')  # Show date for first and last
+
+
+
+
 
 
 
@@ -11174,7 +21897,15 @@ def process_daily_data(daily_data, days):
 
 
 
+
+
+
+
         labels.append(label)
+
+
+
+
 
 
 
@@ -11182,11 +21913,27 @@ def process_daily_data(daily_data, days):
 
 
 
+
+
+
+
     
 
 
 
+
+
+
+
     return labels, revenue
+
+
+
+
+
+
+
+
 
 
 
@@ -11198,7 +21945,15 @@ def process_weekly_data(daily_data, days):
 
 
 
+
+
+
+
     """Process weekly data for revenue analytics."""
+
+
+
+
 
 
 
@@ -11206,11 +21961,23 @@ def process_weekly_data(daily_data, days):
 
 
 
+
+
+
+
     revenue = [0.0] * 5
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -11218,7 +21985,15 @@ def process_weekly_data(daily_data, days):
 
 
 
+
+
+
+
         date_obj = datetime.strptime(date_key, '%Y-%m-%d')
+
+
+
+
 
 
 
@@ -11226,7 +22001,15 @@ def process_weekly_data(daily_data, days):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -11234,7 +22017,15 @@ def process_weekly_data(daily_data, days):
 
 
 
+
+
+
+
             week_num = min(days_ago // 7, 4)
+
+
+
+
 
 
 
@@ -11242,11 +22033,27 @@ def process_weekly_data(daily_data, days):
 
 
 
+
+
+
+
     
 
 
 
+
+
+
+
     return labels, revenue
+
+
+
+
+
+
+
+
 
 
 
@@ -11258,7 +22065,15 @@ def process_monthly_data(daily_data, days):
 
 
 
+
+
+
+
     """Process monthly data for revenue analytics."""
+
+
+
+
 
 
 
@@ -11266,7 +22081,15 @@ def process_monthly_data(daily_data, days):
 
 
 
+
+
+
+
                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+
+
+
 
 
 
@@ -11274,11 +22097,23 @@ def process_monthly_data(daily_data, days):
 
 
 
+
+
+
+
     revenue = [0.0] * 12
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -11286,7 +22121,15 @@ def process_monthly_data(daily_data, days):
 
 
 
+
+
+
+
         date_obj = datetime.strptime(date_key, '%Y-%m-%d')
+
+
+
+
 
 
 
@@ -11294,7 +22137,15 @@ def process_monthly_data(daily_data, days):
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -11302,7 +22153,15 @@ def process_monthly_data(daily_data, days):
 
 
 
+
+
+
+
         if (get_current_time() - date_obj).days < 365:
+
+
+
+
 
 
 
@@ -11310,7 +22169,15 @@ def process_monthly_data(daily_data, days):
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -11322,7 +22189,19 @@ def process_monthly_data(daily_data, days):
 
 
 
+
+
+
+
+
+
+
+
 def calculate_growth_rate(revenue_data):
+
+
+
+
 
 
 
@@ -11330,7 +22209,15 @@ def calculate_growth_rate(revenue_data):
 
 
 
+
+
+
+
     if len(revenue_data) < 2:
+
+
+
+
 
 
 
@@ -11338,7 +22225,15 @@ def calculate_growth_rate(revenue_data):
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -11346,11 +22241,23 @@ def calculate_growth_rate(revenue_data):
 
 
 
+
+
+
+
     last = revenue_data[-1]
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -11358,7 +22265,15 @@ def calculate_growth_rate(revenue_data):
 
 
 
+
+
+
+
         return '+100.0%' if last > 0 else '+0.0%'
+
+
+
+
 
 
 
@@ -11366,11 +22281,23 @@ def calculate_growth_rate(revenue_data):
 
 
 
+
+
+
+
     growth = ((last - first) / first) * 100
 
 
 
+
+
+
+
     sign = '+' if growth >= 0 else ''
+
+
+
+
 
 
 
@@ -11382,7 +22309,19 @@ def calculate_growth_rate(revenue_data):
 
 
 
+
+
+
+
+
+
+
+
 def get_period_description(period):
+
+
+
+
 
 
 
@@ -11390,7 +22329,15 @@ def get_period_description(period):
 
 
 
+
+
+
+
     descriptions = {
+
+
+
+
 
 
 
@@ -11398,7 +22345,15 @@ def get_period_description(period):
 
 
 
+
+
+
+
         'weekly': 'Last 5 weeks',
+
+
+
+
 
 
 
@@ -11406,7 +22361,15 @@ def get_period_description(period):
 
 
 
+
+
+
+
     }
+
+
+
+
 
 
 
@@ -11418,7 +22381,19 @@ def get_period_description(period):
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/system_health')
+
+
+
+
 
 
 
@@ -11426,7 +22401,15 @@ def get_period_description(period):
 
 
 
+
+
+
+
 def system_health():
+
+
+
+
 
 
 
@@ -11434,7 +22417,15 @@ def system_health():
 
 
 
+
+
+
+
     return render_template('system_health.html')
+
+
+
+
 
 
 
@@ -11442,7 +22433,15 @@ def system_health():
 
 
 
+
+
+
+
 def get_system_health():
+
+
+
+
 
 
 
@@ -11450,7 +22449,15 @@ def get_system_health():
 
 
 
+
+
+
+
     try:
+
+
+
+
 
 
 
@@ -11458,7 +22465,15 @@ def get_system_health():
 
 
 
+
+
+
+
         try:
+
+
+
+
 
 
 
@@ -11466,7 +22481,15 @@ def get_system_health():
 
 
 
+
+
+
+
             psutil_available = True
+
+
+
+
 
 
 
@@ -11474,7 +22497,15 @@ def get_system_health():
 
 
 
+
+
+
+
             psutil_available = False
+
+
+
+
 
 
 
@@ -11482,7 +22513,15 @@ def get_system_health():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -11490,7 +22529,15 @@ def get_system_health():
 
 
 
+
+
+
+
         system_info = {
+
+
+
+
 
 
 
@@ -11498,7 +22545,15 @@ def get_system_health():
 
 
 
+
+
+
+
             'platform_release': platform.release(),
+
+
+
+
 
 
 
@@ -11506,7 +22561,15 @@ def get_system_health():
 
 
 
+
+
+
+
             'architecture': platform.machine(),
+
+
+
+
 
 
 
@@ -11514,7 +22577,15 @@ def get_system_health():
 
 
 
+
+
+
+
             'processor': platform.processor(),
+
+
+
+
 
 
 
@@ -11522,7 +22593,15 @@ def get_system_health():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -11530,7 +22609,15 @@ def get_system_health():
 
 
 
+
+
+
+
             # Get real system metrics
+
+
+
+
 
 
 
@@ -11538,7 +22625,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 # Get CPU usage
+
+
+
+
 
 
 
@@ -11546,7 +22641,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 cpu_count = psutil.cpu_count()
+
+
+
+
 
 
 
@@ -11554,7 +22657,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 
+
+
+
+
 
 
 
@@ -11562,7 +22673,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 memory = psutil.virtual_memory()
+
+
+
+
 
 
 
@@ -11570,7 +22689,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 memory_total = memory.total
+
+
+
+
 
 
 
@@ -11578,11 +22705,23 @@ def get_system_health():
 
 
 
+
+
+
+
                 memory_used = memory.used
 
 
 
+
+
+
+
                 
+
+
+
+
 
 
 
@@ -11590,7 +22729,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 disk = psutil.disk_usage('/')
+
+
+
+
 
 
 
@@ -11598,7 +22745,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 disk_total = disk.total
+
+
+
+
 
 
 
@@ -11606,11 +22761,23 @@ def get_system_health():
 
 
 
+
+
+
+
                 disk_used = disk.used
 
 
 
+
+
+
+
                 
+
+
+
+
 
 
 
@@ -11618,7 +22785,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 network = psutil.net_io_counters()
+
+
+
+
 
 
 
@@ -11626,11 +22801,23 @@ def get_system_health():
 
 
 
+
+
+
+
                 bytes_recv = network.bytes_recv if network else 0
 
 
 
+
+
+
+
                 
+
+
+
+
 
 
 
@@ -11638,7 +22825,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 process_count = len(psutil.pids())
+
+
+
+
 
 
 
@@ -11646,7 +22841,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 process_memory = current_process.memory_info()
+
+
+
+
 
 
 
@@ -11654,7 +22857,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 
+
+
+
+
 
 
 
@@ -11662,7 +22873,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 app.logger.error(f"psutil error: {str(psutil_error)}")
+
+
+
+
 
 
 
@@ -11670,7 +22889,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 cpu_usage = 25
+
+
+
+
 
 
 
@@ -11678,7 +22905,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 cpu_freq = None
+
+
+
+
 
 
 
@@ -11686,7 +22921,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 memory_total = 8 * 1024**3  # 8GB
+
+
+
+
 
 
 
@@ -11694,7 +22937,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 memory_used = memory_total * 0.45
+
+
+
+
 
 
 
@@ -11702,7 +22953,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 disk_total = 500 * 1024**3  # 500GB
+
+
+
+
 
 
 
@@ -11710,7 +22969,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 disk_used = disk_total * 0.30
+
+
+
+
 
 
 
@@ -11718,7 +22985,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 bytes_recv = 1024 * 1024 * 150  # 150MB
+
+
+
+
 
 
 
@@ -11726,7 +23001,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 process_memory = type('obj', (object,), {'rss': 1024 * 1024 * 50})()  # 50MB
+
+
+
+
 
 
 
@@ -11734,7 +23017,15 @@ def get_system_health():
 
 
 
+
+
+
+
         else:
+
+
+
+
 
 
 
@@ -11742,7 +23033,15 @@ def get_system_health():
 
 
 
+
+
+
+
             cpu_usage = 25
+
+
+
+
 
 
 
@@ -11750,7 +23049,15 @@ def get_system_health():
 
 
 
+
+
+
+
             cpu_freq = None
+
+
+
+
 
 
 
@@ -11758,7 +23065,15 @@ def get_system_health():
 
 
 
+
+
+
+
             memory_total = 8 * 1024**3  # 8GB
+
+
+
+
 
 
 
@@ -11766,7 +23081,15 @@ def get_system_health():
 
 
 
+
+
+
+
             memory_used = memory_total * 0.45
+
+
+
+
 
 
 
@@ -11774,7 +23097,15 @@ def get_system_health():
 
 
 
+
+
+
+
             disk_total = 500 * 1024**3  # 500GB
+
+
+
+
 
 
 
@@ -11782,7 +23113,15 @@ def get_system_health():
 
 
 
+
+
+
+
             disk_used = disk_total * 0.30
+
+
+
+
 
 
 
@@ -11790,7 +23129,15 @@ def get_system_health():
 
 
 
+
+
+
+
             bytes_recv = 1024 * 1024 * 150  # 150MB
+
+
+
+
 
 
 
@@ -11798,7 +23145,15 @@ def get_system_health():
 
 
 
+
+
+
+
             process_memory = type('obj', (object,), {'rss': 1024 * 1024 * 50})()  # 50MB
+
+
+
+
 
 
 
@@ -11806,7 +23161,15 @@ def get_system_health():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -11814,7 +23177,15 @@ def get_system_health():
 
 
 
+
+
+
+
         app_start_time = datetime.now() - timedelta(hours=24)  # Simulated 24 hours uptime
+
+
+
+
 
 
 
@@ -11822,11 +23193,23 @@ def get_system_health():
 
 
 
+
+
+
+
         uptime_str = f"{uptime.days}d {uptime.seconds // 3600}h {(uptime.seconds % 3600) // 60}m"
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -11834,7 +23217,15 @@ def get_system_health():
 
 
 
+
+
+
+
         db_start = datetime.now()
+
+
+
+
 
 
 
@@ -11842,7 +23233,15 @@ def get_system_health():
 
 
 
+
+
+
+
         db_query_time = (datetime.now() - db_start).total_seconds() * 1000
+
+
+
+
 
 
 
@@ -11850,7 +23249,15 @@ def get_system_health():
 
 
 
+
+
+
+
         return jsonify({
+
+
+
+
 
 
 
@@ -11858,7 +23265,15 @@ def get_system_health():
 
 
 
+
+
+
+
             'performance': {
+
+
+
+
 
 
 
@@ -11866,7 +23281,15 @@ def get_system_health():
 
 
 
+
+
+
+
                     'usage_percent': cpu_usage,
+
+
+
+
 
 
 
@@ -11874,7 +23297,15 @@ def get_system_health():
 
 
 
+
+
+
+
                     'frequency': cpu_freq.current if cpu_freq else 0,
+
+
+
+
 
 
 
@@ -11882,7 +23313,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 },
+
+
+
+
 
 
 
@@ -11890,7 +23329,15 @@ def get_system_health():
 
 
 
+
+
+
+
                     'usage_percent': memory_usage,
+
+
+
+
 
 
 
@@ -11898,7 +23345,15 @@ def get_system_health():
 
 
 
+
+
+
+
                     'available_gb': round(memory_available / (1024**3), 2),
+
+
+
+
 
 
 
@@ -11906,11 +23361,23 @@ def get_system_health():
 
 
 
+
+
+
+
                     'status': 'healthy' if memory_usage < 80 else 'warning' if memory_usage < 95 else 'critical'
 
 
 
+
+
+
+
                 },
+
+
+
+
 
 
 
@@ -11918,7 +23385,15 @@ def get_system_health():
 
 
 
+
+
+
+
                     'usage_percent': disk_usage,
+
+
+
+
 
 
 
@@ -11926,7 +23401,15 @@ def get_system_health():
 
 
 
+
+
+
+
                     'free_gb': round(disk_free / (1024**3), 2),
+
+
+
+
 
 
 
@@ -11934,11 +23417,23 @@ def get_system_health():
 
 
 
+
+
+
+
                     'status': 'healthy' if disk_usage < 80 else 'warning' if disk_usage < 95 else 'critical'
 
 
 
+
+
+
+
                 },
+
+
+
+
 
 
 
@@ -11946,7 +23441,15 @@ def get_system_health():
 
 
 
+
+
+
+
                     'bytes_sent_mb': round(bytes_sent / (1024**2), 2),
+
+
+
+
 
 
 
@@ -11954,7 +23457,15 @@ def get_system_health():
 
 
 
+
+
+
+
                     'status': 'healthy'
+
+
+
+
 
 
 
@@ -11962,7 +23473,15 @@ def get_system_health():
 
 
 
+
+
+
+
             },
+
+
+
+
 
 
 
@@ -11970,7 +23489,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 'total_count': process_count,
+
+
+
+
 
 
 
@@ -11978,7 +23505,15 @@ def get_system_health():
 
 
 
+
+
+
+
                     'memory_mb': round(process_memory.rss / (1024**2), 2),
+
+
+
+
 
 
 
@@ -11986,7 +23521,15 @@ def get_system_health():
 
 
 
+
+
+
+
                     'status': 'healthy'
+
+
+
+
 
 
 
@@ -11994,7 +23537,15 @@ def get_system_health():
 
 
 
+
+
+
+
             },
+
+
+
+
 
 
 
@@ -12002,7 +23553,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 'query_time_ms': round(db_query_time, 2),
+
+
+
+
 
 
 
@@ -12010,11 +23569,23 @@ def get_system_health():
 
 
 
+
+
+
+
                 'status': 'healthy' if db_query_time < 100 else 'warning' if db_query_time < 500 else 'critical'
 
 
 
+
+
+
+
             },
+
+
+
+
 
 
 
@@ -12022,7 +23593,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 'formatted': uptime_str,
+
+
+
+
 
 
 
@@ -12030,7 +23609,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 'status': 'healthy'
+
+
+
+
 
 
 
@@ -12038,7 +23625,15 @@ def get_system_health():
 
 
 
+
+
+
+
             'overall_status': 'healthy' if cpu_usage < 80 and memory_usage < 80 and disk_usage < 80 and db_query_time < 100 else 'warning' if cpu_usage < 95 and memory_usage < 95 and disk_usage < 95 and db_query_time < 500 else 'critical',
+
+
+
+
 
 
 
@@ -12046,7 +23641,15 @@ def get_system_health():
 
 
 
+
+
+
+
             'psutil_available': psutil_available
+
+
+
+
 
 
 
@@ -12054,7 +23657,15 @@ def get_system_health():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -12062,7 +23673,15 @@ def get_system_health():
 
 
 
+
+
+
+
         app.logger.error(f"Error getting system health: {str(e)}")
+
+
+
+
 
 
 
@@ -12070,7 +23689,15 @@ def get_system_health():
 
 
 
+
+
+
+
         return jsonify({
+
+
+
+
 
 
 
@@ -12078,7 +23705,15 @@ def get_system_health():
 
 
 
+
+
+
+
             'fallback_data': {
+
+
+
+
 
 
 
@@ -12086,7 +23721,15 @@ def get_system_health():
 
 
 
+
+
+
+
                     'platform': 'Unknown',
+
+
+
+
 
 
 
@@ -12094,11 +23737,23 @@ def get_system_health():
 
 
 
+
+
+
+
                     'hostname': 'Unknown'
 
 
 
+
+
+
+
                 },
+
+
+
+
 
 
 
@@ -12106,7 +23761,15 @@ def get_system_health():
 
 
 
+
+
+
+
                     'cpu': {'usage_percent': 0, 'status': 'unknown'},
+
+
+
+
 
 
 
@@ -12114,7 +23777,15 @@ def get_system_health():
 
 
 
+
+
+
+
                     'disk': {'usage_percent': 0, 'status': 'unknown'},
+
+
+
+
 
 
 
@@ -12122,7 +23793,15 @@ def get_system_health():
 
 
 
+
+
+
+
                 },
+
+
+
+
 
 
 
@@ -12130,11 +23809,23 @@ def get_system_health():
 
 
 
+
+
+
+
                 'timestamp': datetime.now().isoformat()
 
 
 
+
+
+
+
             }
+
+
+
+
 
 
 
@@ -12146,7 +23837,19 @@ def get_system_health():
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/get_status_distribution')
+
+
+
+
 
 
 
@@ -12154,7 +23857,15 @@ def get_system_health():
 
 
 
+
+
+
+
 @database_required
+
+
+
+
 
 
 
@@ -12162,7 +23873,15 @@ def get_status_distribution():
 
 
 
+
+
+
+
     """Get status distribution data for pie chart."""
+
+
+
+
 
 
 
@@ -12170,7 +23889,15 @@ def get_status_distribution():
 
 
 
+
+
+
+
         # Get date range from query params (default to last 30 days)
+
+
+
+
 
 
 
@@ -12178,7 +23905,15 @@ def get_status_distribution():
 
 
 
+
+
+
+
         end_date = get_current_time()
+
+
+
+
 
 
 
@@ -12186,7 +23921,15 @@ def get_status_distribution():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -12194,7 +23937,15 @@ def get_status_distribution():
 
 
 
+
+
+
+
         deliveries = Delivery.query.filter(
+
+
+
+
 
 
 
@@ -12202,7 +23953,15 @@ def get_status_distribution():
 
 
 
+
+
+
+
             Delivery.created_at <= end_date
+
+
+
+
 
 
 
@@ -12210,7 +23969,15 @@ def get_status_distribution():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -12218,11 +23985,23 @@ def get_status_distribution():
 
 
 
+
+
+
+
         status_counts = {'Pending': 0, 'In Transit': 0, 'Delivered': 0}
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -12230,7 +24009,15 @@ def get_status_distribution():
 
 
 
+
+
+
+
             if delivery.status in status_counts:
+
+
+
+
 
 
 
@@ -12238,7 +24025,15 @@ def get_status_distribution():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -12246,7 +24041,15 @@ def get_status_distribution():
 
 
 
+
+
+
+
             'labels': list(status_counts.keys()),
+
+
+
+
 
 
 
@@ -12254,7 +24057,15 @@ def get_status_distribution():
 
 
 
+
+
+
+
             'counts': status_counts
+
+
+
+
 
 
 
@@ -12262,7 +24073,15 @@ def get_status_distribution():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -12270,7 +24089,15 @@ def get_status_distribution():
 
 
 
+
+
+
+
         app.logger.error(f"Error getting status distribution: {str(e)}")
+
+
+
+
 
 
 
@@ -12282,7 +24109,19 @@ def get_status_distribution():
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/get_delivery_trends_line')
+
+
+
+
 
 
 
@@ -12290,7 +24129,15 @@ def get_status_distribution():
 
 
 
+
+
+
+
 @database_required
+
+
+
+
 
 
 
@@ -12298,7 +24145,15 @@ def get_delivery_trends_line():
 
 
 
+
+
+
+
     """Get delivery trends line chart data."""
+
+
+
+
 
 
 
@@ -12306,7 +24161,15 @@ def get_delivery_trends_line():
 
 
 
+
+
+
+
         # Get date range from query params (default to last 30 days)
+
+
+
+
 
 
 
@@ -12314,7 +24177,15 @@ def get_delivery_trends_line():
 
 
 
+
+
+
+
         end_date = get_current_time()
+
+
+
+
 
 
 
@@ -12322,7 +24193,15 @@ def get_delivery_trends_line():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -12330,7 +24209,15 @@ def get_delivery_trends_line():
 
 
 
+
+
+
+
         deliveries = Delivery.query.filter(
+
+
+
+
 
 
 
@@ -12338,7 +24225,15 @@ def get_delivery_trends_line():
 
 
 
+
+
+
+
             Delivery.created_at <= end_date
+
+
+
+
 
 
 
@@ -12346,7 +24241,15 @@ def get_delivery_trends_line():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -12354,11 +24257,23 @@ def get_delivery_trends_line():
 
 
 
+
+
+
+
         daily_counts = {}
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -12366,7 +24281,15 @@ def get_delivery_trends_line():
 
 
 
+
+
+
+
             date_key = delivery.created_at.strftime('%Y-%m-%d')
+
+
+
+
 
 
 
@@ -12374,7 +24297,15 @@ def get_delivery_trends_line():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -12382,7 +24313,15 @@ def get_delivery_trends_line():
 
 
 
+
+
+
+
         dates = sorted(daily_counts.keys())
+
+
+
+
 
 
 
@@ -12390,7 +24329,15 @@ def get_delivery_trends_line():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -12398,7 +24345,15 @@ def get_delivery_trends_line():
 
 
 
+
+
+
+
             'labels': [datetime.strptime(date, '%Y-%m-%d').strftime('%b %d') for date in dates],
+
+
+
+
 
 
 
@@ -12406,7 +24361,15 @@ def get_delivery_trends_line():
 
 
 
+
+
+
+
         })
+
+
+
+
 
 
 
@@ -12414,11 +24377,23 @@ def get_delivery_trends_line():
 
 
 
+
+
+
+
     except Exception as e:
 
 
 
+
+
+
+
         app.logger.error(f"Error getting delivery trends line: {str(e)}")
+
+
+
+
 
 
 
@@ -12430,7 +24405,19 @@ def get_delivery_trends_line():
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/get_recent_deliveries')
+
+
+
+
 
 
 
@@ -12438,7 +24425,15 @@ def get_delivery_trends_line():
 
 
 
+
+
+
+
 @database_required
+
+
+
+
 
 
 
@@ -12446,7 +24441,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
     """Get recent deliveries with lazy loading support - shows all deliveries (for reports page)."""
+
+
+
+
 
 
 
@@ -12454,7 +24457,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
         # Get pagination parameters
+
+
+
+
 
 
 
@@ -12462,7 +24473,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
         per_page = request.args.get('per_page', 20, type=int)
+
+
+
+
 
 
 
@@ -12470,7 +24489,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -12478,7 +24505,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
         period = request.args.get('period', 'all')
+
+
+
+
 
 
 
@@ -12486,11 +24521,23 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
         search = request.args.get('search', '')
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -12498,95 +24545,191 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
         query = Delivery.query
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
         # Apply period filter
 
+
+
         if period != 'all':
+
+
 
             now = datetime.utcnow()
 
+
+
             if period == 'today':
+
+
 
                 start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
+
+
                 query = query.filter(Delivery.created_at >= start_date)
+
+
 
             elif period == 'week':
 
+
+
                 start_date = now - timedelta(days=7)
 
+
+
                 query = query.filter(Delivery.created_at >= start_date)
+
+
 
             elif period == 'month':
 
+
+
                 start_date = now - timedelta(days=30)
 
+
+
                 query = query.filter(Delivery.created_at >= start_date)
+
+
 
             elif period == 'year':
 
+
+
                 start_date = now - timedelta(days=365)
 
+
+
                 query = query.filter(Delivery.created_at >= start_date)
+
+
+
+
 
 
 
         
+
+
+
+
 
 
 
         # Apply status filter
 
+
+
         if status != 'all':
+
+
 
             query = query.filter(Delivery.status == status)
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
         # Apply search filter
 
+
+
         if search:
+
+
 
             search_term = f"%{search}%"
 
+
+
             query = query.filter(
+
+
 
                 db.or_(
 
+
+
                     Delivery.display_id.ilike(search_term),
+
+
 
                     Delivery.sender_name.ilike(search_term),
 
+
+
                     Delivery.sender_phone.ilike(search_term),
+
+
 
                     Delivery.recipient_name.ilike(search_term),
 
+
+
                     Delivery.recipient_phone.ilike(search_term),
+
+
 
                     Delivery.recipient_address.ilike(search_term),
 
+
+
                     Delivery.delivery_person.ilike(search_term),
+
+
 
                     Delivery.payment_by.ilike(search_term)
 
+
+
                 )
+
+
 
             )
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -12594,11 +24737,23 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
         total_count = query.count()
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -12606,11 +24761,23 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
         recent_deliveries = query.order_by(Delivery.created_at.desc()).offset(offset).limit(per_page).all()
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -12618,7 +24785,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
         deliveries_data = []
+
+
+
+
 
 
 
@@ -12626,7 +24801,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
             delivery_dict = {
+
+
+
+
 
 
 
@@ -12634,7 +24817,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
                 'display_id': delivery.display_id,
+
+
+
+
 
 
 
@@ -12642,7 +24833,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
                 'sender_phone': delivery.sender_phone,
+
+
+
+
 
 
 
@@ -12650,7 +24849,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
                 'recipient_phone': delivery.recipient_phone,
+
+
+
+
 
 
 
@@ -12658,7 +24865,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
                 'status': delivery.status,
+
+
+
+
 
 
 
@@ -12666,7 +24881,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
                 'expenses': float(delivery.expenses) if delivery.expenses else 0.0,
+
+
+
+
 
 
 
@@ -12674,7 +24897,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
                 'goods_type': delivery.goods_type,
+
+
+
+
 
 
 
@@ -12682,7 +24913,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
                 'payment_by': delivery.payment_by,
+
+
+
+
 
 
 
@@ -12690,11 +24929,23 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
                 'time_ago': get_time_ago(delivery.created_at) if delivery.created_at else "Unknown"
 
 
 
+
+
+
+
             }
+
+
+
+
 
 
 
@@ -12702,7 +24953,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -12710,7 +24969,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
         return jsonify({
+
+
+
+
 
 
 
@@ -12718,7 +24985,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
             'pagination': {
+
+
+
+
 
 
 
@@ -12726,7 +25001,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
                 'per_page': per_page,
+
+
+
+
 
 
 
@@ -12734,7 +25017,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
                 'pages': (total_count + per_page - 1) // per_page,
+
+
+
+
 
 
 
@@ -12742,7 +25033,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
                 'has_prev': page > 1
+
+
+
+
 
 
 
@@ -12750,7 +25049,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
         })
+
+
+
+
 
 
 
@@ -12758,7 +25065,15 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
     except Exception as e:
+
+
+
+
 
 
 
@@ -12766,7 +25081,19 @@ def get_recent_deliveries():
 
 
 
+
+
+
+
         return jsonify({'error': 'Failed to load recent deliveries'}), 500
+
+
+
+
+
+
+
+
 
 
 
@@ -12776,220 +25103,443 @@ def get_recent_deliveries():
 
 @app.route('/get_user_recent_deliveries')
 
+
+
 @login_required
+
+
 
 @database_required
 
+
+
 def get_user_recent_deliveries():
+
+
 
     """Get recent deliveries for the current user (for add_delivery page). Admin sees all deliveries."""
 
+
+
     
+
+
 
     try:
 
+
+
         # Get current user from session
+
+
 
         current_user_id = session.get('user_id')
 
+
+
         current_user_role = session.get('user_role', 'user')
 
+
+
         
+
+
 
         # Get pagination parameters
 
+
+
         page = request.args.get('page', 1, type=int)
+
+
 
         per_page = request.args.get('per_page', 20, type=int)
 
+
+
         offset = (page - 1) * per_page
 
+
+
         
+
+
 
         # Get filter parameters
 
+
+
         period = request.args.get('period', 'all')
+
+
 
         status = request.args.get('status', 'all')
 
+
+
         search = request.args.get('search', '')
 
+
+
         
+
+
 
         # Build base query
 
+
+
         query = Delivery.query
 
+
+
         
+
+
 
         # Apply period filter
 
+
+
         if period != 'all':
+
+
 
             now = datetime.utcnow()
 
+
+
             if period == 'today':
+
+
 
                 start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
+
+
                 query = query.filter(Delivery.created_at >= start_date)
+
+
 
             elif period == 'week':
 
+
+
                 start_date = now - timedelta(days=7)
 
+
+
                 query = query.filter(Delivery.created_at >= start_date)
+
+
 
             elif period == 'month':
 
+
+
                 start_date = now - timedelta(days=30)
 
+
+
                 query = query.filter(Delivery.created_at >= start_date)
+
+
 
             elif period == 'year':
 
+
+
                 start_date = now - timedelta(days=365)
+
+
 
                 query = query.filter(Delivery.created_at >= start_date)
 
+
+
         
+
+
 
         # Apply status filter
 
+
+
         if status != 'all':
+
+
 
             query = query.filter(Delivery.status == status)
 
+
+
         
+
+
 
         # Apply search filter
 
+
+
         if search:
+
+
 
             search_term = f"%{search}%"
 
+
+
             query = query.filter(
+
+
 
                 db.or_(
 
+
+
                     Delivery.display_id.ilike(search_term),
+
+
 
                     Delivery.sender_name.ilike(search_term),
 
+
+
                     Delivery.sender_phone.ilike(search_term),
+
+
 
                     Delivery.recipient_name.ilike(search_term),
 
+
+
                     Delivery.recipient_phone.ilike(search_term),
+
+
 
                     Delivery.recipient_address.ilike(search_term),
 
+
+
                     Delivery.delivery_person.ilike(search_term),
+
+
 
                     Delivery.payment_by.ilike(search_term)
 
+
+
                 )
+
             )
-        
-        # For admin and staff roles, show all deliveries with pagination
-        if current_user_role in ['admin', 'staff']:
-            # Get total count for pagination info
-            total_count = query.count()
-            # Get deliveries for current page
-            recent_deliveries = query.order_by(Delivery.created_at.desc()).offset(offset).limit(per_page).all()
-        else:
-            # For regular users, show only their own deliveries with pagination support
-            # Apply user filter to the existing query (which already has period/status/search filters)
-            query = query.filter(Delivery.created_by == current_user_id)
-            # Get total count for pagination info
-            total_count = query.count()
-            # Get deliveries for current page
-            recent_deliveries = query.order_by(Delivery.created_at.desc()).offset(offset).limit(per_page).all()
 
         
+
+        # For admin and staff roles, show all deliveries with pagination
+
+        if current_user_role in ['admin', 'staff']:
+
+            # Get total count for pagination info
+
+            total_count = query.count()
+
+            # Get deliveries for current page
+
+            recent_deliveries = query.order_by(Delivery.created_at.desc()).offset(offset).limit(per_page).all()
+
+        else:
+
+            # For regular users, show only their own deliveries with pagination support
+
+            # Apply user filter to the existing query (which already has period/status/search filters)
+
+            query = query.filter(Delivery.created_by == current_user_id)
+
+            # Get total count for pagination info
+
+            total_count = query.count()
+
+            # Get deliveries for current page
+
+            recent_deliveries = query.order_by(Delivery.created_at.desc()).offset(offset).limit(per_page).all()
+
+
+
+        
+
+
 
         # Convert to list of dictionaries
 
+
+
         deliveries_data = []
+
+
 
         for delivery in recent_deliveries:
 
+
+
             delivery_dict = {
+
+
 
                 'id': delivery.id,
 
+
+
                 'display_id': delivery.display_id,
+
+
 
                 'sender_name': delivery.sender_name,
 
+
+
                 'sender_phone': delivery.sender_phone,
+
+
 
                 'recipient_name': delivery.recipient_name,
 
+
+
                 'recipient_phone': delivery.recipient_phone,
+
+
 
                 'recipient_address': delivery.recipient_address,
 
+
+
                 'status': delivery.status,
+
+
 
                 'amount': float(delivery.amount) if delivery.amount else 0.0,
 
+
+
                 'expenses': float(delivery.expenses) if delivery.expenses else 0.0,
+
+
 
                 'delivery_person': delivery.delivery_person or '',
 
+
+
                 'goods_type': delivery.goods_type,
+
+
 
                 'quantity': delivery.quantity,
 
+
+
                 'payment_by': delivery.payment_by,
+
+
 
                 'created_at': delivery.created_at.isoformat() if delivery.created_at else None,
 
+
+
                 'time_ago': get_time_ago(delivery.created_at) if delivery.created_at else "Unknown"
+
+
 
             }
 
+
+
             deliveries_data.append(delivery_dict)
+
+
 
         
 
+
+
         # Return paginated response for admin, simple response for regular users
+
         if current_user_role == 'admin':
+
+
 
             return jsonify({
 
+
+
                 'deliveries': deliveries_data,
+
+
 
                 'pagination': {
 
+
+
                     'page': page,
+
+
 
                     'per_page': per_page,
 
+
+
                     'total': total_count,
+
+
 
                     'pages': (total_count + per_page - 1) // per_page,
 
+
+
                     'has_next': page * per_page < total_count,
+
+
 
                     'has_prev': page > 1
 
+
+
                 }
+
+
 
             })
 
+
+
         else:
+
+
 
             return jsonify({'deliveries': deliveries_data})
 
+
+
             
+
+
 
     except Exception as e:
 
+
+
         app.logger.error(f"Error getting user recent deliveries: {str(e)}")
 
+
+
         return jsonify({'error': 'Failed to load recent deliveries'}), 500
+
+
+
+
+
+
+
+
 
 
 
@@ -13001,7 +25551,15 @@ def get_user_recent_deliveries():
 
 
 
+
+
+
+
 @login_required
+
+
+
+
 
 
 
@@ -13009,11 +25567,23 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
     """Update delivery expenses and delivery person."""
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -13021,7 +25591,15 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
     if request.method == 'OPTIONS':
+
+
+
+
 
 
 
@@ -13029,7 +25607,15 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
         response.headers.add("Access-Control-Allow-Origin", "*")
+
+
+
+
 
 
 
@@ -13037,11 +25623,23 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
         response.headers.add('Access-Control-Allow-Methods', "*")
 
 
 
+
+
+
+
         return response
+
+
+
+
 
 
 
@@ -13049,7 +25647,15 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
     try:
+
+
+
+
 
 
 
@@ -13057,7 +25663,15 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -13065,11 +25679,23 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
             return jsonify({'error': 'No data provided'}), 400
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -13077,7 +25703,15 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
         expenses = data.get('expenses', 0.0)
+
+
+
+
 
 
 
@@ -13085,7 +25719,15 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -13093,11 +25735,23 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
             return jsonify({'error': 'Delivery ID is required'}), 400
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -13105,7 +25759,15 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
         delivery = Delivery.query.filter_by(display_id=delivery_id).first()
+
+
+
+
 
 
 
@@ -13113,11 +25775,23 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
             return jsonify({'error': 'Delivery not found'}), 404
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -13125,11 +25799,23 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
         delivery.delivery_person = delivery_person or ''
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -13137,7 +25823,15 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -13145,7 +25839,15 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
             'success': True,
+
+
+
+
 
 
 
@@ -13153,7 +25855,15 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
             'delivery': {
+
+
+
+
 
 
 
@@ -13161,7 +25871,15 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
                 'display_id': delivery.display_id,
+
+
+
+
 
 
 
@@ -13169,7 +25887,15 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
                 'delivery_person': delivery.delivery_person
+
+
+
+
 
 
 
@@ -13177,7 +25903,15 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
         })
+
+
+
+
 
 
 
@@ -13185,7 +25919,15 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
         return response
+
+
+
+
 
 
 
@@ -13193,7 +25935,15 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
     except Exception as e:
+
+
+
+
 
 
 
@@ -13201,7 +25951,15 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
         app.logger.error(f"Error updating delivery: {str(e)}")
+
+
+
+
 
 
 
@@ -13213,7 +25971,19 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
+
+
+
+
 @app.route('/update_delivery', methods=['POST', 'OPTIONS'])
+
+
+
+
 
 
 
@@ -13221,7 +25991,15 @@ def update_delivery_expenses_and_person():
 
 
 
+
+
+
+
 def update_delivery():
+
+
+
+
 
 
 
@@ -13229,7 +26007,15 @@ def update_delivery():
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -13237,7 +26023,15 @@ def update_delivery():
 
 
 
+
+
+
+
         response = make_response()
+
+
+
+
 
 
 
@@ -13245,7 +26039,15 @@ def update_delivery():
 
 
 
+
+
+
+
         response.headers.add('Access-Control-Allow-Headers', "*")
+
+
+
+
 
 
 
@@ -13253,7 +26055,15 @@ def update_delivery():
 
 
 
+
+
+
+
         return response
+
+
+
+
 
 
 
@@ -13261,7 +26071,15 @@ def update_delivery():
 
 
 
+
+
+
+
     try:
+
+
+
+
 
 
 
@@ -13269,7 +26087,15 @@ def update_delivery():
 
 
 
+
+
+
+
         delivery_id = data.get('delivery_id')
+
+
+
+
 
 
 
@@ -13277,7 +26103,15 @@ def update_delivery():
 
 
 
+
+
+
+
         delivery_person = data.get('delivery_person', '')
+
+
+
+
 
 
 
@@ -13285,7 +26119,15 @@ def update_delivery():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -13293,7 +26135,15 @@ def update_delivery():
 
 
 
+
+
+
+
         if not delivery:
+
+
+
+
 
 
 
@@ -13301,7 +26151,15 @@ def update_delivery():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -13309,7 +26167,15 @@ def update_delivery():
 
 
 
+
+
+
+
         if expenses is not None:
+
+
+
+
 
 
 
@@ -13317,7 +26183,15 @@ def update_delivery():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -13325,7 +26199,15 @@ def update_delivery():
 
 
 
+
+
+
+
         if amount is not None:
+
+
+
+
 
 
 
@@ -13333,7 +26215,15 @@ def update_delivery():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -13341,7 +26231,15 @@ def update_delivery():
 
 
 
+
+
+
+
         if delivery_person:
+
+
+
+
 
 
 
@@ -13349,7 +26247,15 @@ def update_delivery():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -13357,7 +26263,15 @@ def update_delivery():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -13365,11 +26279,23 @@ def update_delivery():
 
 
 
+
+
+
+
     except Exception as e:
 
 
 
+
+
+
+
         db.session.rollback()
+
+
+
+
 
 
 
@@ -13379,173 +26305,347 @@ def update_delivery():
 
 
 
+
+
+
+
+
+
 @app.route('/api/deliveries')
+
+
 
 @login_required
 
+
+
 @database_required
+
+
 
 def api_deliveries():
 
+
+
     """API endpoint for getting deliveries with filtering - Staff and admin see all, users see only their own."""
+
+
 
     try:
 
+
+
         # Get current user from session
+
+
 
         current_user_id = session.get('user_id')
 
+
+
         current_user_role = session.get('user_role', 'user')
 
+
+
         
+
+
 
         # Get filter parameters
 
+
+
         period = request.args.get('period', 'all')
+
+
 
         status = request.args.get('status', 'all')
 
+
+
         search = request.args.get('search', '')
 
+
+
         
+
+
 
         # Build base query
 
+
+
         query = Delivery.query
 
+
+
         
+
+
 
         # For regular users, only show their own deliveries
 
+
+
         if current_user_role == 'user':
+
+
 
             query = query.filter(Delivery.created_by == current_user_id)
 
+
+
         
+
+
 
         # Apply period filter
 
+
+
         if period != 'all':
+
+
 
             now = datetime.utcnow()
 
+
+
             if period == 'today':
+
+
 
                 start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
+
+
                 query = query.filter(Delivery.created_at >= start_date)
+
+
 
             elif period == 'week':
 
+
+
                 start_date = now - timedelta(days=7)
 
+
+
                 query = query.filter(Delivery.created_at >= start_date)
+
+
 
             elif period == 'month':
 
+
+
                 start_date = now - timedelta(days=30)
 
+
+
                 query = query.filter(Delivery.created_at >= start_date)
+
+
 
             elif period == 'year':
 
+
+
                 start_date = now - timedelta(days=365)
+
+
 
                 query = query.filter(Delivery.created_at >= start_date)
 
+
+
         
+
+
 
         # Apply status filter
 
+
+
         if status != 'all':
+
+
 
             query = query.filter(Delivery.status == status)
 
+
+
         
+
+
 
         # Apply search filter
 
+
+
         if search:
+
+
 
             search_term = f"%{search}%"
 
+
+
             query = query.filter(
+
+
 
                 db.or_(
 
+
+
                     Delivery.reference_number.ilike(search_term),
+
+
 
                     Delivery.display_id.ilike(search_term),
 
+
+
                     Delivery.sender_name.ilike(search_term),
+
+
 
                     Delivery.recipient_name.ilike(search_term),
 
+
+
                     Delivery.delivery_address.ilike(search_term),
+
+
 
                     Delivery.delivery_person.ilike(search_term)
 
+
+
                 )
+
+
 
             )
 
+
+
         
+
+
 
         # Get deliveries (limit to 100 for performance)
 
+
+
         deliveries = query.order_by(Delivery.created_at.desc()).limit(100).all()
 
+
+
         
+
+
 
         # Convert to list of dictionaries
 
+
+
         deliveries_data = []
+
+
 
         for delivery in deliveries:
 
+
+
             delivery_dict = {
+
+
 
                 'id': delivery.id,
 
+
+
                 'reference_number': delivery.reference_number,
+
+
 
                 'display_id': delivery.display_id,
 
+
+
                 'sender_name': delivery.sender_name,
+
+
 
                 'recipient_name': delivery.recipient_name,
 
+
+
                 'delivery_address': delivery.delivery_address,
+
+
 
                 'delivery_person': delivery.delivery_person or '',
 
+
+
                 'pickup_location': delivery.pickup_location or '',
+
+
 
                 'amount': float(delivery.amount) if delivery.amount else 0.0,
 
+
+
                 'status': delivery.status,
+
+
 
                 'created_at': delivery.created_at.isoformat() if delivery.created_at else None
 
+
+
             }
+
+
 
             deliveries_data.append(delivery_dict)
 
+
+
         
+
+
 
         return jsonify({
 
+
+
             'success': True,
+
+
 
             'deliveries': deliveries_data
 
+
+
         })
+
+
 
         
 
+
+
     except Exception as e:
 
+
+
         app.logger.error(f"Error getting deliveries: {str(e)}")
+
+
 
         return jsonify({'success': False, 'error': 'Failed to load deliveries'}), 500
 
@@ -13553,91 +26653,183 @@ def api_deliveries():
 
 
 
+
+
+
+
+
+
 @app.route('/api/delivery/<int:delivery_id>')
+
+
 
 @login_required
 
+
+
 @database_required
+
+
 
 def api_delivery_details(delivery_id):
 
+
+
     """API endpoint for getting delivery details."""
+
+
 
     try:
 
+
+
         # Get current user from session
+
+
 
         current_user_id = session.get('user_id')
 
+
+
         current_user_role = session.get('user_role', 'user')
 
+
+
         
+
+
 
         # Find delivery
 
+
+
         delivery = Delivery.query.get(delivery_id)
+
+
 
         if not delivery:
 
+
+
             return jsonify({'success': False, 'error': 'Delivery not found'}), 404
 
+
+
         
+
+
 
         # For regular users, only allow access to their own deliveries
 
+
+
         if current_user_role == 'user' and delivery.created_by != current_user_id:
+
+
 
             return jsonify({'success': False, 'error': 'Access denied'}), 403
 
+
+
         
+
+
 
         # Convert to dictionary
 
+
+
         delivery_dict = {
+
+
 
             'id': delivery.id,
 
+
+
             'reference_number': delivery.reference_number,
+
+
 
             'display_id': delivery.display_id,
 
+
+
             'sender_name': delivery.sender_name,
+
+
 
             'sender_phone': delivery.sender_phone,
 
+
+
             'recipient_name': delivery.recipient_name,
+
+
 
             'recipient_phone': delivery.recipient_phone,
 
+
+
             'delivery_address': delivery.delivery_address,
+
+
 
             'delivery_person': delivery.delivery_person or '',
 
+
+
             'pickup_location': delivery.pickup_location or '',
+
+
 
             'amount': float(delivery.amount) if delivery.amount else 0.0,
 
+
+
             'status': delivery.status,
+
+
 
             'created_at': delivery.created_at.isoformat() if delivery.created_at else None
 
+
+
         }
 
+
+
         
+
+
 
         return jsonify({
 
+
+
             'success': True,
+
+
 
             'delivery': delivery_dict
 
+
+
         })
+
+
 
         
 
+
+
     except Exception as e:
 
+
+
         app.logger.error(f"Error getting delivery details: {str(e)}")
+
+
 
         return jsonify({'success': False, 'error': 'Failed to load delivery details'}), 500
 
@@ -13645,201 +26837,407 @@ def api_delivery_details(delivery_id):
 
 
 
+
+
+
+
+
+
 @app.route('/api/export_deliveries_csv')
+
+
 
 @login_required
 
+
+
 @database_required
+
+
 
 def api_export_deliveries_csv():
 
+
+
     """API endpoint for exporting deliveries to CSV."""
+
+
 
     try:
 
+
+
         # Get current user from session
+
+
 
         current_user_id = session.get('user_id')
 
+
+
         current_user_role = session.get('user_role', 'user')
 
+
+
         
+
+
 
         # Get filter parameters
 
+
+
         period = request.args.get('period', 'all')
+
+
 
         status = request.args.get('status', 'all')
 
+
+
         search = request.args.get('search', '')
 
+
+
         
+
+
 
         # Build base query
 
+
+
         query = Delivery.query
 
+
+
         
+
+
 
         # For regular users, only export their own deliveries
 
+
+
         if current_user_role == 'user':
+
+
 
             query = query.filter(Delivery.created_by == current_user_id)
 
+
+
         
+
+
 
         # Apply period filter
 
+
+
         if period != 'all':
+
+
 
             now = datetime.utcnow()
 
+
+
             if period == 'today':
+
+
 
                 start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
+
+
                 query = query.filter(Delivery.created_at >= start_date)
+
+
 
             elif period == 'week':
 
+
+
                 start_date = now - timedelta(days=7)
 
+
+
                 query = query.filter(Delivery.created_at >= start_date)
+
+
 
             elif period == 'month':
 
+
+
                 start_date = now - timedelta(days=30)
 
+
+
                 query = query.filter(Delivery.created_at >= start_date)
+
+
 
             elif period == 'year':
 
+
+
                 start_date = now - timedelta(days=365)
+
+
 
                 query = query.filter(Delivery.created_at >= start_date)
 
+
+
         
+
+
 
         # Apply status filter
 
+
+
         if status != 'all':
+
+
 
             query = query.filter(Delivery.status == status)
 
+
+
         
+
+
 
         # Apply search filter
 
+
+
         if search:
+
+
 
             search_term = f"%{search}%"
 
+
+
             query = query.filter(
+
+
 
                 db.or_(
 
+
+
                     Delivery.reference_number.ilike(search_term),
+
+
 
                     Delivery.display_id.ilike(search_term),
 
+
+
                     Delivery.sender_name.ilike(search_term),
+
+
 
                     Delivery.recipient_name.ilike(search_term),
 
+
+
                     Delivery.delivery_address.ilike(search_term),
+
+
 
                     Delivery.delivery_person.ilike(search_term)
 
+
+
                 )
+
+
 
             )
 
+
+
         
+
+
 
         # Get deliveries
 
+
+
         deliveries = query.order_by(Delivery.created_at.desc()).all()
 
+
+
         
+
+
 
         # Create CSV
 
+
+
         output = io.StringIO()
+
+
 
         writer = csv.writer(output)
 
+
+
         
+
+
 
         # Write header
 
+
+
         writer.writerow([
+
+
 
             'Reference Number', 'Display ID', 'Sender Name', 'Sender Phone',
 
+
+
             'Recipient Name', 'Recipient Phone', 'Delivery Address',
+
+
 
             'Delivery Person', 'Pickup Location', 'Amount', 'Status', 'Created At'
 
+
+
         ])
 
+
+
         
+
+
 
         # Write data
 
+
+
         for delivery in deliveries:
+
+
 
             writer.writerow([
 
+
+
                 delivery.reference_number or '',
+
+
 
                 delivery.display_id or '',
 
+
+
                 delivery.sender_name or '',
+
+
 
                 delivery.sender_phone or '',
 
+
+
                 delivery.recipient_name or '',
+
+
 
                 delivery.recipient_phone or '',
 
+
+
                 delivery.delivery_address or '',
+
+
 
                 delivery.delivery_person or '',
 
+
+
                 delivery.pickup_location or '',
+
+
 
                 delivery.amount or 0,
 
+
+
                 delivery.status or '',
+
+
 
                 delivery.created_at.strftime('%Y-%m-%d %H:%M:%S') if delivery.created_at else ''
 
+
+
             ])
 
+
+
         
+
+
 
         # Create response
 
+
+
         output.seek(0)
+
+
 
         response = make_response(output.getvalue())
 
+
+
         response.headers['Content-Type'] = 'text/csv'
+
+
 
         response.headers['Content-Disposition'] = f'attachment; filename=deliveries_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
 
+
+
         
+
+
 
         return response
 
+
+
         
+
+
 
     except Exception as e:
 
+
+
         app.logger.error(f"Error exporting deliveries: {str(e)}")
 
+
+
         return jsonify({'success': False, 'error': 'Failed to export deliveries'}), 500
+
+
+
+
+
+
 
 
 
@@ -13849,7 +27247,15 @@ def api_export_deliveries_csv():
 
 
 
+
+
+
+
 @admin_required
+
+
+
+
 
 
 
@@ -13857,7 +27263,15 @@ def audit_logs():
 
 
 
+
+
+
+
     """Render the audit logs page for administrators."""
+
+
+
+
 
 
 
@@ -13865,7 +27279,15 @@ def audit_logs():
 
 
 
+
+
+
+
         # Get query parameters for filtering
+
+
+
+
 
 
 
@@ -13873,7 +27295,15 @@ def audit_logs():
 
 
 
+
+
+
+
         per_page = request.args.get('per_page', 50, type=int)
+
+
+
+
 
 
 
@@ -13881,7 +27311,15 @@ def audit_logs():
 
 
 
+
+
+
+
         username_filter = request.args.get('username', '')
+
+
+
+
 
 
 
@@ -13889,11 +27327,23 @@ def audit_logs():
 
 
 
+
+
+
+
         date_to = request.args.get('date_to', '')
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -13901,11 +27351,23 @@ def audit_logs():
 
 
 
+
+
+
+
         query = AuditLog.query
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -13913,7 +27375,15 @@ def audit_logs():
 
 
 
+
+
+
+
         if action_filter:
+
+
+
+
 
 
 
@@ -13921,7 +27391,15 @@ def audit_logs():
 
 
 
+
+
+
+
         if username_filter:
+
+
+
+
 
 
 
@@ -13929,11 +27407,23 @@ def audit_logs():
 
 
 
+
+
+
+
         if date_from:
 
 
 
+
+
+
+
             try:
+
+
+
+
 
 
 
@@ -13941,7 +27431,15 @@ def audit_logs():
 
 
 
+
+
+
+
                 query = query.filter(AuditLog.timestamp >= date_from_dt)
+
+
+
+
 
 
 
@@ -13949,7 +27447,15 @@ def audit_logs():
 
 
 
+
+
+
+
                 pass
+
+
+
+
 
 
 
@@ -13957,7 +27463,15 @@ def audit_logs():
 
 
 
+
+
+
+
             try:
+
+
+
+
 
 
 
@@ -13965,7 +27479,15 @@ def audit_logs():
 
 
 
+
+
+
+
                 query = query.filter(AuditLog.timestamp <= date_to_dt)
+
+
+
+
 
 
 
@@ -13973,11 +27495,23 @@ def audit_logs():
 
 
 
+
+
+
+
                 pass
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -13985,11 +27519,23 @@ def audit_logs():
 
 
 
+
+
+
+
         query = query.order_by(AuditLog.timestamp.desc())
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -13997,7 +27543,15 @@ def audit_logs():
 
 
 
+
+
+
+
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+
+
+
+
 
 
 
@@ -14005,7 +27559,15 @@ def audit_logs():
 
 
 
+
+
+
+
         
+
+
+
+
 
 
 
@@ -14013,7 +27575,15 @@ def audit_logs():
 
 
 
+
+
+
+
                              audit_logs=audit_logs, 
+
+
+
+
 
 
 
@@ -14021,7 +27591,15 @@ def audit_logs():
 
 
 
+
+
+
+
                              action_filter=action_filter,
+
+
+
+
 
 
 
@@ -14029,7 +27607,15 @@ def audit_logs():
 
 
 
+
+
+
+
                              date_from=date_from,
+
+
+
+
 
 
 
@@ -14037,7 +27623,15 @@ def audit_logs():
 
 
 
+
+
+
+
     except Exception as e:
+
+
+
+
 
 
 
@@ -14045,7 +27639,15 @@ def audit_logs():
 
 
 
+
+
+
+
         flash('Error loading audit logs', 'danger')
+
+
+
+
 
 
 
@@ -14057,14 +27659,30 @@ def audit_logs():
 
 
 
+
+
+
+
+
+
+
+
 @app.errorhandler(404)
+
 def not_found_error(error):
+
     """Handle 404 errors."""
+
     
+
     # Check if this is an API request
+
     if request.path.startswith('/api/') or request.path.startswith('/delete_user/') or request.path.startswith('/update_delivery/') or request.path.startswith('/quick_assign_delivery/'):
+
         return jsonify({'error': 'Not found', 'message': 'The requested resource was not found'}), 404
+
     
+
     return render_template('404.html'), 404
 
 
@@ -14073,16 +27691,41 @@ def not_found_error(error):
 
 
 
+
+
+
+
+
+
+
+
 @app.errorhandler(500)
+
 def internal_error(error):
+
     """Handle 500 errors."""
+
     db.session.rollback()
+
     
+
     # Check if this is an API request
+
     if request.path.startswith('/api/') or request.path.startswith('/delete_user/') or request.path.startswith('/update_delivery/') or request.path.startswith('/quick_assign_delivery/'):
+
         return jsonify({'error': 'Internal server error', 'message': 'An unexpected error occurred'}), 500
+
     
+
     return render_template('500.html'), 500
+
+
+
+
+
+
+
+
 
 
 
@@ -14094,7 +27737,15 @@ def create_default_admin():
 
 
 
+
+
+
+
     """Create default admin user if it doesn't exist."""
+
+
+
+
 
 
 
@@ -14102,7 +27753,15 @@ def create_default_admin():
 
 
 
+
+
+
+
         # Check for admin user (case-insensitive)
+
+
+
+
 
 
 
@@ -14110,21 +27769,43 @@ def create_default_admin():
 
 
 
+
+
+
+
         if not admin_user:
+
+
+
+
 
 
 
             admin_user = User(username='admin', role='admin')
 
+
+
             # Set password for admin (actual_password will be None for admin)
+
             admin_user.set_password('ErrantMate@24!')
+
+
+
+
 
 
 
             db.session.add(admin_user)
 
 
+
+
+
             db.session.commit()
+
+
+
+
 
 
 
@@ -14132,7 +27813,15 @@ def create_default_admin():
 
 
 
+
+
+
+
         else:
+
+
+
+
 
 
 
@@ -14140,11 +27829,23 @@ def create_default_admin():
 
 
 
+
+
+
+
     except Exception as e:
 
 
 
+
+
+
+
         print(f"Error creating admin user: {e}")
+
+
+
+
 
 
 
@@ -14156,7 +27857,19 @@ def create_default_admin():
 
 
 
+
+
+
+
+
+
+
+
 def main():
+
+
+
+
 
 
 
@@ -14164,11 +27877,23 @@ def main():
 
 
 
+
+
+
+
     print("Starting ErrantMate Application...")
 
 
 
+
+
+
+
     
+
+
+
+
 
 
 
@@ -14176,7 +27901,15 @@ def main():
 
 
 
+
+
+
+
         try:
+
+
+
+
 
 
 
@@ -14184,11 +27917,23 @@ def main():
 
 
 
+
+
+
+
             db.create_all()
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -14196,11 +27941,23 @@ def main():
 
 
 
+
+
+
+
             create_default_admin()
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -14208,7 +27965,15 @@ def main():
 
 
 
+
+
+
+
             print("Access the app at: http://localhost:5001")
+
+
+
+
 
 
 
@@ -14216,7 +27981,15 @@ def main():
 
 
 
+
+
+
+
             
+
+
+
+
 
 
 
@@ -14224,7 +27997,15 @@ def main():
 
 
 
+
+
+
+
             print(f"Startup error: {e}")
+
+
+
+
 
 
 
@@ -14232,7 +28013,15 @@ def main():
 
 
 
+
+
+
+
             traceback.print_exc()
+
+
+
+
 
 
 
@@ -14240,7 +28029,15 @@ def main():
 
 
 
+
+
+
+
     try:
+
+
+
+
 
 
 
@@ -14248,7 +28045,15 @@ def main():
 
 
 
+
+
+
+
     except Exception as e:
+
+
+
+
 
 
 
@@ -14264,11 +28069,31 @@ def main():
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 if __name__ == '__main__':
 
 
 
+
+
+
+
     main()
+
+
+
+
 
 
 
