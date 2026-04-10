@@ -3,9 +3,19 @@
 {% block content %}
 <div class="max-w-4xl mx-auto px-4 py-8">
     <!-- Header -->
-    <div class="mb-8">
-        <h1 class="text-3xl font-light text-gray-900 mb-2">New Delivery</h1>
-        <p class="text-gray-600">Create a new delivery record</p>
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl font-light text-gray-900 mb-2">New Delivery</h1>
+            <p class="text-gray-600">Create a new delivery record</p>
+            <div class="mt-2 text-lg font-semibold text-gray-700">
+                Welcome {{ session.username }}
+            </div>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2">
+            <a href="{{ url_for('dashboard') }}" class="bg-teal-500 hover:bg-teal-700 text-teal-50 font-bold py-2 px-4 rounded inline-flex items-center transition duration-200">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+            </a>
+        </div>
     </div>
 
     <!-- Form -->
@@ -19,16 +29,28 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label for="sender_name" class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                    <input type="text" id="sender_name" name="sender_name" required
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
-                           placeholder="Enter sender's full name">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-user text-gray-400"></i>
+                        </div>
+                        <input type="text" id="sender_name" name="sender_name" autocomplete="on" required
+                               class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
+                               placeholder="Enter sender's full name">
+                        <!-- Autocomplete dropdown -->
+                        <div id="sender_autocomplete" class="absolute z-50 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto hidden" style="top: 100%; left: 0; right: 0;"></div>
+                    </div>
                 </div>
                 
                 <div>
                     <label for="sender_phone" class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                    <input type="tel" id="sender_phone" name="sender_phone" required
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
-                           placeholder="0712345678" pattern="[0-9]{10,15}">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-phone text-gray-400"></i>
+                        </div>
+                        <input type="tel" id="sender_phone" name="sender_phone" required
+                               class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
+                               placeholder="0712345678" pattern="[0-9]{10,15}">
+                    </div>
                 </div>
             </div>
         </div>
@@ -40,24 +62,39 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                     <label for="recipient_name" class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                    <input type="text" id="recipient_name" name="recipient_name" required
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
-                           placeholder="Enter recipient's full name">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-user text-gray-400"></i>
+                        </div>
+                        <input type="text" id="recipient_name" name="recipient_name" required
+                               class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
+                               placeholder="Enter recipient's full name">
+                    </div>
                 </div>
                 
                 <div>
                     <label for="recipient_phone" class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
-                    <input type="tel" id="recipient_phone" name="recipient_phone" required
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
-                           placeholder="0723456789" pattern="[0-9]{10,15}">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-phone text-gray-400"></i>
+                        </div>
+                        <input type="tel" id="recipient_phone" name="recipient_phone" required
+                               class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
+                               placeholder="0723456789" pattern="[0-9]{10,15}">
+                    </div>
                 </div>
             </div>
             
             <div>
                 <label for="recipient_address" class="block text-sm font-medium text-gray-700 mb-2">Delivery Address</label>
-                <textarea id="recipient_address" name="recipient_address" rows="3" required
-                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200 resize-none"
-                          placeholder="Enter complete delivery address"></textarea>
+                <div class="relative">
+                    <div class="absolute top-3 left-0 pl-3 flex items-start pointer-events-none">
+                        <i class="fas fa-map-marker-alt text-gray-400 mt-0.5"></i>
+                    </div>
+                    <textarea id="recipient_address" name="recipient_address" rows="3" required
+                              class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200 resize-none"
+                              placeholder="Enter complete delivery address"></textarea>
+                </div>
             </div>
         </div>
 
@@ -68,15 +105,25 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label for="goods_type" class="block text-sm font-medium text-gray-700 mb-2">Goods Type</label>
-                    <input type="text" id="goods_type" name="goods_type" required
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
-                           placeholder="e.g., Documents, Electronics">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-box text-gray-400"></i>
+                        </div>
+                        <input type="text" id="goods_type" name="goods_type" required
+                               class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
+                               placeholder="e.g., Documents, Electronics">
+                    </div>
                 </div>
                 
                 <div>
                     <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
-                    <input type="number" id="quantity" name="quantity" min="1" value="1" required
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-boxes text-gray-400"></i>
+                        </div>
+                        <input type="number" id="quantity" name="quantity" min="1" value="1" required
+                               class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200">
+                    </div>
                 </div>
             </div>
             
@@ -84,18 +131,28 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 pt-6 border-t border-gray-100">
                 <div>
                     <label for="payment_by" class="block text-sm font-medium text-gray-700 mb-2">Pickup Method</label>
-                    <select id="payment_by" name="payment_by" required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200">
-                        <option value="Errant" selected>Errant (KSh 50)</option>
-                        <option value="Pickup Location">Pickup Location (KSh 30)</option>
-                    </select>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-credit-card text-gray-400"></i>
+                        </div>
+                        <select id="payment_by" name="payment_by" required
+                                class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200">
+                            <option value="Errant" selected>Errant (KSh 50)</option>
+                            <option value="Pickup Location">Pickup Location (KSh 30)</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <div>
                     <label for="amount" class="block text-sm font-medium text-gray-700 mb-2">Amount (KSh)</label>
-                    <input type="number" id="amount" name="amount" step="0.01" min="0" required
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
-                           placeholder="0.00" readonly>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500">KSh</span>
+                        </div>
+                        <input type="number" id="amount" name="amount" step="0.01" min="0" required
+                               class="pl-16 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition duration-200"
+                               placeholder="0.00" readonly>
+                    </div>
                 </div>
             </div>
             
@@ -134,35 +191,96 @@
         </div>
     </form>
 
-    <!-- Recent Deliveries Section -->
-    <div class="mt-12">
-        <div class="bg-white rounded-lg border border-gray-200 shadow-sm">
-            <div class="px-6 py-4 border-b border-gray-100">
+    <!-- Staff Quick Actions Section -->
+    <div id="staffQuickActionsSection" class="mt-8" style="display: none;">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg">
+            <div class="bg-gradient-to-r from-orange-50 to-amber-50 px-6 py-4 border-b border-gray-200">
                 <div class="flex items-center justify-between">
-                    <h2 class="text-lg font-medium text-gray-900">Recent Deliveries</h2>
-                    <button onclick="refreshRecentDeliveries()" class="text-teal-600 hover:text-teal-700 p-2 rounded-full hover:bg-teal-50 transition-colors">
+                    <button onclick="toggleQuickActions()" 
+                            class="flex items-center text-orange-800 hover:text-orange-600 focus:outline-none transition-colors duration-200">
+                        <i class="fas fa-chevron-down mr-2 transition-transform duration-200" id="quickActionsToggleIcon"></i>
+                        <h2 class="text-lg font-semibold flex items-center">
+                            <i class="fas fa-bolt text-orange-600 mr-2"></i>
+                            Quick Actions - Unassigned Deliveries
+                        </h2>
+                    </button>
+                    <button onclick="refreshUnassignedDeliveries()" 
+                            class="text-orange-600 hover:text-orange-800 p-2 rounded-full hover:bg-orange-100 transition-colors"
+                            title="Refresh unassigned deliveries">
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </div>
             </div>
             
-            <div id="recentDeliveriesContent">
+            <!-- Collapsible Quick Actions Content -->
+            <div id="quickActionsContent" class="hidden transition-all duration-300">
+                <div class="p-6">
+                    <!-- Quick Stats Summary -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-orange-50 rounded-lg p-3 text-center border border-orange-200">
+                            <div class="text-2xl font-bold text-orange-600" id="unassignedCount">0</div>
+                            <div class="text-xs text-orange-700 font-medium">Unassigned</div>
+                        </div>
+                        <div class="bg-blue-50 rounded-lg p-3 text-center border border-blue-200">
+                            <div class="text-2xl font-bold text-blue-600" id="myAssignedCount">0</div>
+                            <div class="text-xs text-blue-700 font-medium">My Assigned</div>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-3 text-center border border-green-200">
+                            <div class="text-2xl font-bold text-green-600" id="inTransitCount">0</div>
+                            <div class="text-xs text-green-700 font-medium">In Transit</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Unassigned Deliveries Cards -->
+                    <div class="border-t border-gray-200 pt-4">
+                        <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                            <i class="fas fa-bolt text-orange-500 mr-2"></i>
+                            Click any delivery to assign it to yourself
+                        </h3>
+                        <div id="unassignedDeliveriesCards" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6 gap-3">
+                            <!-- Delivery cards will be loaded here -->
+                            <div class="col-span-full text-center text-gray-500 py-8">
+                                <i class="fas fa-spinner fa-spin mr-2"></i>Loading unassigned deliveries...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Deliveries Section -->
+    <div class="mt-12">
+        <div class="bg-gradient-to-br from-white to-gray-50 rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+            <div class="bg-gradient-to-r from-teal-500 to-cyan-600 px-6 py-4 border-b border-gray-100">
+                <div class="flex items-center justify-between">
+                    <button onclick="toggleRecentDeliveries()" class="flex items-center text-white hover:text-teal-50 focus:outline-none transition-colors duration-200">
+                        <i class="fas fa-chevron-down mr-2 transition-transform duration-200" id="recentDeliveriesToggleIcon"></i>
+                        <h2 class="text-lg font-semibold">Recent Deliveries</h2>
+                    </button>
+                    <button onclick="refreshRecentDeliveries()" class="text-white hover:text-teal-50 p-2 rounded-full hover:bg-teal-700 transition-colors">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="recentDeliveriesContent" class="transition-all duration-300">
                 <div class="p-6">
                     <div class="overflow-x-auto">
                         <table class="min-w-full">
-                            <thead class="bg-gray-50 border-b border-gray-200">
+                            <thead class="bg-gradient-to-r from-teal-50 to-cyan-50 border-b border-teal-100">
                                 <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sender</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recipient</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-teal-700 uppercase tracking-wider">ID</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-teal-700 uppercase tracking-wider">Sender</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-teal-700 uppercase tracking-wider">Recipient</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-teal-700 uppercase tracking-wider">Status</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-teal-700 uppercase tracking-wider">Time</th>
                                 </tr>
                             </thead>
                             <tbody id="recentDeliveriesBody" class="divide-y divide-gray-100">
                                 <tr>
                                     <td colspan="5" class="px-4 py-8 text-center text-gray-500">
-                                        <i class="fas fa-spinner fa-spin text-2xl mb-3"></i>
+                                        <i class="fas fa-spinner fa-spin text-2xl mb-3 text-teal-600"></i>
                                         <p>Loading recent deliveries...</p>
                                     </td>
                                 </tr>
@@ -176,6 +294,9 @@
 </div>
 
 <script>
+// User role from server
+const userRole = "{{ session.user_role|default('') }}";
+
 // Auto-set amount based on pickup method
 function updatePaymentAmount() {
     const amountInput = document.getElementById('amount');
@@ -193,6 +314,248 @@ function updatePaymentAmount() {
     amountInput.value = amount;
     displayAmount.textContent = amount.toFixed(2);
     totalPayAmount.textContent = amount.toFixed(2);
+}
+
+// Autocomplete functionality for sender names
+let senderSuggestions = [];
+
+function loadSenderSuggestions() {
+    fetch('/get_sender_suggestions')
+        .then(response => response.json())
+        .then(data => {
+            senderSuggestions = data.suggestions || [];
+        })
+        .catch(error => console.error('Error loading sender suggestions:', error));
+}
+
+function setupSenderAutocomplete() {
+    const senderInput = document.getElementById('sender_name');
+    const autocompleteDiv = document.getElementById('sender_autocomplete');
+    
+    senderInput.addEventListener('input', function() {
+        const value = this.value.toLowerCase();
+        
+        if (value.length < 2) {
+            autocompleteDiv.classList.add('hidden');
+            return;
+        }
+        
+        const filtered = senderSuggestions.filter(s => 
+            s.toLowerCase().includes(value)
+        ).slice(0, 5);
+        
+        if (filtered.length > 0) {
+            autocompleteDiv.innerHTML = filtered.map(name => `
+                <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" onclick="selectSender('${name.replace(/'/g, "\\'")}')">
+                    ${name}
+                </div>
+            `).join('');
+            autocompleteDiv.classList.remove('hidden');
+        } else {
+            autocompleteDiv.classList.add('hidden');
+        }
+    });
+    
+    // Hide autocomplete when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!senderInput.contains(e.target) && !autocompleteDiv.contains(e.target)) {
+            autocompleteDiv.classList.add('hidden');
+        }
+    });
+}
+
+function selectSender(name) {
+    document.getElementById('sender_name').value = name;
+    document.getElementById('sender_autocomplete').classList.add('hidden');
+}
+
+// Staff Quick Actions functionality
+function toggleQuickActions() {
+    const content = document.getElementById('quickActionsContent');
+    const icon = document.getElementById('quickActionsToggleIcon');
+    
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.classList.add('rotate-180');
+        loadStaffStats();
+        loadUnassignedDeliveryCards();
+    } else {
+        content.classList.add('hidden');
+        icon.classList.remove('rotate-180');
+    }
+}
+
+function loadStaffStats() {
+    fetch('/get_staff_stats')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('unassignedCount').textContent = data.unassigned || 0;
+            document.getElementById('myAssignedCount').textContent = data.my_assigned || 0;
+            document.getElementById('inTransitCount').textContent = data.in_transit || 0;
+        })
+        .catch(error => console.error('Error loading staff stats:', error));
+}
+
+function loadUnassignedDeliveryCards() {
+    const container = document.getElementById('unassignedDeliveriesCards');
+    
+    fetch('/get_unassigned_deliveries')
+        .then(response => response.json())
+        .then(data => {
+            if (data.deliveries && data.deliveries.length > 0) {
+                container.innerHTML = data.deliveries.map(delivery => `
+                    <div class="bg-white border border-gray-200 rounded-lg p-3 cursor-pointer hover:shadow-md transition-shadow" 
+                         data-delivery-id="${delivery.id}" onclick="quickAssignDelivery(${delivery.id})">
+                        <div class="text-xs font-semibold text-gray-600 mb-1">#${delivery.display_id}</div>
+                        <div class="text-sm font-medium text-gray-900 truncate">${delivery.sender_name}</div>
+                        <div class="text-xs text-gray-500 truncate">${delivery.recipient_name}</div>
+                        <div class="mt-2">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                                ${delivery.status}
+                            </span>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = `
+                    <div class="col-span-full text-center text-gray-500 py-8">
+                        <i class="fas fa-inbox text-gray-400 text-2xl mb-3"></i>
+                        <p>No unassigned deliveries</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading unassigned deliveries:', error);
+            container.innerHTML = `
+                <div class="col-span-full text-center text-gray-500 py-8">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-2xl mb-3"></i>
+                    <p class="text-red-500">Error loading deliveries</p>
+                </div>
+            `;
+        });
+}
+
+function refreshUnassignedDeliveries() {
+    loadStaffStats();
+    loadUnassignedDeliveryCards();
+}
+
+function quickAssignDelivery(deliveryId) {
+    const card = document.querySelector(`[data-delivery-id="${deliveryId}"]`);
+    if (card) {
+        const originalContent = card.innerHTML;
+        card.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-spinner fa-spin text-orange-500 text-xl"></i>
+                <div class="text-xs text-orange-600 mt-1">Assigning...</div>
+            </div>
+        `;
+        
+        card.style.pointerEvents = 'none';
+        card.style.opacity = '0.7';
+        
+        fetch(`/quick_assign_delivery/${deliveryId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message, 'success');
+                loadStaffStats();
+                loadUnassignedDeliveryCards();
+            } else {
+                showNotification(data.message || 'Assignment failed', 'error');
+                card.innerHTML = originalContent;
+                card.style.pointerEvents = '';
+                card.style.opacity = '';
+            }
+        })
+        .catch(error => {
+            console.error('Error assigning delivery:', error);
+            showNotification('Error assigning delivery', 'error');
+            card.innerHTML = originalContent;
+            card.style.pointerEvents = '';
+            card.style.opacity = '';
+        });
+    }
+}
+
+// Notification system
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        'bg-blue-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${
+                type === 'success' ? 'fa-check-circle' :
+                type === 'error' ? 'fa-exclamation-circle' :
+                'fa-info-circle'
+            } mr-2"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 3000);
+}
+
+// Real-time updates using polling
+function startRealTimeUpdates() {
+    const updateInterval = 10000; // 10 seconds
+    
+    // Initial load
+    if (typeof loadStaffStats === 'function') {
+        loadStaffStats();
+    }
+    if (typeof loadUnassignedDeliveryCards === 'function') {
+        loadUnassignedDeliveryCards();
+    }
+    
+    // Set up automatic polling
+    setInterval(() => {
+        if (typeof loadStaffStats === 'function') {
+            loadStaffStats();
+        }
+        if (typeof loadUnassignedDeliveryCards === 'function') {
+            loadUnassignedDeliveryCards();
+        }
+    }, updateInterval);
+    
+    // Update when page becomes visible again
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            if (typeof loadStaffStats === 'function') {
+                loadStaffStats();
+            }
+            if (typeof loadUnassignedDeliveryCards === 'function') {
+                loadUnassignedDeliveryCards();
+            }
+        }
+    });
+    
+    // Update when window gains focus
+    window.addEventListener('focus', function() {
+        if (typeof loadStaffStats === 'function') {
+            loadStaffStats();
+        }
+        if (typeof loadUnassignedDeliveryCards === 'function') {
+            loadUnassignedDeliveryCards();
+        }
+    });
 }
 
 // Recent Deliveries functionality
@@ -286,6 +649,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load recent deliveries
     refreshRecentDeliveries();
+    
+    // Setup autocomplete
+    loadSenderSuggestions();
+    setupSenderAutocomplete();
+    
+    // Show staff section if user is staff
+    if (userRole === 'staff') {
+        document.getElementById('staffQuickActionsSection').style.display = 'block';
+        startRealTimeUpdates();
+    }
 });
 </script>
 {% endblock %}
