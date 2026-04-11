@@ -28141,6 +28141,25 @@ def get_pending_deliveries():
         app.logger.error(f"Error getting pending deliveries: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to get pending deliveries'}), 500
 
+@app.route('/api/users')
+@login_required
+@database_required
+def get_users():
+    """Get all users for user management in reports page."""
+    try:
+        users = User.query.order_by(User.created_at.desc()).all()
+        
+        return jsonify([{
+            'id': user.id,
+            'username': user.username,
+            'role': user.role,
+            'created_at': user.created_at.strftime('%Y-%m-%d') if user.created_at else None
+        } for user in users])
+        
+    except Exception as e:
+        app.logger.error(f"Error getting users: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to get users'}), 500
+
 
 if __name__ == '__main__':
 
