@@ -9836,6 +9836,13 @@ def get_shelves():
 
 
 
+        # Check if shelf table exists
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        if 'shelf' not in inspector.get_table_names():
+            # Return empty data if table doesn't exist
+            return jsonify([])
+
         shelves = Shelf.query.all()
 
 
