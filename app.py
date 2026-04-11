@@ -28081,19 +28081,102 @@ def main():
 
 
 
+@app.route('/get_summary')
+@login_required
+@database_required
+def get_summary():
+    """Get summary statistics for reports page."""
+    try:
+        # Get basic statistics
+        total_deliveries = Delivery.query.count()
+        pending_deliveries = Delivery.query.filter_by(status='Pending').count()
+        completed_deliveries = Delivery.query.filter_by(status='Delivered').count()
+        in_transit_deliveries = Delivery.query.filter_by(status='In Transit').count()
+        
+        # Calculate revenue
+        total_revenue = db.session.query(db.func.sum(Delivery.amount)).filter(Delivery.status == 'Delivered').scalar() or 0
+        
+        # Get recent deliveries (last 7 days)
+        from datetime import datetime, timedelta
+        week_ago = datetime.utcnow() - timedelta(days=7)
+        recent_deliveries = Delivery.query.filter(Delivery.created_at >= week_ago).count()
+        
+        return jsonify({
+            'total_deliveries': total_deliveries,
+            'pending_deliveries': pending_deliveries,
+            'completed_deliveries': completed_deliveries,
+            'in_transit_deliveries': in_transit_deliveries,
+            'total_revenue': float(total_revenue),
+            'recent_deliveries': recent_deliveries
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error getting summary: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to get summary statistics'}), 500
+
+@app.route('/get_delivery_stats')
+@login_required
+@database_required
+def get_delivery_stats():
+    """Get detailed delivery statistics."""
+    try:
+        # Get statistics by status
+        status_stats = db.session.query(
+            Delivery.status,
+            db.func.count(Delivery.id).label('count'),
+            db.func.sum(Delivery.amount).label('revenue')
+        ).group_by(Delivery.status).all()
+        
+        # Get daily stats for last 30 days
+        from datetime import datetime, timedelta
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        
+        daily_stats = db.session.query(
+            db.func.date(Delivery.created_at).label('date'),
+            db.func.count(Delivery.id).label('count'),
+            db.func.sum(Delivery.amount).label('revenue')
+        ).filter(Delivery.created_at >= thirty_days_ago
+        ).group_by(db.func.date(Delivery.created_at)
+        ).order_by(db.func.date(Delivery.created_at)).all()
+        
+        return jsonify({
+            'status_stats': [{'status': stat[0], 'count': stat[1], 'revenue': float(stat[2] or 0)} for stat in status_stats],
+            'daily_stats': [{'date': stat[0].isoformat(), 'count': stat[1], 'revenue': float(stat[2] or 0)} for stat in daily_stats]
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error getting delivery stats: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to get delivery statistics'}), 500
+
+@app.route('/get_pending_deliveries')
+@login_required
+@database_required
+def get_pending_deliveries():
+    """Get pending deliveries for staff quick actions."""
+    try:
+        # Get pending deliveries
+        pending_deliveries = Delivery.query.filter_by(status='Pending').order_by(Delivery.created_at.desc()).limit(20).all()
+        
+        return jsonify({
+            'deliveries': [{
+                'id': d.id,
+                'display_id': d.display_id,
+                'sender_name': d.sender_name,
+                'recipient_name': d.recipient_name,
+                'amount': float(d.amount),
+                'status': d.status,
+                'created_at': d.created_at.isoformat() if d.created_at else None
+            } for d in pending_deliveries]
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error getting pending deliveries: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to get pending deliveries'}), 500
+
+
 if __name__ == '__main__':
 
 
-
-
-
-
-
     main()
-
-
-
-
-
 
 
