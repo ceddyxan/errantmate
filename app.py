@@ -28081,38 +28081,6 @@ def main():
 
 
 
-@app.route('/get_summary')
-@login_required
-@database_required
-def get_summary():
-    """Get summary statistics for reports page."""
-    try:
-        # Get basic statistics
-        total_deliveries = Delivery.query.count()
-        pending_deliveries = Delivery.query.filter_by(status='Pending').count()
-        completed_deliveries = Delivery.query.filter_by(status='Delivered').count()
-        in_transit_deliveries = Delivery.query.filter_by(status='In Transit').count()
-        
-        # Calculate revenue
-        total_revenue = db.session.query(db.func.sum(Delivery.amount)).filter(Delivery.status == 'Delivered').scalar() or 0
-        
-        # Get recent deliveries (last 7 days)
-        from datetime import datetime, timedelta
-        week_ago = datetime.utcnow() - timedelta(days=7)
-        recent_deliveries = Delivery.query.filter(Delivery.created_at >= week_ago).count()
-        
-        return jsonify({
-            'total_deliveries': total_deliveries,
-            'pending_deliveries': pending_deliveries,
-            'completed_deliveries': completed_deliveries,
-            'in_transit_deliveries': in_transit_deliveries,
-            'total_revenue': float(total_revenue),
-            'recent_deliveries': recent_deliveries
-        })
-        
-    except Exception as e:
-        app.logger.error(f"Error getting summary: {str(e)}", exc_info=True)
-        return jsonify({'error': 'Failed to get summary statistics'}), 500
 
 @app.route('/get_delivery_stats')
 @login_required
