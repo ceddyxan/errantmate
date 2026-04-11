@@ -28144,21 +28144,11 @@ def get_pending_deliveries():
 @app.route('/api/users')
 @login_required
 @database_required
-def get_users():
-    """Get all users for user management in reports page."""
-    try:
-        users = User.query.order_by(User.created_at.desc()).all()
-        
-        return jsonify([{
-            'id': user.id,
-            'username': user.username,
-            'role': user.role,
-            'created_at': user.created_at.strftime('%Y-%m-%d') if user.created_at else None
-        } for user in users])
-        
-    except Exception as e:
-        app.logger.error(f"Error getting users: {str(e)}", exc_info=True)
-        return jsonify({'error': 'Failed to get users'}), 500
+def get_users_api():
+    """API endpoint for users - alias to existing get_users function."""
+    # Call the existing get_users function
+    from app import get_users as existing_get_users
+    return existing_get_users()
 
 
 if __name__ == '__main__':
