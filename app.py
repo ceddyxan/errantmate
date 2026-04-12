@@ -16870,24 +16870,14 @@ def quick_assign_delivery(delivery_id):
     try:
 
         # Get the delivery
-
         delivery = Delivery.query.get_or_404(delivery_id)
 
-        
-
-        # Check if delivery is unassigned and pending
-
-        if delivery.delivery_person or delivery.status != 'Pending':
-
+        # Check if delivery is unassigned or assigned to admin and is pending
+        if (delivery.delivery_person and delivery.delivery_person != 'admin') or delivery.status != 'Pending':
             return jsonify({
-
                 'success': False, 
-
                 'error': 'Delivery is already assigned or not in Pending status'
-
             }), 400
-
-        
 
         # Get current user
 
@@ -28145,10 +28135,21 @@ def get_users_api():
     from app import get_users as existing_get_users
     return existing_get_users()
 
+@app.route('/get_sender_suggestions')
+@login_required
+@database_required
+def get_sender_suggestions():
+    """Get sender name suggestions for autocomplete."""
+    try:
+        # Get unique sender names from deliveries
+        senders = db.session.query(Delivery.sender_name).distinct().all()
+        suggestions = [sender[0] for sender in senders if sender[0]]
+        return jsonify({'suggestions': suggestions})
+    except Exception as e:
+        app.logger.error(f"Error getting sender suggestions: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to get suggestions'}), 500
 
 if __name__ == '__main__':
 
 
     main()
-
-
