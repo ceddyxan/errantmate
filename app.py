@@ -16791,33 +16791,21 @@ def update_delivery_details(delivery_id):
 
 
 
-
-
-
-
 @app.route('/get_unassigned_deliveries')
-
 @login_required
-
 @database_required
-
 def get_unassigned_deliveries():
-
     """Get unassigned deliveries for staff quick assignment"""
-
     try:
-
-        # Get deliveries with no delivery person assigned and status is 'Pending'
-
+        # Get deliveries with no delivery person assigned OR assigned to 'admin' and status is 'Pending'
+        # This shows truly unassigned deliveries plus those assigned to admin (effectively unassigned for staff)
         unassigned_deliveries = Delivery.query.filter(
-
-            Delivery.delivery_person.is_(None),
-
+            db.or_(
+                Delivery.delivery_person.is_(None),
+                Delivery.delivery_person == 'admin'
+            ),
             Delivery.status == 'Pending'
-
         ).order_by(Delivery.created_at.desc()).limit(10).all()
-
-        
 
         deliveries_data = []
 
