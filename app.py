@@ -17019,38 +17019,31 @@ def get_staff_stats():
 
         ).count()
 
-        
-
         # Get completed deliveries for current user
-
         completed = Delivery.query.filter(
-
             Delivery.delivery_person == current_username,
-
             Delivery.status == 'Delivered'
-
         ).count()
-
         
-
+        # Get unassigned deliveries (no person or assigned to admin, pending status)
+        unassigned = Delivery.query.filter(
+            db.or_(
+                Delivery.delivery_person.is_(None),
+                Delivery.delivery_person == 'admin'
+            ),
+            Delivery.status == 'Pending'
+        ).count()
+        
         return jsonify({
-
             'success': True,
-
             'my_assigned': my_assigned,
-
             'in_transit': in_transit,
-
-            'completed': completed
-
+            'completed': completed,
+            'unassigned': unassigned
         })
-
         
-
     except Exception as e:
-
         app.logger.error(f"Error getting staff stats: {str(e)}")
-
         return jsonify({'success': False, 'error': 'Failed to get staff stats'}), 500
 
 
