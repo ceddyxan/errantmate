@@ -1546,7 +1546,7 @@ function displayDeliveryPersons(persons, period = 'month') {
                         <div class="space-y-2 text-sm">
                             <div class="flex justify-between">
                                 <span class="text-gray-600">Total assigned:</span>
-                                <span class="font-medium">${person.delivery_count || 0}</span>
+                                <span class="font-medium">${person.deliveries || 0}</span>
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-gray-600">Pending:</span>
@@ -1558,11 +1558,11 @@ function displayDeliveryPersons(persons, period = 'month') {
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-gray-600">Revenue:</span>
-                                <span class="font-medium">KSh ${(person.total_amount || 0).toFixed(2)}</span>
+                                <span class="font-medium">KSh ${(person.revenue || 0).toFixed(2)}</span>
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-gray-600">Delivery Costs:</span>
-                                <span class="font-medium text-red-600">KSh ${(person.total_expenses || 0).toFixed(2)}</span>
+                                <span class="font-medium text-red-600">KSh 0.00</span>
                             </div>
                         </div>
                         ${person.daily_deliveries && Object.keys(person.daily_deliveries).length > 0 ? `
