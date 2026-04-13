@@ -28132,11 +28132,22 @@ def get_users_api():
 @login_required
 @database_required
 def get_sender_suggestions():
-    """Get sender name suggestions for autocomplete."""
+    """Get sender name suggestions for autocomplete with phone numbers."""
     try:
-        # Get unique sender names from deliveries
-        senders = db.session.query(Delivery.sender_name).distinct().all()
-        suggestions = [sender[0] for sender in senders if sender[0]]
+        # Get unique sender names with their phone numbers from deliveries
+        senders = db.session.query(
+            Delivery.sender_name, 
+            Delivery.sender_phone
+        ).distinct().all()
+        
+        suggestions = []
+        for sender in senders:
+            if sender[0]:  # Only include if sender name exists
+                suggestions.append({
+                    'name': sender[0],
+                    'phone': sender[1] or ''
+                })
+        
         return jsonify({'suggestions': suggestions})
     except Exception as e:
         app.logger.error(f"Error getting sender suggestions: {str(e)}", exc_info=True)

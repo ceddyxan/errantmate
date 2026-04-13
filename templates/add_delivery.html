@@ -341,16 +341,22 @@ function setupSenderAutocomplete() {
             return;
         }
         
+        // Handle new format: array of objects with name and phone
         const filtered = senderSuggestions.filter(s => 
-            s.toLowerCase().includes(value)
+            (typeof s === 'string' ? s : s.name).toLowerCase().includes(value)
         ).slice(0, 5);
         
         if (filtered.length > 0) {
-            autocompleteDiv.innerHTML = filtered.map(name => `
-                <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" onclick="selectSender('${name.replace(/'/g, "\\'")}')">
-                    ${name}
-                </div>
-            `).join('');
+            autocompleteDiv.innerHTML = filtered.map(suggestion => {
+                const name = typeof suggestion === 'string' ? suggestion : suggestion.name;
+                const phone = typeof suggestion === 'string' ? '' : suggestion.phone;
+                const displayText = phone ? `${name} (${phone})` : name;
+                return `
+                    <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm" onclick="selectSender('${name.replace(/'/g, "\\'")}', '${phone.replace(/'/g, "\\'")}')">
+                        ${displayText}
+                    </div>
+                `;
+            }).join('');
             autocompleteDiv.classList.remove('hidden');
         } else {
             autocompleteDiv.classList.add('hidden');
@@ -365,8 +371,11 @@ function setupSenderAutocomplete() {
     });
 }
 
-function selectSender(name) {
+function selectSender(name, phone = '') {
     document.getElementById('sender_name').value = name;
+    if (phone) {
+        document.getElementById('sender_phone').value = phone;
+    }
     document.getElementById('sender_autocomplete').classList.add('hidden');
 }
 
